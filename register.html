@@ -1,0 +1,273 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>تسجيل مستخدم جديد</title>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <style>
+    body {
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      padding: 20px;
+      background: #f5f7fa;
+    }
+    form {
+      max-width: 400px;
+      margin: 20px auto;
+      background: white;
+      padding: 20px;
+      border-radius: 10px;
+      box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+    }
+    label {
+      display: block;
+      margin: 10px 0 5px;
+      font-weight: bold;
+    }
+    input, select {
+      width: 100%;
+      padding: 8px;
+      border: 1px solid #ccc;
+      border-radius: 4px;
+      box-sizing: border-box;
+    }
+    button {
+      margin-top: 20px;
+      padding: 10px 15px;
+      background: #28a745;
+      color: white;
+      border: none;
+      border-radius: 4px;
+      cursor: pointer;
+      width: 100%;
+    }
+    button:hover {
+      background: #218838;
+    }
+    #status {
+      margin-top: 20px;
+      padding: 10px;
+      border-radius: 4px;
+      text-align: center;
+      font-weight: bold;
+    }
+    .success { background: #d4edda; color: #155724; }
+    .error { background: #f8d7da; color: #721c24; }
+    .warning { background: #fff3cd; color: #856404; }
+  </style>
+</head>
+
+<body>
+  <h2 style="text-align:center">تسجيل مستخدم جديد</h2>
+  <form id="registerForm">
+    <label>الاسم الكامل:
+      <input type="text" id="fullName" required>
+    </label><br><br>
+    <label>البريد الإلكتروني:
+      <input type="email" id="email" required>
+    </label><br><br>
+    <label>كلمة المرور:
+      <input type="password" id="password" required minlength="6">
+    </label><br><br>
+    <label>الدور:
+      <select id="role">
+        <option value="admin">مشرف</option>
+        <option value="teacher">معلم</option>
+        <option value="secretary">مسؤول الطلاب (السيكرتير)</option>
+      </select>
+    </label>
+    
+    <br><br>
+    <button type="submit">تسجيل</button>
+  </form>
+
+  <p id="status"></p>
+
+  <div style="max-width: 800px; margin: 30px auto; padding: 15px; background: #fff3cd; border-radius: 8px; border: 1px solid #ffeaa7;">
+    <h3 style="color: #856404; margin-top: 0;">ملاحظات هامة حول مشكلة تسجيل البيانات</h3>
+    <p style="color: #856404; line-height: 1.6;">
+      <strong>المشكلة:</strong> قد يتم إنشاء المستخدم في نظام المصادقة (Auth) دون حفظ بياناته في جدول <code>users</code>، مما يؤدي إلى ظهور المستخدم في جدول <code>auth.users</code> مع بيانات مكتملة، بينما يظهر في جدول <code>public.users</code> برقم التعريف فقط (id) والباقي فارغ (null).
+    </p>
+    <p style="color: #856404; line-height: 1.6;">
+      <strong>السبب:</strong> هذه المشكلة تحدث عندما ينجح إنشاء المستخدم في نظام المصادقة، لكن عملية الإدراج في جدول <code>public.users</code> تفشل أو لا تُنفذ بسبب خطأ في الكود، أو صلاحيات قاعدة البيانات، أو تكرار البريد الإلكتروني.
+    </p>
+    <p style="color: #856404; line-height: 1.6;">
+      <strong>الحل:</strong> تم تحسين الكود لضمان التحقق من وجود المستخدم أولاً، وتحسين معالجة الأخطاء، وتسجيل الأحداث المهمة في وحدة التحكم (console) لتسهيل التصحيح.
+    </p>
+  </div>
+
+<script type="module">
+  import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js/+esm';
+
+  const supabaseClient = createClient(
+    "https://zefsmckaihzfiqqbdake.supabase.co",
+    "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InplZnNtY2thaWh6ZmlxcWJkYWtlIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTQyMzUzNTgsImV4cCI6MjA2OTgxMTM1OH0.vktk2VkEPtMclb6jb_pFa1DbrqWX9SOZRsBR577o5mc"
+  );
+
+  document.getElementById('registerForm').addEventListener('submit', async function(e) {
+    e.preventDefault();
+
+    const status = document.getElementById('status');
+    status.textContent = '';
+    status.className = '';
+
+    const fullName = document.getElementById('fullName').value.trim();
+    const email = document.getElementById('email').value.trim();
+    const password = document.getElementById('password').value;
+    const role = document.getElementById('role').value;
+
+    // التحقق من صحة المدخلات
+    if (!fullName) {
+      status.textContent = 'الرجاء إدخال الاسم الكامل';
+      status.className = 'error';
+      return;
+    }
+
+    if (password.length < 6) {
+      status.textContent = 'كلمة المرور يجب أن تكون مكونة من 6 أحرف على الأقل';
+      status.className = 'error';
+      return;
+    }
+
+    try {
+      console.log('بدء عملية التسجيل:', {
+        email,
+        fullName,
+        role
+      });
+
+      // التحقق من وجود المستخدم أولاً في جدول public.users
+      const { data: existingUser, error: checkError } = await supabaseClient
+        .from('users')
+        .select('email')
+        .eq('email', email)
+        .maybeSingle();
+
+      if (checkError) {
+        console.error('خطأ في التحقق من وجود المستخدم:', checkError);
+        status.textContent = 'خطأ في التحقق من البريد الإلكتروني';
+        status.className = 'error';
+        return;
+      }
+
+      if (existingUser) {
+        console.log('المستخدم موجود بالفعل في جدول users:', existingUser);
+        status.textContent = 'هذا البريد الإلكتروني مسجل مسبقاً';
+        status.className = 'error';
+        return;
+      }
+
+      console.log('جاري إنشاء حساب جديد...');
+      
+      // إنشاء المستخدم في نظام المصادقة
+      const { data: authData, error: authError } = await supabaseClient.auth.signUp({
+        email,
+        password,
+        options: {
+          data: {
+            full_name: fullName,
+            role: role
+          },
+          emailRedirectTo: window.location.origin + '/confirm-sent.html'
+        }
+      });
+
+      if (authError) {
+        console.error("خطأ في تسجيل المستخدم:", {
+          error: authError,
+          message: authError.message,
+          status: authError.status,
+          details: authError.details
+        });
+        
+        // معالجة أخطاء شائعة
+        if (authError.message.includes('Email rate limit exceeded')) {
+          status.textContent = 'تم تجاوز الحد الأقصى لعدد المحاولات. الرجاء المحاولة لاحقاً';
+        } else if (authError.message.includes('Invalid email')) {
+          status.textContent = 'عنوان البريد الإلكتروني غير صحيح';
+        } else if (authError.message.includes('weak password')) {
+          status.textContent = 'كلمة المرور ضعيفة جداً';
+        } else {
+          status.textContent = 'فشل في التسجيل: ' + (authError.message || 'خطأ في الخادم');
+        }
+        status.className = 'error';
+        return;
+      }
+
+      if (!authData || !authData.user) {
+        status.textContent = 'فشل في إنشاء الحساب: لم يتم استلام بيانات المستخدم';
+        status.className = 'error';
+        return;
+      }
+
+      const userId = authData.user.id;
+      console.log('تم إنشاء المستخدم في نظام المصادقة بنجاح:', {
+        userId,
+        email,
+        confirmed: authData.user.confirmed_at
+      });
+
+      // حفظ بيانات المستخدم في جدول public.users
+      console.log('جاري حفظ بيانات المستخدم في جدول users...', {
+        userId,
+        email,
+        fullName,
+        role
+      });
+
+      const { error: insertError } = await supabaseClient
+        .from('users')
+        .insert([
+          {
+            id: userId,
+            email: email,
+            full_name: fullName,
+            role: role,
+            created_at: new Date().toISOString()
+          }
+        ]);
+
+      if (insertError) {
+        console.error('خطأ في حفظ البيانات في جدول users:', {
+          error: insertError,
+          message: insertError.message,
+          details: insertError.details,
+          hint: insertError.hint,
+          code: insertError.code
+        });
+
+        // حذف المستخدم من نظام المصادقة إذا فشل الإدراج في جدول users
+        if (userId) {
+          try {
+            await supabaseClient.auth.admin.deleteUser(userId);
+            console.log('تم حذف المستخدم من نظام المصادقة بسبب فشل حفظ البيانات');
+          } catch (deleteError) {
+            console.error('فشل في حذف المستخدم من نظام المصادقة:', deleteError);
+          }
+        }
+
+        status.innerHTML = `فشل في حفظ بيانات المستخدم: ${insertError.message}<br>
+                           <small>تم إلغاء عملية التسجيل للحفاظ على سلامة البيانات</small>`;
+        status.className = 'error';
+        return;
+      }
+
+      console.log('تم حفظ البيانات بنجاح في جدول users');
+      
+      status.textContent = 'تم إنشاء الحساب بنجاح! سيتم تحويلك...';
+      status.className = 'success';
+      
+      setTimeout(() => {
+        window.location.href = 'confirm-sent.html';
+      }, 1500);
+      
+    } catch (err) {
+      console.error("خطأ غير متوقع:", err);
+      status.textContent = 'خطأ غير متوقع: ' + err.message;
+      status.className = 'error';
+    }
+  });
+</script>
+</body>
+</html>

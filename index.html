@@ -1,0 +1,398 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>تسجيل الدخول</title>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <style>
+    body {
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      padding: 20px;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      margin: 0;
+      direction: rtl;
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .container {
+      max-width: 400px;
+      width: 100%;
+      background: white;
+      padding: 40px;
+      border-radius: 20px;
+      box-shadow: 0 15px 35px rgba(0,0,0,0.1);
+      backdrop-filter: blur(10px);
+    }
+    h2 {
+      text-align: center;
+      color: #333;
+      margin-bottom: 30px;
+      font-size: 28px;
+      font-weight: 700;
+    }
+    label {
+      display: block;
+      margin: 20px 0 8px;
+      font-weight: 600;
+      color: #555;
+      font-size: 14px;
+    }
+    input {
+      width: 100%;
+      padding: 15px;
+      border: 2px solid #e1e5e9;
+      border-radius: 10px;
+      font-size: 16px;
+      box-sizing: border-box;
+      transition: all 0.3s ease;
+      background: #f8f9fa;
+    }
+    input:focus {
+      outline: none;
+      border-color: #667eea;
+      background: white;
+      transform: translateY(-2px);
+      box-shadow: 0 5px 15px rgba(102, 126, 234, 0.2);
+    }
+    button {
+      margin-top: 30px;
+      padding: 15px;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: white;
+      border: none;
+      border-radius: 10px;
+      cursor: pointer;
+      width: 100%;
+      font-size: 16px;
+      font-weight: bold;
+      transition: all 0.3s ease;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+    }
+    button:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 10px 25px rgba(102, 126, 234, 0.3);
+    }
+    button:active {
+      transform: translateY(0);
+    }
+    #status {
+      margin-top: 25px;
+      padding: 15px;
+      border-radius: 10px;
+      text-align: center;
+      font-weight: bold;
+      font-size: 14px;
+    }
+    .success { 
+      background: linear-gradient(135deg, #56ab2f 0%, #a8e6cf 100%); 
+      color: white; 
+      border: none;
+    }
+    .error { 
+      background: linear-gradient(135deg, #ff416c 0%, #ff4b2b 100%); 
+      color: white; 
+      border: none;
+    }
+    .info { 
+      background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%); 
+      color: white; 
+      border: none;
+    }
+    .loader {
+      display: inline-block;
+      width: 20px;
+      height: 20px;
+      border: 3px solid rgba(255,255,255,0.3);
+      border-radius: 50%;
+      border-top-color: white;
+      animation: spin 1s ease-in-out infinite;
+      margin-left: 10px;
+    }
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+    .register-link {
+      text-align: center;
+      margin-top: 25px;
+      padding: 15px;
+      background: rgba(102, 126, 234, 0.1);
+      border-radius: 10px;
+    }
+    .register-link a {
+      color: #667eea;
+      text-decoration: none;
+      font-weight: 600;
+      transition: all 0.3s ease;
+    }
+    .register-link a:hover {
+      color: #764ba2;
+      text-decoration: underline;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h2>🔐 تسجيل الدخول</h2>
+    <form id="loginForm">
+      <label>📧 البريد الإلكتروني:
+        <input type="email" id="email" required autocomplete="email" placeholder="أدخل بريدك الإلكتروني">
+      </label>
+      <label>🔒 كلمة المرور:
+        <input type="password" id="password" required autocomplete="current-password" placeholder="أدخل كلمة المرور">
+      </label>
+      <button type="submit">دخول</button>
+    </form>
+
+    <p id="status"></p>
+
+    <div class="register-link">
+      <a href="#" onclick="showRegisterForm()">إنشاء حساب جديد</a>
+    </div>
+  </div>
+
+  <!-- نموذج التسجيل -->
+  <div id="registerContainer" style="display: none;">
+    <div class="container">
+      <h2>📝 تسجيل مستخدم جديد</h2>
+      <form id="registerForm">
+        <label>👤 الاسم الكامل:
+          <input type="text" id="regFullName" required placeholder="أدخل اسمك الكامل">
+        </label>
+        <label>📧 البريد الإلكتروني:
+          <input type="email" id="regEmail" required placeholder="أدخل بريدك الإلكتروني">
+        </label>
+        <label>🔒 كلمة المرور:
+          <input type="password" id="regPassword" required minlength="6" placeholder="أدخل كلمة مرور قوية">
+        </label>
+        <label>👔 الدور:
+          <select id="regRole" style="padding: 15px; border: 2px solid #e1e5e9; border-radius: 10px; font-size: 16px; background: #f8f9fa;">
+            <option value="admin">مشرف</option>
+            <option value="teacher">معلم</option>
+            <option value="secretary">مسؤول الطلاب (السيكرتير)</option>
+          </select>
+        </label>
+        
+        <button type="submit">تسجيل</button>
+      </form>
+
+      <p id="regStatus"></p>
+
+      <div class="register-link">
+        <a href="#" onclick="showLoginForm()">العودة لتسجيل الدخول</a>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // تهيئة العميل
+    const supabaseClient = supabase.createClient(
+      "https://zefsmckaihzfiqqbdake.supabase.co",
+      "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InplZnNtY2thaWh6ZmlxcWJkYWtlIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTQyMzUzNTgsImV4cCI6MjA2OTgxMTM1OH0.vktk2VkEPtMclb6jb_pFa1DbrqWX9SOZRsBR577o5mc"
+    );
+
+    // متغيرات للتخزين المؤقت في الذاكرة (بدلاً من localStorage)
+    let currentUser = null;
+    let signupEmail = null;
+
+    // عرض نموذج التسجيل
+    function showRegisterForm() {
+      document.querySelector('.container').style.display = 'none';
+      document.getElementById('registerContainer').style.display = 'flex';
+    }
+
+    // عرض نموذج تسجيل الدخول
+    function showLoginForm() {
+      document.getElementById('registerContainer').style.display = 'none';
+      document.querySelector('.container').style.display = 'block';
+    }
+
+    // معالج تسجيل الدخول
+    document.getElementById('loginForm').addEventListener('submit', async function(e) {
+      e.preventDefault();
+      const status = document.getElementById('status');
+      const email = document.getElementById('email').value;
+      const password = document.getElementById('password').value;
+
+      status.textContent = '';
+      status.className = 'info';
+      status.innerHTML = '<span class="loader"></span> جاري تسجيل الدخول...';
+
+      try {
+        // تسجيل الدخول
+        const { data, error } = await supabaseClient.auth.signInWithPassword({
+          email,
+          password
+        });
+
+        // طباعة معلومات المستخدم للتشخيص
+        console.log('بيانات المستخدم الكاملة:', data?.user);
+        console.log('user_metadata:', data?.user?.user_metadata);
+
+        if (error) {
+          status.className = 'error';
+          status.textContent = 'فشل في الدخول: ' + error.message;
+          return;
+        }
+
+        if (!data.user) {
+          status.className = 'error';
+          status.textContent = 'لم يتم استلام بيانات المستخدم.';
+          return;
+        }
+
+        // محاولة جلب البيانات من user_metadata أولاً
+        let full_name = data.user.user_metadata?.full_name;
+        let role = data.user.user_metadata?.role;
+
+        // إذا لم توجد البيانات في user_metadata، نحاول جلبها من جدول users
+        if (!full_name || !role) {
+          console.log('محاولة جلب البيانات من جدول users...');
+          const { data: userData, error: userError } = await supabaseClient
+            .from('users')
+            .select('full_name, role')
+            .eq('id', data.user.id)
+            .maybeSingle();
+
+          if (userError) {
+            console.error('Database error:', userError);
+            status.className = 'error';
+            status.textContent = 'خطأ في قاعدة البيانات: ' + userError.message;
+            return;
+          }
+
+          if (userData) {
+            full_name = userData.full_name;
+            role = userData.role;
+          }
+        }
+
+        // التحقق من وجود البيانات المطلوبة
+        if (!full_name || !role) {
+          status.className = 'error';
+          status.textContent = 'لم يتم العثور على بيانات المستخدم الكاملة. الاسم: ' + (full_name || 'غير محدد') + '، الدور: ' + (role || 'غير محدد');
+          return;
+        }
+        currentUser = { ...data.user, full_name, role };
+
+        status.className = 'success';
+
+        if (role === 'admin') {
+          status.textContent = `🎉 مرحباً ${full_name}! تحويل إلى لوحة المشرف...`;
+          setTimeout(() => {
+            alert('سيتم توجيهك إلى لوحة المشرف');
+            window.location.href = 'admin-dashboar.html';
+          }, 1500);
+        } else if (role === 'teacher') {
+          status.textContent = `🎉 مرحباً ${full_name}! تحويل إلى لوحة المعلم...`;
+          setTimeout(() => {
+            alert('سيتم توجيهك إلى لوحة المعلم');
+            window.location.href = 'dashboard-teacher.html';
+          }, 1500);
+        } else if (role === 'secretary') {
+          status.textContent = `🎉 مرحباً ${full_name}! تحويل إلى لوحة مسؤول الطلاب...`;
+          setTimeout(() => {
+            window.location.href = 'dashboard-secretary.html';
+          }, 1500);
+        } else {
+          status.className = 'error';
+          status.textContent = 'دور غير معروف: ' + role;
+        }
+
+      } catch (err) {
+        console.error('Unexpected error:', err);
+        status.className = 'error';
+        status.textContent = 'خطأ غير متوقع: ' + err.message;
+      }
+    });
+
+    // معالج التسجيل الجديد
+// معالج التسجيل الجديد
+document.getElementById('registerForm').addEventListener('submit', async function(e) {
+  e.preventDefault();
+
+  const status = document.getElementById('regStatus');
+  status.textContent = '';
+  status.className = '';
+
+  const fullName = document.getElementById('regFullName').value;
+  const email = document.getElementById('regEmail').value;
+  const password = document.getElementById('regPassword').value;
+  const role = document.getElementById('regRole').value;
+
+  status.className = 'info';
+  status.innerHTML = '<span class="loader"></span> جاري إنشاء الحساب...';
+
+  try {
+    // First check if user already exists
+    const { data: existingUser } = await supabaseClient
+      .from('users')
+      .select('email')
+      .eq('email', email)
+      .maybeSingle();
+
+    if (existingUser) {
+      status.textContent = 'هذا البريد الإلكتروني مسجل مسبقاً';
+      status.className = 'error';
+      return;
+    }
+const { data, error } = await supabaseClient.auth.signUp({
+  email,
+  password,
+  options: {
+    data: {
+      full_name: fullName,
+      role: role
+    }
+  }
+});
+
+if (error) {
+  console.error("خطأ في التسجيل:", error.message);
+  return;
+}
+
+console.log("تم إنشاء المستخدم:", data.user);
+
+// 👇 الحل هنا
+const { data: freshUserData, error: userFetchError } = await supabaseClient.auth.getUser();
+if (userFetchError) {
+  console.error("خطأ في جلب بيانات المستخدم:", userFetchError.message);
+} else {
+  console.log("بيانات المستخدم الكاملة:", freshUserData?.user);
+  console.log("user_metadata:", freshUserData?.user?.user_metadata);
+}
+
+    if (data && data.user) {
+      status.textContent = '✅ تم إنشاء الحساب بنجاح! يرجى تفعيل حسابك من خلال الرابط المرسل إلى بريدك الإلكتروني.';
+      status.className = 'success';
+      setTimeout(() => {
+        showLoginForm();
+      }, 3000);
+    } else {
+      status.textContent = 'تم إرسال رابط التفعيل إلى بريدك.';
+      status.className = 'success';
+      setTimeout(() => {
+        showLoginForm();
+      }, 2000);
+    }
+  } catch (err) {
+    status.textContent = 'خطأ غير متوقع: ' + err.message;
+    status.className = 'error';
+    console.error("Unexpected error:", err);
+  }
+});
+    // فحص حالة المصادقة عند تحميل الصفحة
+    window.addEventListener('load', async () => {
+      const { data: { session } } = await supabaseClient.auth.getSession();
+      if (session) {
+        console.log('المستخدم مسجل دخول مسبقاً:', session.user);
+        currentUser = session.user;
+      }
+    });
+  </script>
+</body>
+</html>
