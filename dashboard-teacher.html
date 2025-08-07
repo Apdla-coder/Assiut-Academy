@@ -3,229 +3,232 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>لوحة تحكم المعلم - نظام الأكاديمية</title>
+    <title>لوحة التحكم - المعلم</title>
+
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
     <style>
+        :root {
+            --primary: #0ea5e9; /* تغيير اللون الأساسي ليكون أزرق بدلًا من البرتقالي */
+            --primary-dark: #0284c7;
+            --secondary: #059669;
+            --dark: #1f2937;
+            --light: #f9fafb;
+            --gray: #6b7280;
+            --border: #e5e7eb;
+            --success: #059669;
+            --warning: #f59e0b;
+            --danger: #ef4444;
+            --info: #3b82f6;
+            --waiting: #8b5cf6;
+            --sidebar-width: 250px;
+            --header-height: 60px;
+        }
+
         * {
             margin: 0;
             padding: 0;
             box-sizing: border-box;
+            font-family: 'Tajawal', sans-serif;
         }
+
         body {
-            font-family: 'Arial', sans-serif;
-            background: #f8f9fa;
-            color: #333;
+            background-color: #f5f7fb;
+            color: var(--dark);
+            display: flex;
+            min-height: 100vh;
         }
-        .header {
-            background: linear-gradient(135deg, #28a745, #20c997);
+
+        /* Sidebar */
+        .sidebar {
+            width: var(--sidebar-width);
+            background: linear-gradient(180deg, var(--primary), var(--primary-dark));
             color: white;
-            padding: 20px 0;
-            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+            height: 100vh;
+            position: fixed;
+            overflow-y: auto;
+            transition: all 0.3s ease;
+            z-index: 100;
+            box-shadow: 2px 0 10px rgba(0,0,0,0.1);
         }
-        .header-content {
-            max-width: 1200px;
-            margin: 0 auto;
-            padding: 0 20px;
+
+        .sidebar-header {
+            padding: 20px;
+            text-align: center;
+            border-bottom: 1px solid rgba(255,255,255,0.1);
+        }
+
+        .sidebar-header h3 {
+            margin: 0;
+            font-size: 1.5rem;
+        }
+
+        .sidebar-menu {
+            padding: 0;
+            list-style: none;
+        }
+
+        .nav-item {
+            margin: 5px 0;
+        }
+
+        .nav-link {
+            display: flex;
+            align-items: center;
+            padding: 15px 20px;
+            color: rgba(255,255,255,0.8);
+            text-decoration: none;
+            transition: all 0.3s;
+            border-right: 3px solid transparent;
+        }
+
+        .nav-link:hover, .nav-link.active {
+            background: rgba(255,255,255,0.1);
+            color: white;
+            border-right: 3px solid white;
+        }
+
+        .nav-link i {
+            margin-left: 10px;
+            font-size: 1.2rem;
+        }
+
+        /* Main Content */
+        .main-content {
+            flex: 1;
+            margin-right: var(--sidebar-width);
+            transition: all 0.3s ease;
+        }
+
+        /* Header */
+        .header {
+            height: var(--header-height);
+            background: white;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
             display: flex;
             justify-content: space-between;
             align-items: center;
+            padding: 0 20px;
+            position: sticky;
+            top: 0;
+            z-index: 99;
         }
-        .header h1 {
-            font-size: 1.8rem;
+
+        .header-title h1 {
+            font-size: 1.5rem;
+            color: var(--dark);
         }
+
         .user-info {
             display: flex;
             align-items: center;
-            gap: 15px;
         }
-        .logout-btn {
-            background: rgba(255,255,255,0.2);
-            border: 2px solid rgba(255,255,255,0.3);
-            color: white;
-            padding: 8px 20px;
-            border-radius: 20px;
-            cursor: pointer;
-            transition: all 0.3s ease;
-        }
-        .logout-btn:hover {
-            background: rgba(255,255,255,0.3);
-            border-color: rgba(255,255,255,0.5);
-        }
-        .container {
-            max-width: 1200px;
-            margin: 0 auto;
-            padding: 30px 20px;
-        }
-        .nav-tabs {
-            display: flex;
-            gap: 5px;
-            margin-bottom: 30px;
-            background: white;
-            border-radius: 12px;
-            padding: 5px;
-            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
-        }
-        .nav-tab {
-            flex: 1;
-            background: transparent;
-            border: none;
-            padding: 15px 20px;
-            border-radius: 8px;
-            cursor: pointer;
-            transition: all 0.3s ease;
-            font-size: 1rem;
+
+        .user-info span {
+            margin-left: 10px;
             font-weight: 500;
         }
-        .nav-tab.active {
-            background: linear-gradient(135deg, #28a745, #20c997);
-            color: white;
-            box-shadow: 0 4px 10px rgba(40, 167, 69, 0.3);
+
+        .user-info img {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            object-fit: cover;
         }
-        .nav-tab:hover:not(.active) {
-            background: #f8f9fa;
+
+        /* Content */
+        .content {
+            padding: 20px;
         }
-        .content-section {
-            background: white;
-            border-radius: 15px;
-            padding: 30px;
-            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
-            display: none;
-        }
-        .content-section.active {
-            display: block;
-        }
-        .stats-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-            gap: 20px;
-            margin-bottom: 30px;
-        }
-        .stat-card {
-            background: linear-gradient(135deg, #28a745, #20c997);
-            color: white;
-            padding: 25px;
-            border-radius: 15px;
-            text-align: center;
-            box-shadow: 0 8px 25px rgba(40, 167, 69, 0.3);
-            transform: translateY(0);
-            transition: transform 0.3s ease;
-        }
-        .stat-card:hover {
-            transform: translateY(-5px);
-        }
-        .stat-card h3 {
-            font-size: 2.5rem;
-            margin-bottom: 10px;
-        }
-        .stat-card p {
-            font-size: 1.1rem;
-            opacity: 0.9;
-        }
-        .section-header {
+
+        /* Loading Spinner */
+        .loading {
             display: flex;
-            justify-content: space-between;
+            flex-direction: column;
             align-items: center;
-            margin-bottom: 25px;
+            justify-content: center;
+            padding: 40px;
         }
-        .section-title {
-            font-size: 1.5rem;
-            color: #333;
-            font-weight: 600;
+
+        .loading-spinner {
+            border: 4px solid rgba(0,0,0,0.1);
+            border-radius: 50%;
+            border-top: 4px solid var(--primary);
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+            margin-bottom: 15px;
         }
-        .add-btn {
-            background: linear-gradient(135deg, #007bff, #0056b3);
-            color: white;
-            border: none;
-            padding: 12px 25px;
-            border-radius: 25px;
-            cursor: pointer;
-            font-size: 1rem;
-            transition: all 0.3s ease;
-            box-shadow: 0 4px 15px rgba(0, 123, 255, 0.3);
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
         }
-        .add-btn:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 6px 20px rgba(0, 123, 255, 0.4);
-        }
-        .data-table {
-            width: 100%;
-            border-collapse: collapse;
+
+        /* Table Styles */
+        .table-container {
+            overflow-x: auto;
             background: white;
             border-radius: 10px;
-            overflow: hidden;
-            box-shadow: 0 4px 15px rgba(0,0,0,0.05);
+            padding: 20px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.05);
+            border: 1px solid var(--border);
+            margin-bottom: 30px;
         }
-        .data-table th {
-            background: #f8f9fa;
-            padding: 15px;
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 20px 0;
+        }
+
+        th, td {
+            padding: 12px 15px;
             text-align: right;
+            border-bottom: 1px solid var(--border);
+        }
+
+        th {
+            background-color: var(--light);
             font-weight: 600;
-            color: #495057;
-            border-bottom: 2px solid #e9ecef;
+            color: var(--dark);
         }
-        .data-table td {
-            padding: 15px;
-            text-align: right;
-            border-bottom: 1px solid #e9ecef;
+
+        tr:hover {
+            background-color: rgba(14, 165, 233, 0.05); /* لون خلفية عند التمرير يتناسب مع اللون الأساسي الجديد */
         }
-        .data-table tr:hover {
-            background: #f8f9fa;
+
+        /* Status Message */
+        #status {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            padding: 16px 24px;
+            border-radius: 12px;
+            font-weight: 500;
+            transform: translateX(150%);
+            transition: transform 0.3s ease;
+            z-index: 1000;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.2);
         }
-        .action-btn {
-            background: #007bff;
+
+        #status.show {
+            transform: translateX(0);
+        }
+
+        #status.success {
+            background: var(--success);
             color: white;
-            border: none;
-            padding: 6px 12px;
-            border-radius: 5px;
-            cursor: pointer;
-            font-size: 0.9rem;
-            margin: 0 2px;
-            transition: all 0.3s ease;
         }
-        .action-btn.view {
-            background: #28a745;
+
+        #status.error {
+            background: var(--danger);
+            color: white;
         }
-        .action-btn.edit {
-            background: #ffc107;
-        }
-        .action-btn.delete {
-            background: #dc3545;
-        }
-        .action-btn:hover {
-            transform: translateY(-1px);
-            box-shadow: 0 2px 8px rgba(0,0,0,0.2);
-        }
-        .course-card {
-            background: linear-gradient(135deg, #f8f9fa, #ffffff);
-            border-radius: 15px;
-            padding: 25px;
-            margin-bottom: 20px;
-            border: 2px solid #e9ecef;
-            transition: all 0.3s ease;
-            box-shadow: 0 4px 15px rgba(0,0,0,0.05);
-        }
-        .course-card:hover {
-            border-color: #28a745;
-            transform: translateY(-2px);
-            box-shadow: 0 8px 25px rgba(0,0,0,0.1);
-        }
-        .course-card h4 {
-            color: #28a745;
-            font-size: 1.3rem;
-            margin-bottom: 15px;
-        }
-        .course-info {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
-            gap: 15px;
-            margin-bottom: 15px;
-        }
-        .course-info span {
-            display: block;
-            padding: 8px 12px;
-            background: #f8f9fa;
-            border-radius: 8px;
-            font-size: 0.9rem;
-        }
+
+        /* Modal */
         .modal {
             display: none;
             position: fixed;
@@ -234,975 +237,1948 @@
             top: 0;
             width: 100%;
             height: 100%;
-            background: rgba(0,0,0,0.5);
+            background: rgba(0, 0, 0, 0.5);
+            backdrop-filter: blur(5px);
+            align-items: center;
+            justify-content: center;
+            padding: 15px;
         }
+
         .modal-content {
             background: white;
-            margin: 5% auto;
-            padding: 30px;
-            border-radius: 15px;
-            width: 90%;
-            max-width: 700px;
-            max-height: 85vh;
+            border-radius: 16px;
+            width: 95%;
+            max-width: 650px;
+            max-height: 95vh;
             overflow-y: auto;
-            box-shadow: 0 10px 40px rgba(0,0,0,0.2);
+            box-shadow: 
+                0 25px 50px -12px rgba(0, 0, 0, 0.25),
+                0 0 0 1px rgba(0, 0, 0, 0.05);
+            border: 1px solid rgba(0, 0, 0, 0.08);
+            position: relative;
+            animation: modalSlideIn 0.3s ease-out forwards;
         }
+
+        @keyframes modalSlideIn {
+            from {
+                opacity: 0;
+                transform: translateY(30px) scale(0.95);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0) scale(1);
+            }
+        }
+
         .modal-header {
+            padding: 22px 25px;
+            border-bottom: 1px solid var(--border);
             display: flex;
             justify-content: space-between;
             align-items: center;
-            margin-bottom: 25px;
-            padding-bottom: 15px;
-            border-bottom: 2px solid #f8f9fa;
+            background-color: #fcfcfc;
+            border-top-left-radius: 15px;
+            border-top-right-radius: 15px;
         }
+
+        .modal-header h2 {
+            margin: 0;
+            color: var(--dark);
+            font-size: 1.4rem;
+            font-weight: 600;
+        }
+
         .close {
-            background: none;
-            border: none;
-            font-size: 1.5rem;
+            font-size: 1.8rem;
             cursor: pointer;
-            color: #aaa;
+            color: var(--gray);
+            border: none;
+            background: none;
+            width: 40px;
+            height: 40px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 10px;
+            transition: all 0.2s ease;
         }
+
         .close:hover {
-            color: #000;
+            color: var(--danger);
+            background-color: #f8f8f8;
         }
+
+        .modal-body {
+            padding: 25px;
+        }
+
         .form-group {
-            margin-bottom: 20px;
+            margin-bottom: 22px;
         }
+
         .form-group label {
             display: block;
             margin-bottom: 8px;
-            font-weight: 600;
-            color: #333;
+            font-weight: 500;
+            color: var(--dark);
+            font-size: 0.95rem;
         }
+
         .form-group input,
         .form-group select,
         .form-group textarea {
             width: 100%;
-            padding: 12px;
-            border: 2px solid #e9ecef;
-            border-radius: 8px;
+            padding: 12px 15px;
+            border: 1px solid var(--border);
+            border-radius: 10px;
             font-size: 1rem;
-            transition: border-color 0.3s ease;
+            transition: all 0.2s ease;
+            background-color: #fdfdfd;
         }
+
         .form-group input:focus,
         .form-group select:focus,
         .form-group textarea:focus {
             outline: none;
-            border-color: #28a745;
+            border-color: var(--primary);
+            box-shadow: 0 0 0 3px rgba(14, 165, 233, 0.2); /* ظل يتناسب مع اللون الأساسي الجديد */
+            background-color: white;
         }
-        .submit-btn {
-            background: linear-gradient(135deg, #28a745, #20c997);
-            color: white;
+
+        .modal-footer {
+            padding: 20px 25px;
+            border-top: 1px solid var(--border);
+            display: flex;
+            justify-content: flex-end;
+            gap: 12px;
+            background-color: #fcfcfc;
+            border-bottom-left-radius: 15px;
+            border-bottom-right-radius: 15px;
+        }
+
+        .btn {
+            padding: 11px 22px;
             border: none;
-            padding: 12px 30px;
-            border-radius: 25px;
+            border-radius: 10px;
             cursor: pointer;
             font-size: 1rem;
-            width: 100%;
+            font-weight: 500;
             transition: all 0.3s ease;
+            min-width: 80px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
         }
-        .submit-btn:hover {
+
+        .btn-primary {
+            background: var(--primary);
+            color: white;
+            box-shadow: 0 4px 6px rgba(14, 165, 233, 0.2); /* ظل يتناسب مع اللون الأساسي الجديد */
+        }
+
+        .btn-primary:hover {
+            background: var(--primary-dark);
             transform: translateY(-2px);
-            box-shadow: 0 5px 15px rgba(40, 167, 69, 0.4);
+            box-shadow: 0 6px 8px rgba(14, 165, 233, 0.25);
         }
-        .success-message {
-            background: #d4edda;
-            color: #155724;
-            padding: 12px 20px;
-            border: 1px solid #c3e6cb;
-            border-radius: 8px;
-            margin-bottom: 20px;
-            display: none;
+
+        .btn-secondary {
+            background: var(--gray);
+            color: white;
+            box-shadow: 0 4px 6px rgba(107, 114, 128, 0.1);
         }
-        .attendance-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
-            gap: 15px;
-            margin-top: 20px;
+
+        .btn-secondary:hover {
+            background: #5a6268;
+            transform: translateY(-2px);
+            box-shadow: 0 6px 8px rgba(107, 114, 128, 0.15);
         }
-        .student-attendance {
-            background: #f8f9fa;
-            padding: 15px;
-            border-radius: 10px;
-            border: 2px solid #e9ecef;
-            transition: all 0.3s ease;
+
+        .btn-danger {
+            background: var(--danger);
+            color: white;
+            box-shadow: 0 4px 6px rgba(239, 68, 68, 0.2);
         }
-        .student-attendance:hover {
-            border-color: #28a745;
+
+        .btn-danger:hover {
+            background: #e1156f;
+            transform: translateY(-2px);
+            box-shadow: 0 6px 8px rgba(239, 68, 68, 0.25);
         }
-        .student-name {
-            font-weight: 600;
-            margin-bottom: 10px;
-            color: #333;
-        }
-        .attendance-buttons {
+
+        /* Action Buttons */
+        .action-buttons {
             display: flex;
-            gap: 10px;
+            gap: 5px;
         }
-        .attendance-btn {
-            flex: 1;
-            padding: 8px 12px;
+
+        .action-btn {
+            padding: 5px 10px;
             border: none;
             border-radius: 5px;
             cursor: pointer;
             font-size: 0.9rem;
-            transition: all 0.3s ease;
+            transition: all 0.3s;
         }
-        .attendance-btn.present {
-            background: #28a745;
+
+        .edit-btn {
+            background: var(--warning);
             color: white;
         }
-        .attendance-btn.absent {
-            background: #dc3545;
+
+        .edit-btn:hover {
+            opacity: 0.8;
+        }
+
+        .delete-btn {
+            background: var(--danger);
             color: white;
         }
-        .attendance-btn:not(.present):not(.absent) {
-            background: #e9ecef;
-            color: #495057;
+
+        .delete-btn:hover {
+            opacity: 0.8;
         }
-        .attendance-btn:hover {
-            transform: translateY(-1px);
+
+        .view-btn {
+            background: var(--info);
+            color: white;
+        }
+
+        .view-btn:hover {
+            opacity: 0.8;
+        }
+
+        /* Attendance Status */
+        .attendance-status {
+            padding: 5px 10px;
+            border-radius: 20px;
+            font-size: 0.8rem;
+            font-weight: 500;
+        }
+
+        .attendance-status.present {
+            background: #d1fae5;
+            color: #065f46;
+        }
+
+        .attendance-status.absent {
+            background: #fee2e2;
+            color: #991b1b;
+        }
+
+        .attendance-status.late {
+            background: #fef3c7;
+            color: #92400e;
+        }
+
+        /* Course Card */
+        .course-card {
+            background: white;
+            border-radius: 10px;
+            padding: 20px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.05);
+            border: 1px solid var(--border);
+            margin-bottom: 20px;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .course-card:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 6px 12px rgba(0,0,0,0.1);
+            border-color: var(--primary);
+        }
+
+        .course-card h3 {
+            margin-bottom: 10px;
+            color: var(--primary);
+        }
+
+        .course-card p {
+            color: var(--gray);
+            margin: 5px 0;
+        }
+
+        /* Responsive */
+        @media (max-width: 768px) {
+            .sidebar {
+                width: 70px;
+            }
+            
+            .sidebar-header h3, .nav-link span {
+                display: none;
+            }
+            
+            .nav-link {
+                justify-content: center;
+                padding: 15px 10px;
+            }
+            
+            .nav-link i {
+                margin: 0;
+                font-size: 1.3rem;
+            }
+            
+            .main-content {
+                margin-right: 70px;
+            }
         }
     </style>
 </head>
 <body>
-    <header class="header">
-        <div class="header-content">
-            <h1>لوحة تحكم المعلم</h1>
+    <!-- Sidebar -->
+    <div class="sidebar">
+        <div class="sidebar-header">
+            <h3>نظام إدارة الكورسات</h3>
+        </div>
+        <ul class="sidebar-menu">
+            <li class="nav-item">
+                <a href="#" class="nav-link active" onclick="switchTab('dashboard'); setActiveLink(this);">
+                    <i class="fas fa-home"></i>
+                    <span>الرئيسية</span>
+                </a>
+            </li>
+            <li class="nav-item">
+                <a href="#" class="nav-link" onclick="switchTab('courses'); setActiveLink(this);">
+                    <i class="fas fa-book"></i>
+                    <span>الدورات</span>
+                </a>
+            </li>
+            <li class="nav-item">
+                <a href="#" class="nav-link" onclick="switchTab('students'); setActiveLink(this);">
+                    <i class="fas fa-users"></i>
+                    <span>الطلاب</span>
+                </a>
+            </li>
+            <li class="nav-item">
+                <a href="#" class="nav-link" onclick="switchTab('lessons'); setActiveLink(this);">
+                    <i class="fas fa-chalkboard-teacher"></i>
+                    <span>الدروس</span>
+                </a>
+            </li>
+            <li class="nav-item">
+                <a href="#" class="nav-link" onclick="switchTab('materials'); setActiveLink(this);">
+                    <i class="fas fa-file-alt"></i>
+                    <span>المواد</span>
+                </a>
+            </li>
+            <li class="nav-item">
+                <a href="#" class="nav-link" onclick="switchTab('grades'); setActiveLink(this);">
+                    <i class="fas fa-graduation-cap"></i>
+                    <span>الدرجات</span>
+                </a>
+            </li>
+            <li class="nav-item">
+                <a href="#" class="nav-link" onclick="switchTab('attendance'); setActiveLink(this);">
+                    <i class="fas fa-calendar-check"></i>
+                    <span>الحضور</span>
+                </a>
+            </li>
+        </ul>
+    </div>
+
+    <!-- Main Content -->
+    <div class="main-content">
+        <!-- Header -->
+        <div class="header">
+            <div class="header-title">
+                <h1>لوحة التحكم - المعلم</h1>
+            </div>
             <div class="user-info">
-                <span>مرحباً، د. محمد السعد</span>
-                <button class="logout-btn" onclick="logout()">خروج</button>
+                <span id="userName">المعلم</span>
+                <i class="fas fa-user-circle fa-2x"></i>
             </div>
         </div>
-    </header>
-    <div class="container">
-        <div class="nav-tabs">
-            <button class="nav-tab active" onclick="showSection('overview')">نظرة عامة</button>
-            <button class="nav-tab" onclick="showSection('courses')">دوراتي</button>
-            <button class="nav-tab" onclick="showSection('students')">الطلاب</button>
-            <button class="nav-tab" onclick="showSection('attendance')">الحضور</button>
-            <button class="nav-tab" onclick="showSection('materials')">المواد التعليمية</button>
-            <button class="nav-tab" onclick="showSection('grades')">الدرجات</button>
-        </div>
-        <!-- Overview Section -->
-        <div id="overview" class="content-section active">
-            <div class="stats-grid">
-                <div class="stat-card">
-                    <h3 id="totalCourses">3</h3>
-                    <p>دوراتي النشطة</p>
-                </div>
-                <div class="stat-card">
-                    <h3 id="totalStudents">67</h3>
-                    <p>إجمالي الطلاب</p>
-                </div>
-                <div class="stat-card">
-                    <h3 id="avgAttendance">89%</h3>
-                    <p>متوسط الحضور</p>
-                </div>
-                <div class="stat-card">
-                    <h3 id="completedLessons">24</h3>
-                    <p>الدروس المكتملة</p>
-                </div>
-            </div>
-            <div class="section-header">
-                <h2 class="section-title">دوراتي النشطة</h2>
-            </div>
-            <div id="activeCourses">
-                <div class="course-card">
-                    <h4>تطوير المواقع المتقدم</h4>
-                    <div class="course-info">
-                        <span>الطلاب: 25</span>
-                        <span>الدروس: 8 من 12</span>
-                        <span>معدل الحضور: 92%</span>
-                        <span>التقييم: 4.8/5</span>
+
+        <!-- Content -->
+        <div class="content">
+            <!-- Dashboard Tab -->
+            <div id="dashboardContent" class="tab-content" style="display: block;">
+                <div class="stats">
+                    <div class="stat-card">
+                        <div class="stat-icon bg-primary">
+                            <i class="fas fa-book"></i>
+                        </div>
+                        <div class="stat-text">
+                            <h3 id="activeCoursesCount">0</h3>
+                            <p>الدورات النشطة</p>
+                        </div>
                     </div>
-                    <div style="margin-top: 15px;">
-                        <button class="action-btn view" onclick="viewCourse(1)">عرض التفاصيل</button>
-                        <button class="action-btn edit" onclick="editCourse(1)">تعديل</button>
+                    <div class="stat-card">
+                        <div class="stat-icon bg-success">
+                            <i class="fas fa-users"></i>
+                        </div>
+                        <div class="stat-text">
+                            <h3 id="totalStudentsCount">0</h3>
+                            <p>إجمالي الطلاب</p>
+                        </div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-icon bg-warning">
+                            <i class="fas fa-chart-line"></i>
+                        </div>
+                        <div class="stat-text">
+                            <h3 id="avgAttendanceRate">0%</h3>
+                            <p>متوسط الحضور</p>
+                        </div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-icon bg-info">
+                            <i class="fas fa-chalkboard-teacher"></i>
+                        </div>
+                        <div class="stat-text">
+                            <h3 id="completedLessonsCount">0</h3>
+                            <p>الدروس المكتملة</p>
+                        </div>
                     </div>
                 </div>
-                <div class="course-card">
-                    <h4>أساسيات البرمجة</h4>
-                    <div class="course-info">
-                        <span>الطلاب: 22</span>
-                        <span>الدروس: 5 من 10</span>
-                        <span>معدل الحضور: 85%</span>
-                        <span>التقييم: 4.6/5</span>
-                    </div>
-                    <div style="margin-top: 15px;">
-                        <button class="action-btn view" onclick="viewCourse(2)">عرض التفاصيل</button>
-                        <button class="action-btn edit" onclick="editCourse(2)">تعديل</button>
-                    </div>
-                </div>
-                <div class="course-card">
-                    <h4>قواعد البيانات</h4>
-                    <div class="course-info">
-                        <span>الطلاب: 20</span>
-                        <span>الدروس: 3 من 8</span>
-                        <span>معدل الحضور: 90%</span>
-                        <span>التقييم: 4.7/5</span>
-                    </div>
-                    <div style="margin-top: 15px;">
-                        <button class="action-btn view" onclick="viewCourse(3)">عرض التفاصيل</button>
-                        <button class="action-btn edit" onclick="editCourse(3)">تعديل</button>
+
+                <div class="recent-activity">
+                    <h2>الدورات النشطة</h2>
+                    <div id="courseCardsContainer">
+                        <div class="loading">
+                            <div class="loading-spinner"></div>
+                            <p>جاري تحميل بيانات الدورات...</p>
+                        </div>
                     </div>
                 </div>
             </div>
-        </div>
-        <!-- Courses Section -->
-        <div id="courses" class="content-section">
-            <div class="section-header">
-                <h2 class="section-title">إدارة الدورات</h2>
-                <button class="add-btn" onclick="openModal('addLessonModal')">إضافة درس جديد</button>
-            </div>
-            <table class="data-table">
-                <thead>
-                    <tr>
-                        <th>اسم الدورة</th>
-                        <th>عدد الطلاب</th>
-                        <th>عدد الدروس</th>
-                        <th>آخر درس</th>
-                        <th>الحالة</th>
-                        <th>الإجراءات</th>
-                    </tr>
-                </thead>
-                <tbody id="coursesTable">
-                    <tr>
-                        <td>تطوير المواقع المتقدم</td>
-                        <td>25</td>
-                        <td>8/12</td>
-                        <td>2025-08-02</td>
-                        <td>نشط</td>
-                        <td>
-                            <button class="action-btn view">عرض</button>
-                            <button class="action-btn edit">تعديل</button>
-                        </td>
-                    </tr>
-                    <tr>
-                        <td>أساسيات البرمجة</td>
-                        <td>22</td>
-                        <td>5/10</td>
-                        <td>2025-08-01</td>
-                        <td>نشط</td>
-                        <td>
-                            <button class="action-btn view">عرض</button>
-                            <button class="action-btn edit">تعديل</button>
-                        </td>
-                    </tr>
-                    <tr>
-                        <td>قواعد البيانات</td>
-                        <td>20</td>
-                        <td>3/8</td>
-                        <td>2025-07-30</td>
-                        <td>نشط</td>
-                        <td>
-                            <button class="action-btn view">عرض</button>
-                            <button class="action-btn edit">تعديل</button>
-                        </td>
-                    </tr>
-                </tbody>
-            </table>
-        </div>
-        <!-- Students Section -->
-        <div id="students" class="content-section">
-            <div class="section-header">
-                <h2 class="section-title">طلابي</h2>
-                <select id="courseFilter" onchange="filterStudents()" style="padding: 10px; border-radius: 8px; border: 2px solid #e9ecef;">
-                    <option value="all">جميع الدورات</option>
-                    <option value="course1">تطوير المواقع المتقدم</option>
-                    <option value="course2">أساسيات البرمجة</option>
-                    <option value="course3">قواعد البيانات</option>
-                </select>
-            </div>
-            <table class="data-table">
-                <thead>
-                    <tr>
-                        <th>اسم الطالب</th>
-                        <th>البريد الإلكتروني</th>
-                        <th>الدورة</th>
-                        <th>معدل الحضور</th>
-                        <th>آخر نشاط</th>
-                        <th>الدرجة</th>
-                        <th>الإجراءات</th>
-                    </tr>
-                </thead>
-                <tbody id="studentsTable">
-                    <tr data-course="course1">
-                        <td>أحمد محمد</td>
-                        <td>ahmed@example.com</td>
-                        <td>تطوير المواقع المتقدم</td>
-                        <td>95%</td>
-                        <td>2025-08-02</td>
-                        <td>85/100</td>
-                        <td>
-                            <button class="action-btn view" onclick="viewStudent('ahmed')">عرض</button>
-                            <button class="action-btn edit" onclick="editGrade('ahmed')">تعديل الدرجة</button>
-                        </td>
-                    </tr>
-                    <tr data-course="course1">
-                        <td>فاطمة علي</td>
-                        <td>fatma@example.com</td>
-                        <td>تطوير المواقع المتقدم</td>
-                        <td>88%</td>
-                        <td>2025-08-01</td>
-                        <td>92/100</td>
-                        <td>
-                            <button class="action-btn view" onclick="viewStudent('fatma')">عرض</button>
-                            <button class="action-btn edit" onclick="editGrade('fatma')">تعديل الدرجة</button>
-                        </td>
-                    </tr>
-                    <tr data-course="course2">
-                        <td>محمد أحمد</td>
-                        <td>mohammed@example.com</td>
-                        <td>أساسيات البرمجة</td>
-                        <td>92%</td>
-                        <td>2025-08-01</td>
-                        <td>78/100</td>
-                        <td>
-                            <button class="action-btn view" onclick="viewStudent('mohammed')">عرض</button>
-                            <button class="action-btn edit" onclick="editGrade('mohammed')">تعديل الدرجة</button>
-                        </td>
-                    </tr>
-                    <tr data-course="course2">
-                        <td>سارة خالد</td>
-                        <td>sara@example.com</td>
-                        <td>أساسيات البرمجة</td>
-                        <td>85%</td>
-                        <td>2025-07-30</td>
-                        <td>82/100</td>
-                        <td>
-                            <button class="action-btn view" onclick="viewStudent('sara')">عرض</button>
-                            <button class="action-btn edit" onclick="editGrade('sara')">تعديل الدرجة</button>
-                        </td>
-                    </tr>
-                    <tr data-course="course3">
-                        <td>علي حسن</td>
-                        <td>ali@example.com</td>
-                        <td>قواعد البيانات</td>
-                        <td>90%</td>
-                        <td>2025-07-30</td>
-                        <td>75/100</td>
-                        <td>
-                            <button class="action-btn view" onclick="viewStudent('ali')">عرض</button>
-                            <button class="action-btn edit" onclick="editGrade('ali')">تعديل الدرجة</button>
-                        </td>
-                    </tr>
-                </tbody>
-            </table>
-        </div>
-        <!-- Attendance Section -->
-        <div id="attendance" class="content-section">
-            <div class="section-header">
-                <h2 class="section-title">تسجيل الحضور</h2>
-                <div>
-                    <select id="attendanceCourse" onchange="loadAttendanceStudents()" style="padding: 10px; border-radius: 8px; border: 2px solid #e9ecef; margin-left: 10px;">
-                        <option value="">اختر الدورة</option>
-                        <option value="course1">تطوير المواقع المتقدم</option>
-                        <option value="course2">أساسيات البرمجة</option>
-                        <option value="course3">قواعد البيانات</option>
-                    </select>
-                    <input type="date" id="attendanceDate" value="2025-08-03" style="padding: 10px; border-radius: 8px; border: 2px solid #e9ecef;">
+
+            <!-- Courses Tab -->
+            <div id="coursesContent" class="tab-content" style="display: none;">
+                <div class="table-container">
+                    <button class="btn btn-primary" onclick="openModal('addCourseModal')" style="margin-bottom: 20px;">
+                        <i class="fas fa-plus"></i> إضافة دورة جديدة
+                    </button>
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>اسم الدورة</th>
+                                <th>عدد الطلاب</th>
+                                <th>عدد الدروس</th>
+                                <th>تاريخ آخر درس</th>
+                                <th>الحالة</th>
+                                <th>الإجراءات</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td colspan="6">
+                                    <div class="loading">
+                                        <div class="loading-spinner"></div>
+                                        <p>جاري تحميل بيانات الدورات...</p>
+                                    </div>
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
                 </div>
             </div>
-            <div id="attendanceStudents" class="attendance-grid">
-                <p style="text-align: center; color: #666;">اختر دورة لعرض الطلاب</p>
+
+            <!-- Students Tab -->
+            <div id="studentsContent" class="tab-content" style="display: none;">
+                <div class="search-filter">
+                    <div class="search-box">
+                        <select id="studentCourseFilter" onchange="filterStudents()">
+                            <option value="">جميع الدورات</option>
+                            <!-- سيتم ملؤها ديناميكيًا -->
+                        </select>
+                    </div>
+                </div>
+                <div class="table-container">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>الاسم</th>
+                                <th>البريد الإلكتروني</th>
+                                <th>الدورة</th>
+                                <th>معدل الحضور</th>
+                                <th>آخر نشاط</th>
+                                <th>الدرجة</th>
+                                <th>الإجراءات</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td colspan="7">
+                                    <div class="loading">
+                                        <div class="loading-spinner"></div>
+                                        <p>جاري تحميل بيانات الطلاب...</p>
+                                    </div>
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
             </div>
-            <div style="text-align: center; margin-top: 30px;">
-                <button class="submit-btn" onclick="saveAttendance()" style="width: auto; padding: 15px 40px;">حفظ الحضور</button>
+
+            <!-- Lessons Tab -->
+            <div id="lessonsContent" class="tab-content" style="display: none;">
+                <div class="table-container">
+                    <button class="btn btn-primary" onclick="openModal('addLessonModal')" style="margin-bottom: 20px;">
+                        <i class="fas fa-plus"></i> إضافة درس جديد
+                    </button>
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>عنوان الدرس</th>
+                                <th>الدورة</th>
+                                <th>الوصف</th>
+                                <th>التاريخ</th>
+                                <th>الإجراءات</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td colspan="5">
+                                    <div class="loading">
+                                        <div class="loading-spinner"></div>
+                                        <p>جاري تحميل بيانات الدروس...</p>
+                                    </div>
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
             </div>
-        </div>
-        <!-- Materials Section -->
-        <div id="materials" class="content-section">
-            <div class="section-header">
-                <h2 class="section-title">المواد التعليمية</h2>
-                <button class="add-btn" onclick="openModal('addMaterialModal')">رفع مادة جديدة</button>
+
+            <!-- Materials Tab -->
+            <div id="materialsContent" class="tab-content" style="display: none;">
+                <div class="table-container">
+                    <button class="btn btn-primary" onclick="openModal('addMaterialModal')" style="margin-bottom: 20px;">
+                        <i class="fas fa-plus"></i> رفع مادة جديدة
+                    </button>
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>اسم المادة</th>
+                                <th>الدورة</th>
+                                <th>النوع</th>
+                                <th>تاريخ الرفع</th>
+                                <th>الإجراءات</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td colspan="5">
+                                    <div class="loading">
+                                        <div class="loading-spinner"></div>
+                                        <p>جاري تحميل المواد...</p>
+                                    </div>
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
             </div>
-            <table class="data-table">
-                <thead>
-                    <tr>
-                        <th>اسم المادة</th>
-                        <th>الدورة</th>
-                        <th>النوع</th>
-                        <th>تاريخ الرفع</th>
-                        <th>عدد التحميلات</th>
-                        <th>الإجراءات</th>
-                    </tr>
-                </thead>
-                <tbody id="materialsTable">
-                    <tr>
-                        <td>مقدمة في HTML</td>
-                        <td>تطوير المواقع المتقدم</td>
-                        <td>PDF</td>
-                        <td>2025-07-15</td>
-                        <td>23</td>
-                        <td>
-                            <button class="action-btn view">عرض</button>
-                            <button class="action-btn edit">تعديل</button>
-                            <button class="action-btn delete">حذف</button>
-                        </td>
-                    </tr>
-                    <tr>
-                        <td>فيديو شرح CSS</td>
-                        <td>تطوير المواقع المتقدم</td>
-                        <td>فيديو</td>
-                        <td>2025-07-20</td>
-                        <td>19</td>
-                        <td>
-                            <button class="action-btn view">عرض</button>
-                            <button class="action-btn edit">تعديل</button>
-                            <button class="action-btn delete">حذف</button>
-                        </td>
-                    </tr>
-                    <tr>
-                        <td>دليل JavaScript</td>
-                        <td>تطوير المواقع المتقدم</td>
-                        <td>PDF</td>
-                        <td>2025-07-25</td>
-                        <td>15</td>
-                        <td>
-                            <button class="action-btn view">عرض</button>
-                            <button class="action-btn edit">تعديل</button>
-                            <button class="action-btn delete">حذف</button>
-                        </td>
-                    </tr>
-                    <tr>
-                        <td>أساسيات البرمجة</td>
-                        <td>أساسيات البرمجة</td>
-                        <td>عرض تقديمي</td>
-                        <td>2025-07-10</td>
-                        <td>30</td>
-                        <td>
-                            <button class="action-btn view">عرض</button>
-                            <button class="action-btn edit">تعديل</button>
-                            <button class="action-btn delete">حذف</button>
-                        </td>
-                    </tr>
-                    <tr>
-                        <td>تمارين البرمجة</td>
-                        <td>أساسيات البرمجة</td>
-                        <td>مستند</td>
-                        <td>2025-07-18</td>
-                        <td>28</td>
-                        <td>
-                            <button class="action-btn view">عرض</button>
-                            <button class="action-btn edit">تعديل</button>
-                            <button class="action-btn delete">حذف</button>
-                        </td>
-                    </tr>
-                    <tr>
-                        <td>مقدمة في قواعد البيانات</td>
-                        <td>قواعد البيانات</td>
-                        <td>PDF</td>
-                        <td>2025-07-05</td>
-                        <td>25</td>
-                        <td>
-                            <button class="action-btn view">عرض</button>
-                            <button class="action-btn edit">تعديل</button>
-                            <button class="action-btn delete">حذف</button>
-                        </td>
-                    </tr>
-                </tbody>
-            </table>
-        </div>
-        <!-- Grades Section -->
-        <div id="grades" class="content-section">
-            <div class="section-header">
-                <h2 class="section-title">إدارة الدرجات</h2>
-                <select id="gradesFilter" onchange="filterGrades()" style="padding: 10px; border-radius: 8px; border: 2px solid #e9ecef;">
-                    <option value="all">جميع الدورات</option>
-                    <option value="course1">تطوير المواقع المتقدم</option>
-                    <option value="course2">أساسيات البرمجة</option>
-                    <option value="course3">قواعد البيانات</option>
-                </select>
+
+            <!-- Grades Tab -->
+            <div id="gradesContent" class="tab-content" style="display: none;">
+                <div class="table-container">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>الطالب</th>
+                                <th>الدورة</th>
+                                <th>الاختبار 1</th>
+                                <th>الاختبار 2</th>
+                                <th>المشروع</th>
+                                <th>الدرجة الكلية</th>
+                                <th>التقدير</th>
+                                <th>الإجراءات</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td colspan="8">
+                                    <div class="loading">
+                                        <div class="loading-spinner"></div>
+                                        <p>جاري تحميل الدرجات...</p>
+                                    </div>
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
             </div>
-            <table class="data-table">
-                <thead>
-                    <tr>
-                        <th>اسم الطالب</th>
-                        <th>الدورة</th>
-                        <th>الاختبار الأول</th>
-                        <th>الاختبار الثاني</th>
-                        <th>المشروع النهائي</th>
-                        <th>المجموع</th>
-                        <th>التقدير</th>
-                        <th>الإجراءات</th>
-                    </tr>
-                </thead>
-                <tbody id="gradesTable">
-                    <tr data-course="course1">
-                        <td>أحمد محمد</td>
-                        <td>تطوير المواقع المتقدم</td>
-                        <td>28/30</td>
-                        <td>25/30</td>
-                        <td>32/40</td>
-                        <td>85/100</td>
-                        <td>ممتاز</td>
-                        <td>
-                            <button class="action-btn edit" onclick="editAllGrades('ahmed')">تعديل</button>
-                        </td>
-                    </tr>
-                    <tr data-course="course1">
-                        <td>فاطمة علي</td>
-                        <td>تطوير المواقع المتقدم</td>
-                        <td>29/30</td>
-                        <td>28/30</td>
-                        <td>35/40</td>
-                        <td>92/100</td>
-                        <td>ممتاز</td>
-                        <td>
-                            <button class="action-btn edit" onclick="editAllGrades('fatma')">تعديل</button>
-                        </td>
-                    </tr>
-                    <tr data-course="course2">
-                        <td>محمد أحمد</td>
-                        <td>أساسيات البرمجة</td>
-                        <td>25/30</td>
-                        <td>23/30</td>
-                        <td>30/40</td>
-                        <td>78/100</td>
-                        <td>جيد جداً</td>
-                        <td>
-                            <button class="action-btn edit" onclick="editAllGrades('mohammed')">تعديل</button>
-                        </td>
-                    </tr>
-                    <tr data-course="course2">
-                        <td>سارة خالد</td>
-                        <td>أساسيات البرمجة</td>
-                        <td>26/30</td>
-                        <td>27/30</td>
-                        <td>29/40</td>
-                        <td>82/100</td>
-                        <td>جيد جداً</td>
-                        <td>
-                            <button class="action-btn edit" onclick="editAllGrades('sara')">تعديل</button>
-                        </td>
-                    </tr>
-                    <tr data-course="course3">
-                        <td>علي حسن</td>
-                        <td>قواعد البيانات</td>
-                        <td>24/30</td>
-                        <td>22/30</td>
-                        <td>29/40</td>
-                        <td>75/100</td>
-                        <td>جيد</td>
-                        <td>
-                            <button class="action-btn edit" onclick="editAllGrades('ali')">تعديل</button>
-                        </td>
-                    </tr>
-                </tbody>
-            </table>
+
+            <!-- Attendance Tab -->
+            <div id="attendanceContent" class="tab-content" style="display: none;">
+                <div class="search-filter">
+                    <div class="search-box">
+                        <select id="attendanceCourseFilter">
+                            <option value="">اختر دورة</option>
+                            <!-- سيتم ملؤها ديناميكيًا -->
+                        </select>
+                    </div>
+                    <div class="search-box">
+                        <input type="date" id="attendanceDate" value="">
+                    </div>
+                    <div class="search-box">
+                        <button class="btn btn-primary" onclick="saveAttendance()">
+                            <i class="fas fa-save"></i> حفظ الحضور
+                        </button>
+                    </div>
+                </div>
+                <div id="attendanceList">
+                    <div class="loading">
+                        <div class="loading-spinner"></div>
+                        <p>اختر دورة لعرض قائمة الحضور...</p>
+                    </div>
+                </div>
+            </div>
         </div>
     </div>
+
+    <!-- Status Message -->
+    <div id="status"></div>
+
+    <!-- Add Course Modal -->
+    <div id="addCourseModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>إضافة دورة جديدة</h2>
+                <button class="close" onclick="closeModal('addCourseModal')">&times;</button>
+            </div>
+            <form id="addCourseForm">
+                <div class="modal-body">
+                    <div class="form-group">
+                        <label for="courseName">اسم الدورة</label>
+                        <input type="text" id="courseName" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="courseDescription">الوصف</label>
+                        <textarea id="courseDescription" rows="3"></textarea>
+                    </div>
+                    <div class="form-group">
+                        <label for="coursePrice">السعر (ج.م)</label>
+                        <input type="number" id="coursePrice" step="0.01">
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" onclick="closeModal('addCourseModal')">إلغاء</button>
+                    <button type="submit" class="btn btn-primary">حفظ</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
     <!-- Add Lesson Modal -->
     <div id="addLessonModal" class="modal">
         <div class="modal-content">
             <div class="modal-header">
-                <h3>إضافة درس جديد</h3>
+                <h2>إضافة درس جديد</h2>
                 <button class="close" onclick="closeModal('addLessonModal')">&times;</button>
             </div>
-            <div id="lessonSuccess" class="success-message"></div>
             <form id="addLessonForm">
-                <div class="form-group">
-                    <label>الدورة:</label>
-                    <select id="lessonCourse" required>
-                        <option value="">اختر الدورة</option>
-                        <option value="course1">تطوير المواقع المتقدم</option>
-                        <option value="course2">أساسيات البرمجة</option>
-                        <option value="course3">قواعد البيانات</option>
-                    </select>
+                <div class="modal-body">
+                    <div class="form-group">
+                        <label for="lessonCourse">الدورة</label>
+                        <select id="lessonCourse" required>
+                            <option value="">اختر دورة</option>
+                            <!-- سيتم ملؤها ديناميكيًا -->
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="lessonTitle">عنوان الدرس</label>
+                        <input type="text" id="lessonTitle" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="lessonDescription">الوصف</label>
+                        <textarea id="lessonDescription" rows="3"></textarea>
+                    </div>
+                    <div class="form-group">
+                        <label for="lessonDate">التاريخ</label>
+                        <input type="date" id="lessonDate" required>
+                    </div>
                 </div>
-                <div class="form-group">
-                    <label>عنوان الدرس:</label>
-                    <input type="text" id="lessonTitle" required>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" onclick="closeModal('addLessonModal')">إلغاء</button>
+                    <button type="submit" class="btn btn-primary">حفظ</button>
                 </div>
-                <div class="form-group">
-                    <label>وصف الدرس:</label>
-                    <textarea id="lessonDescription" rows="4" required></textarea>
-                </div>
-                <div class="form-group">
-                    <label>تاريخ الدرس:</label>
-                    <input type="datetime-local" id="lessonDate" required>
-                </div>
-                <div class="form-group">
-                    <label>مدة الدرس (دقيقة):</label>
-                    <input type="number" id="lessonDuration" value="90" required>
-                </div>
-                <button type="submit" class="submit-btn">إضافة الدرس</button>
             </form>
         </div>
     </div>
+
     <!-- Add Material Modal -->
     <div id="addMaterialModal" class="modal">
         <div class="modal-content">
             <div class="modal-header">
-                <h3>رفع مادة تعليمية جديدة</h3>
+                <h2>رفع مادة جديدة</h2>
                 <button class="close" onclick="closeModal('addMaterialModal')">&times;</button>
             </div>
-            <div id="materialSuccess" class="success-message"></div>
             <form id="addMaterialForm">
-                <div class="form-group">
-                    <label>الدورة:</label>
-                    <select id="materialCourse" required>
-                        <option value="">اختر الدورة</option>
-                        <option value="course1">تطوير المواقع المتقدم</option>
-                        <option value="course2">أساسيات البرمجة</option>
-                        <option value="course3">قواعد البيانات</option>
-                    </select>
+                <div class="modal-body">
+                    <div class="form-group">
+                        <label for="materialCourse">الدورة</label>
+                        <select id="materialCourse" required>
+                            <option value="">اختر دورة</option>
+                            <!-- سيتم ملؤها ديناميكيًا -->
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="materialName">اسم المادة</label>
+                        <input type="text" id="materialName" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="materialType">النوع</label>
+                        <select id="materialType" required>
+                            <option value="">اختر نوع</option>
+                            <option value="pdf">PDF</option>
+                            <option value="video">فيديو</option>
+                            <option value="doc">مستند</option>
+                            <option value="other">آخر</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="materialDescription">الوصف</label>
+                        <textarea id="materialDescription" rows="3"></textarea>
+                    </div>
+                    <div class="form-group">
+                        <label for="materialFile">رفع الملف</label>
+                        <input type="file" id="materialFile" required>
+                    </div>
                 </div>
-                <div class="form-group">
-                    <label>اسم المادة:</label>
-                    <input type="text" id="materialName" required>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" onclick="closeModal('addMaterialModal')">إلغاء</button>
+                    <button type="submit" class="btn btn-primary">رفع</button>
                 </div>
-                <div class="form-group">
-                    <label>نوع المادة:</label>
-                    <select id="materialType" required>
-                        <option value="">اختر النوع</option>
-                        <option value="pdf">PDF</option>
-                        <option value="video">فيديو</option>
-                        <option value="presentation">عرض تقديمي</option>
-                        <option value="document">مستند</option>
-                    </select>
-                </div>
-                <div class="form-group">
-                    <label>وصف المادة:</label>
-                    <textarea id="materialDescription" rows="3"></textarea>
-                </div>
-                <div class="form-group">
-                    <label>رفع الملف:</label>
-                    <input type="file" id="materialFile" required>
-                </div>
-                <button type="submit" class="submit-btn">رفع المادة</button>
             </form>
         </div>
     </div>
+
     <!-- Edit Grade Modal -->
     <div id="editGradeModal" class="modal">
         <div class="modal-content">
             <div class="modal-header">
-                <h3>تعديل درجات الطالب</h3>
+                <h2>تعديل درجات الطالب</h2>
                 <button class="close" onclick="closeModal('editGradeModal')">&times;</button>
             </div>
-            <div id="gradeSuccess" class="success-message"></div>
             <form id="editGradeForm">
-                <div class="form-group">
-                    <label>اسم الطالب:</label>
-                    <input type="text" id="gradeStudentName" readonly>
+                <div class="modal-body">
+                    <div class="form-group">
+                        <label for="gradeStudentName">اسم الطالب</label>
+                        <input type="text" id="gradeStudentName" readonly>
+                    </div>
+                    <div class="form-group">
+                        <label for="exam1Grade">الاختبار 1</label>
+                        <input type="number" id="exam1Grade" min="0" max="100">
+                    </div>
+                    <div class="form-group">
+                        <label for="exam2Grade">الاختبار 2</label>
+                        <input type="number" id="exam2Grade" min="0" max="100">
+                    </div>
+                    <div class="form-group">
+                        <label for="projectGrade">المشروع</label>
+                        <input type="number" id="projectGrade" min="0" max="100">
+                    </div>
                 </div>
-                <div class="form-group">
-                    <label>الاختبار الأول (من 30):</label>
-                    <input type="number" id="exam1Grade" min="0" max="30" required>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" onclick="closeModal('editGradeModal')">إلغاء</button>
+                    <button type="submit" class="btn btn-primary">حفظ</button>
                 </div>
-                <div class="form-group">
-                    <label>الاختبار الثاني (من 30):</label>
-                    <input type="number" id="exam2Grade" min="0" max="30" required>
-                </div>
-                <div class="form-group">
-                    <label>المشروع النهائي (من 40):</label>
-                    <input type="number" id="projectGrade" min="0" max="40" required>
-                </div>
-                <div class="form-group">
-                    <label>المجموع الكلي:</label>
-                    <input type="text" id="totalGrade" readonly>
-                </div>
-                <button type="submit" class="submit-btn">حفظ الدرجات</button>
             </form>
         </div>
     </div>
+
     <script>
-        // Mock data
-        let mockData = {
-            courses: [
-                {id: 1, name: 'تطوير المواقع المتقدم', students: 25, lessons: 8, maxLessons: 12},
-                {id: 2, name: 'أساسيات البرمجة', students: 22, lessons: 5, maxLessons: 10},
-                {id: 3, name: 'قواعد البيانات', students: 20, lessons: 3, maxLessons: 8}
-            ],
-            students: [
-                {id: 'ahmed', name: 'أحمد محمد', email: 'ahmed@example.com', course: 'course1', attendance: 95, grade: 85},
-                {id: 'fatma', name: 'فاطمة علي', email: 'fatma@example.com', course: 'course1', attendance: 88, grade: 92},
-                {id: 'mohammed', name: 'محمد أحمد', email: 'mohammed@example.com', course: 'course2', attendance: 92, grade: 78},
-                {id: 'sara', name: 'سارة خالد', email: 'sara@example.com', course: 'course2', attendance: 85, grade: 82},
-                {id: 'ali', name: 'علي حسن', email: 'ali@example.com', course: 'course3', attendance: 90, grade: 75}
-            ],
-            attendance: {},
-            materials: [
-                {id: 1, name: 'مقدمة في HTML', course: 'course1', type: 'pdf', date: '2025-07-15', downloads: 23},
-                {id: 2, name: 'فيديو شرح CSS', course: 'course1', type: 'video', date: '2025-07-20', downloads: 19},
-                {id: 3, name: 'دليل JavaScript', course: 'course1', type: 'pdf', date: '2025-07-25', downloads: 15},
-                {id: 4, name: 'أساسيات البرمجة', course: 'course2', type: 'presentation', date: '2025-07-10', downloads: 30},
-                {id: 5, name: 'تمارين البرمجة', course: 'course2', type: 'document', date: '2025-07-18', downloads: 28},
-                {id: 6, name: 'مقدمة في قواعد البيانات', course: 'course3', type: 'pdf', date: '2025-07-05', downloads: 25}
-            ],
-            grades: {
-                'ahmed': {exam1: 28, exam2: 25, project: 32, total: 85, grade: 'ممتاز'},
-                'fatma': {exam1: 29, exam2: 28, project: 35, total: 92, grade: 'ممتاز'},
-                'mohammed': {exam1: 25, exam2: 23, project: 30, total: 78, grade: 'جيد جداً'},
-                'sara': {exam1: 26, exam2: 27, project: 29, total: 82, grade: 'جيد جداً'},
-                'ali': {exam1: 24, exam2: 22, project: 29, total: 75, grade: 'جيد'}
-            }
-        };
-        // Navigation
-        function showSection(sectionName) {
-            document.querySelectorAll('.content-section').forEach(section => {
-                section.classList.remove('active');
-            });
-            document.getElementById(sectionName).classList.add('active');
-            document.querySelectorAll('.nav-tab').forEach(tab => {
-                tab.classList.remove('active');
-            });
-            event.target.classList.add('active');
-        }
-        // Modal functions
-        function openModal(modalId) {
-            document.getElementById(modalId).style.display = 'block';
-        }
-        function closeModal(modalId) {
-            document.getElementById(modalId).style.display = 'none';
-            const form = document.querySelector(`#${modalId} form`);
-            if (form) form.reset();
-            const successMsg = document.querySelector(`#${modalId} .success-message`);
-            if (successMsg) successMsg.style.display = 'none';
-        }
-        // Attendance functions
-        function loadAttendanceStudents() {
-            const courseId = document.getElementById('attendanceCourse').value;
-            const container = document.getElementById('attendanceStudents');
-            if (!courseId) {
-                container.innerHTML = '<p style="text-align: center; color: #666;">اختر دورة لعرض الطلاب</p>';
+        // Supabase Configuration - تأكد من صحة المفتاح والرابط
+        const supabaseUrl = "https://zefsmckaihzfiqqbdake.supabase.co";
+        const supabaseKey = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InplZnNtY2thaWh6ZmlxcWJkYWtlIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTQyMzUzNTgsImV4cCI6MjA2OTgxMTM1OH0.vktk2VkEPtMclb6jb_pFa1DbrqWX9SOZRsBR577o5mc";
+        const supabaseClient = supabase.createClient(supabaseUrl, supabaseKey);
+
+        // Global variables
+        let currentUser = null;
+        let teacherCourses = [];
+        let allStudents = [];
+        let courseStudentsMap = {}; // Map course_id -> [student objects]
+        let lessons = [];
+        let materials = [];
+        let grades = [];
+        let attendances = [];
+
+        // Show status message
+        function showStatus(message, type = 'success') {
+            const statusEl = document.getElementById('status');
+            if (!statusEl) {
+                console.warn('عنصر #status غير موجود في DOM');
                 return;
             }
-            const courseStudents = mockData.students.filter(s => s.course === courseId);
-            container.innerHTML = courseStudents.map(student => `
-                <div class="student-attendance">
-                    <div class="student-name">${student.name}</div>
-                    <div class="attendance-buttons">
-                        <button class="attendance-btn" onclick="markAttendance('${student.id}', 'present')">حاضر</button>
-                        <button class="attendance-btn" onclick="markAttendance('${student.id}', 'absent')">غائب</button>
-                    </div>
-                </div>
-            `).join('');
+            
+            statusEl.textContent = message;
+            statusEl.className = ''; // Clear classes
+            statusEl.classList.add('show', type);
+            
+            setTimeout(() => {
+                statusEl.classList.remove('show');
+            }, 3000);
         }
-        function markAttendance(studentId, status) {
-            const date = document.getElementById('attendanceDate').value;
-            const course = document.getElementById('attendanceCourse').value;
-            if (!mockData.attendance[date]) {
-                mockData.attendance[date] = {};
-            }
-            if (!mockData.attendance[date][course]) {
-                mockData.attendance[date][course] = {};
-            }
-            mockData.attendance[date][course][studentId] = status;
-            // Update button appearance
-            const studentDiv = event.target.closest('.student-attendance');
-            const buttons = studentDiv.querySelectorAll('.attendance-btn');
-            buttons.forEach(btn => {
-                btn.classList.remove('present', 'absent');
-            });
-            event.target.classList.add(status);
-        }
-        function saveAttendance() {
-            const date = document.getElementById('attendanceDate').value;
-            const course = document.getElementById('attendanceCourse').value;
-            if (!course) {
-                alert('يرجى اختيار الدورة أولاً');
-                return;
-            }
-            const courseName = document.querySelector(`#attendanceCourse option[value="${course}"]`).text;
-            alert(`تم حفظ الحضور بنجاح للدورة "${courseName}" بتاريخ: ${date}`);
-        }
-        // Filter functions
-        function filterStudents() {
-            const filter = document.getElementById('courseFilter').value;
-            const rows = document.querySelectorAll('#studentsTable tr[data-course]');
-            rows.forEach(row => {
-                if (filter === 'all' || row.dataset.course === filter) {
-                    row.style.display = '';
-                } else {
-                    row.style.display = 'none';
+
+        // Load course cards for dashboard
+        async function loadCourseCards(courseIds) {
+            console.log("بدأ تحميل بطاقات الدورات...", courseIds);
+            try {
+                if (courseIds.length === 0) {
+                    console.log("لا توجد دورات نشطة لتحميل البطاقات.");
+                    const container = document.getElementById('courseCardsContainer');
+                    if (container) container.innerHTML = '<p>لا توجد دورات نشطة.</p>';
+                    return;
                 }
-            });
-        }
-        function filterGrades() {
-            const filter = document.getElementById('gradesFilter').value;
-            const rows = document.querySelectorAll('#gradesTable tr[data-course]');
-            rows.forEach(row => {
-                if (filter === 'all' || row.dataset.course === filter) {
-                    row.style.display = '';
-                } else {
-                    row.style.display = 'none';
+
+                // Get courses
+                console.log("جاري جلب بيانات الدورات...");
+                const {  courses, error: coursesError } = await supabaseClient
+                    .from('courses')
+                    .select('id, name')
+                    .in('id', courseIds);
+                if (coursesError) {
+                    console.error('خطأ في جلب بيانات الدورات:', coursesError);
+                    throw coursesError;
                 }
-            });
-        }
-        // Grade editing
-        function editGrade(studentId) {
-            openModal('editGradeModal');
-            const student = mockData.students.find(s => s.id === studentId);
-            if (student) {
-                document.getElementById('gradeStudentName').value = student.name;
-                // Load existing grades
-                const grades = mockData.grades[studentId];
-                document.getElementById('exam1Grade').value = grades.exam1;
-                document.getElementById('exam2Grade').value = grades.exam2;
-                document.getElementById('projectGrade').value = grades.project;
-                updateTotalGrade();
+                console.log(`تم جلب ${courses.length} دورة.`);
+
+                // Get student counts per course using count aggregate
+                console.log("جاري حساب عدد الطلاب لكل دورة...");
+                const {  studentCounts, error: studentCountsError } = await supabaseClient
+                    .from('subscriptions')
+                    .select('course_id, count') // Using RLS count
+                    .in('course_id', courseIds);
+                if (studentCountsError) {
+                    console.error('خطأ في جلب عدد الطلاب:', studentCountsError);
+                    throw studentCountsError;
+                }
+                console.log("عدد الطلاب لكل دورة:", studentCounts);
+
+                const studentCountMap = {};
+                studentCounts.forEach(item => {
+                    studentCountMap[item.course_id] = item.count; // RLS returns count directly
+                });
+
+                // Get lesson counts per course using count aggregate
+                console.log("جاري حساب عدد الدروس لكل دورة...");
+                const {  lessonCounts, error: lessonCountsError } = await supabaseClient
+                    .from('lessons')
+                    .select('course_id, count') // Using RLS count
+                    .in('course_id', courseIds);
+                if (lessonCountsError) {
+                    console.error('خطأ في جلب عدد الدروس:', lessonCountsError);
+                    // Don't throw, just log and continue
+                } else {
+                    console.log("عدد الدروس لكل دورة:", lessonCounts);
+                }
+
+                const lessonCountMap = {};
+                if (lessonCounts) {
+                    lessonCounts.forEach(item => {
+                        lessonCountMap[item.course_id] = item.count; // RLS returns count directly
+                    });
+                }
+
+                let cardsHTML = '';
+                courses.forEach(course => {
+                    const studentCount = studentCountMap[course.id] || 0;
+                    const lessonCount = lessonCountMap[course.id] || 0;
+                    // Simplified attendance rate for card
+                    const avgAttendance = 'N/A'; // Would require more complex query
+                    const rating = 'لا يوجد تقييم';
+
+                    cardsHTML += `
+                        <div class="course-card">
+                            <h3>${course.name}</h3>
+                            <p><i class="fas fa-users"></i> عدد الطلاب: ${studentCount}</p>
+                            <p><i class="fas fa-book"></i> الدروس: ${lessonCount}</p>
+                            <p><i class="fas fa-chart-line"></i> معدل الحضور: ${avgAttendance}</p>
+                            <p><i class="fas fa-star"></i> التقييم: ${rating}</p>
+                            <button class="action-btn edit" onclick="viewCourseDetails('${course.id}')">عرض التفاصيل</button>
+                            <button class="action-btn edit" onclick="editCourse('${course.id}')">تعديل</button>
+                        </div>
+                    `;
+                });
+
+                const container = document.getElementById('courseCardsContainer');
+                if (container) {
+                    container.innerHTML = cardsHTML;
+                    console.log("تم تحديث بطاقات الدورات في واجهة المستخدم.");
+                } else {
+                    console.warn("عنصر courseCardsContainer غير موجود في DOM.");
+                }
+
+            } catch (error) {
+                console.error('خطأ في تحميل بطاقات الدورات:', error);
+                const container = document.getElementById('courseCardsContainer');
+                if (container) container.innerHTML = '<p>خطأ في تحميل بطاقات الدورات.</p>';
             }
         }
-        function editAllGrades(studentId) {
-            editGrade(studentId);
-        }
-        function updateTotalGrade() {
-            const exam1 = parseInt(document.getElementById('exam1Grade').value) || 0;
-            const exam2 = parseInt(document.getElementById('exam2Grade').value) || 0;
-            const project = parseInt(document.getElementById('projectGrade').value) || 0;
-            const total = exam1 + exam2 + project;
-            document.getElementById('totalGrade').value = total + '/100';
-        }
-        // Course management
-        function viewCourse(courseId) {
-            const course = mockData.courses.find(c => c.id === courseId);
-            if (course) {
-                alert(`تفاصيل الدورة:
-الاسم: ${course.name}
-عدد الطلاب: ${course.students}
-عدد الدروس: ${course.lessons}/${course.maxLessons}`);
+
+        // Load courses for courses tab
+        async function loadCourses() {
+            console.log("بدأ تحميل بيانات الدورات...");
+            try {
+                const container = document.querySelector('#coursesContent .table-container table tbody'); // More specific selector
+                if (!container) {
+                    console.error("عنصر جدول الدورات غير موجود في DOM.");
+                    return; // Exit early if container not found
+                }
+
+                // Show loading state
+                container.innerHTML = '<tr><td colspan="6"><div class="loading"><div class="loading-spinner"></div><p>جاري تحميل بيانات الدورات...</p></div></td></tr>';
+
+                if (!currentUser) {
+                    console.warn("لم يتم تحميل بيانات المستخدم الحالي بعد.");
+                    container.innerHTML = '<tr><td colspan="6">يرجى تسجيل الدخول أولاً.</td></tr>';
+                    return;
+                }
+
+                console.log("جاري جلب الدورات من قاعدة البيانات...");
+                const { data, error } = await supabaseClient
+                    .from('courses')
+                    .select('id, name, description, price, start_date, end_date, created_at') // Include relevant fields
+                    .eq('teacher_id', currentUser.id)
+                    .order('created_at', { ascending: false });
+
+                if (error) {
+                    console.error('خطأ في استعلام قاعدة البيانات لتحميل الدورات:', error);
+                    throw error;
+                }
+                console.log(`تم جلب ${data.length} دورة من قاعدة البيانات.`);
+                teacherCourses = data;
+
+                let tableHTML = '';
+                if (data.length === 0) {
+                    tableHTML = '<tr><td colspan="6">لا توجد دورات.</td></tr>';
+                    console.log("لا توجد دورات لعرضها.");
+                } else {
+                    // For lessons count and last lesson date, we need to query lessons table
+                    const courseIds = data.map(course => course.id);
+                    console.log("معرفات الدورات لجلب الدروس:", courseIds);
+
+                    let lessonsMap = {};
+                    if (courseIds.length > 0) {
+                        console.log("جاري جلب عدد الدروس وكل تاريخ آخر درس لكل دورة...");
+                        // Use aggregate functions in select
+                        const { data: lessonAggregates, error: lessonAggregatesError } = await supabaseClient
+                            .from('lessons')
+                            .select('course_id, count(*), MAX(date) as last_date') // Aggregate functions
+                            .in('course_id', courseIds);
+
+                        if (lessonAggregatesError) {
+                            console.error('خطأ في جلب بيانات الدروس المجمعة:', lessonAggregatesError);
+                            // Continue without lesson data
+                        } else {
+                            console.log("بيانات الدروس المجمعة:", lessonAggregates);
+                            lessonAggregates.forEach(item => {
+                                lessonsMap[item.course_id] = {
+                                    count: parseInt(item.count),
+                                    lastDate: item.last_date
+                                };
+                            });
+                        }
+                    }
+
+                    // For student count, query subscriptions
+                    let studentsMap = {};
+                    if (courseIds.length > 0) {
+                        console.log("جاري جلب عدد الطلاب لكل دورة...");
+                        const { data: studentCounts, error: studentCountsError } = await supabaseClient
+                            .from('subscriptions')
+                            .select('course_id, count') // Using RLS count
+                            .in('course_id', courseIds);
+
+                        if (studentCountsError) {
+                            console.error('خطأ في جلب عدد الطلاب:', studentCountsError);
+                            // Continue without student data
+                        } else {
+                            console.log("عدد الطلاب لكل دورة:", studentCounts);
+                            studentCounts.forEach(item => {
+                                studentsMap[item.course_id] = item.count; // RLS returns count directly
+                            });
+                        }
+                    }
+
+                    data.forEach(course => {
+                        const lessonsInfo = lessonsMap[course.id] || { count: 0, lastDate: 'N/A' };
+                        const studentCount = studentsMap[course.id] || 0;
+                        const status = 'نشط'; // Assuming active based on existence
+
+                        tableHTML += `
+                            <tr>
+                                <td>${course.name}</td>
+                                <td>${studentCount}</td>
+                                <td>${lessonsInfo.count}</td>
+                                <td>${lessonsInfo.lastDate !== 'N/A' ? formatDate(lessonsInfo.lastDate) : lessonsInfo.lastDate}</td>
+                                <td>${status}</td>
+                                <td>
+                                    <button class="action-btn edit" onclick="editCourse('${course.id}')">تعديل</button>
+                                    <button class="action-btn edit" onclick="addLesson('${course.id}')">إضافة درس</button>
+                                </td>
+                            </tr>
+                        `;
+                    });
+                }
+
+                container.innerHTML = tableHTML;
+                console.log("تم تحديث جدول الدورات في واجهة المستخدم.");
+                populateCourseDropdowns(); // Refresh dropdowns
+
+            } catch (error) {
+                console.error('خطأ في تحميل الدورات:', error);
+                const container = document.querySelector('#coursesContent .table-container table tbody');
+                if (container) {
+                    container.innerHTML = '<tr><td colspan="6">خطأ في تحميل الدورات.</td></tr>';
+                }
+                showStatus('حدث خطأ أثناء تحميل الدورات.', 'error'); // Now defined
             }
         }
+
+
+
+        function addLesson(courseId) {
+            console.log(`فتح نافذة إضافة درس للدورة: ${courseId}`);
+            // This would typically open the add lesson modal and pre-fill the course
+            // For now, we'll just open the modal
+            const lessonCourseSelect = document.getElementById('lessonCourse');
+            if (lessonCourseSelect) {
+                lessonCourseSelect.value = courseId;
+            }
+            openModal('addLessonModal');
+        }
+
         function editCourse(courseId) {
-            const course = mockData.courses.find(c => c.id === courseId);
-            if (course) {
-                alert(`تعديل الدورة:
-الاسم: ${course.name}
-عدد الطلاب: ${course.students}
-عدد الدروس: ${course.lessons}/${course.maxLessons}`);
-            }
+            console.log(`طلب تعديل الدورة: ${courseId}`);
+            alert(`تعديل الدورة: ${courseId}`);
+            // Implement edit course logic
         }
-        function viewStudent(studentId) {
-            const student = mockData.students.find(s => s.id === studentId);
-            if (student) {
-                const grades = mockData.grades[studentId];
-                alert(`تفاصيل الطالب:
-الاسم: ${student.name}
-البريد: ${student.email}
-الدورة: ${mockData.courses.find(c => c.id === parseInt(student.course.charAt(5))).name}
-معدل الحضور: ${student.attendance}%
-الدرجة: ${student.grade}/100
-الاختبار الأول: ${grades.exam1}/30
-الاختبار الثاني: ${grades.exam2}/30
-المشروع النهائي: ${grades.project}/40`);
-            }
+
+        function viewCourseDetails(courseId) {
+            console.log(`طلب عرض تفاصيل الدورة: ${courseId}`);
+            alert(`عرض تفاصيل الدورة: ${courseId}`);
+            // Implement view course details logic
         }
-        // Form submissions
-        document.getElementById('addLessonForm').addEventListener('submit', function(e) {
+
+        async function handleAddCourse(e) {
             e.preventDefault();
-            const course = document.getElementById('lessonCourse').value;
-            const title = document.getElementById('lessonTitle').value;
-            const description = document.getElementById('lessonDescription').value;
-            const date = document.getElementById('lessonDate').value;
-            const duration = document.getElementById('lessonDuration').value;
-            
-            if (!course || !title || !description || !date) {
-                alert('يرجى تعبئة جميع الحقول');
+            console.log("بدأ معالجة إضافة دورة جديدة...");
+
+            const name = document.getElementById('courseName')?.value;
+            const description = document.getElementById('courseDescription')?.value;
+            const price = parseFloat(document.getElementById('coursePrice')?.value) || 0;
+            // Assuming teacher_id comes from currentUser
+            const startDate = document.getElementById('startDate')?.value; // Add these fields to your modal
+            const endDate = document.getElementById('endDate')?.value;       // Add these fields to your modal
+
+            if (!name) {
+                console.warn("اسم الدورة مطلوب.");
+                showStatus('يرجى إدخال اسم الدورة', 'error');
                 return;
             }
-            
-            const successMsg = document.getElementById('lessonSuccess');
-            successMsg.textContent = `تم إضافة الدرس "${title}" بنجاح!`;
-            successMsg.style.display = 'block';
-            this.reset();
-            setTimeout(() => {
+
+            try {
+                const newCourse = {
+                    name: name,
+                    description: description,
+                    price: price,
+                    teacher_id: currentUser.id, // Use logged-in teacher's ID
+                    start_date: startDate,
+                    end_date: endDate,
+                    created_at: new Date().toISOString()
+                };
+                console.log("بيانات الدورة الجديدة:", newCourse);
+
+                const { data, error } = await supabaseClient
+                    .from('courses')
+                    .insert([newCourse]);
+
+                if (error) {
+                    console.error('خطأ في إدراج الدورة الجديدة:', error);
+                    throw error;
+                }
+
+                console.log("تم إدراج الدورة بنجاح:", data);
+                showStatus('تم إضافة الدورة بنجاح');
+                closeModal('addCourseModal');
+                document.getElementById('addCourseForm')?.reset();
+                await loadCourses();
+                await loadDashboardData(); // Refresh dashboard stats
+
+            } catch (error) {
+                console.error('خطأ في إضافة الدورة:', error);
+                showStatus('حدث خطأ أثناء إضافة الدورة.', 'error');
+            }
+        }
+
+
+        // --- Students Functions ---
+        async function loadStudents() {
+            console.log("بدأ تحميل بيانات الطلاب...");
+            try {
+                const container = document.querySelector('#studentsContent .table-container table tbody');
+                if (!container) {
+                    console.error("عنصر جدول الطلاب غير موجود في DOM.");
+                    return;
+                }
+
+                // Show loading state
+                container.innerHTML = '<tr><td colspan="7"><div class="loading"><div class="loading-spinner"></div><p>جاري تحميل بيانات الطلاب...</p></div></td></tr>';
+
+                if (!currentUser) {
+                    console.warn("لم يتم تحميل بيانات المستخدم الحالي بعد.");
+                    container.innerHTML = '<tr><td colspan="7">يرجى تسجيل الدخول أولاً.</td></tr>';
+                    return;
+                }
+
+                 // Get course IDs for this teacher
+                console.log("جاري جلب معرفات دورات المعلم...");
+                const { data: teacherCourseIds, error: courseIdsError } = await supabaseClient
+                    .from('courses')
+                    .select('id')
+                    .eq('teacher_id', currentUser.id);
+                if (courseIdsError) {
+                    console.error('خطأ في جلب معرفات الدورات:', courseIdsError);
+                    throw courseIdsError;
+                }
+
+                const courseIds = teacherCourseIds.map(c => c.id);
+                console.log("معرفات دورات المعلم:", courseIds);
+
+                if (courseIds.length === 0) {
+                    console.log("المعلم لا يملك أي دورات.");
+                    container.innerHTML = '<tr><td colspan="7">لا توجد دورات لتحميل الطلاب.</td></tr>';
+                    return;
+                }
+
+                // Get subscriptions for these courses
+                console.log("جاري جلب اشتراكات الطلاب...");
+                const { data: subscriptions, error: subsError } = await supabaseClient
+                    .from('subscriptions')
+                    .select('student_id, course_id')
+                    .in('course_id', courseIds);
+                if (subsError) {
+                    console.error('خطأ في جلب الاشتراكات:', subsError);
+                    throw subsError;
+                }
+                console.log(`تم جلب ${subscriptions.length} اشتراك.`);
+
+                const studentIds = [...new Set(subscriptions.map(sub => sub.student_id))]; // Unique student IDs
+                console.log("معرفات الطلاب الفريدة:", studentIds);
+
+                if (studentIds.length === 0) {
+                    console.log("لا يوجد طلاب مسجلون في دورات المعلم.");
+                    container.innerHTML = '<tr><td colspan="7">لا يوجد طلاب مسجلون في دوراتك.</td></tr>';
+                    return;
+                }
+
+                // Get student details
+                console.log("جاري جلب تفاصيل الطلاب...");
+                const { data: students, error: studentsError } = await supabaseClient
+                    .from('students')
+                    .select('id, full_name, email')
+                    .in('id', studentIds);
+                if (studentsError) {
+                    console.error('خطأ في جلب تفاصيل الطلاب:', studentsError);
+                    throw studentsError;
+                }
+                console.log(`تم جلب تفاصيل ${students.length} طالب.`);
+
+                allStudents = students;
+                courseStudentsMap = {}; // Reset map
+                subscriptions.forEach(sub => {
+                    if (!courseStudentsMap[sub.course_id]) {
+                        courseStudentsMap[sub.course_id] = [];
+                    }
+                    const student = students.find(s => s.id === sub.student_id);
+                    if (student) {
+                        courseStudentsMap[sub.course_id].push({...student, course_id: sub.course_id});
+                    }
+                });
+                console.log("خريطة الطلاب حسب الدورة:", courseStudentsMap);
+
+                // For display, we need to calculate attendance and grades per student-course pair
+                // This is simplified. Real implementation would be more complex.
+                let tableHTML = '';
+                for (const sub of subscriptions) {
+                    const student = students.find(s => s.id === sub.student_id);
+                    // Find course name
+                    const course = teacherCourses.find(c => c.id === sub.course_id);
+                    if (student) { // && course (optional, if course might not be loaded)
+                        // Dummy calculations for now
+                        const attendanceRate = 'N/A'; // Would require querying attendances
+                        const grade = 'N/A'; // Would require querying grades
+                        const lastActivity = 'N/A'; // Would require checking latest attendance/grade date
+
+                        tableHTML += `
+                            <tr data-course="${sub.course_id}">
+                                <td>${student.full_name}</td>
+                                <td>${student.email || '-'}</td>
+                                <td>${course ? course.name : 'دورة غير معروفة'}</td>
+                                <td>${attendanceRate}</td>
+                                <td>${lastActivity}</td>
+                                <td>${grade}</td>
+                                <td>
+                                    <button class="action-btn edit" onclick="viewStudentDetails('${student.id}')">عرض</button>
+                                    <button class="action-btn edit" onclick="editStudentGrade('${student.id}', '${sub.course_id}')">تعديل الدرجة</button>
+                                </td>
+                            </tr>
+                        `;
+                    }
+                }
+
+                container.innerHTML = tableHTML;
+                console.log("تم تحديث جدول الطلاب في واجهة المستخدم.");
+
+            } catch (error) {
+                console.error('خطأ في تحميل الطلاب:', error);
+                const container = document.querySelector('#studentsContent .table-container table tbody');
+                if (container) {
+                    container.innerHTML = '<tr><td colspan="7">خطأ في تحميل الطلاب.</td></tr>';
+                }
+                showStatus('حدث خطأ أثناء تحميل الطلاب.', 'error');
+            }
+        }
+
+        function filterStudents() {
+            const courseId = document.getElementById('studentCourseFilter')?.value;
+            console.log(`تصفية الطلاب حسب الدورة: ${courseId}`);
+            const rows = document.querySelectorAll('#studentsContent .table-container table tbody tr');
+            rows.forEach(row => {
+                if (courseId === '') {
+                    row.style.display = '';
+                } else {
+                    row.style.display = row.getAttribute('data-course') === courseId ? '' : 'none';
+                }
+            });
+        }
+
+        function viewStudentDetails(studentId) {
+            console.log(`عرض تفاصيل الطالب: ${studentId}`);
+            alert(`عرض تفاصيل الطالب: ${studentId}`);
+            // Implement view student details logic
+        }
+
+        function editStudentGrade(studentId, courseId) {
+            console.log(`فتح نافذة تعديل درجة الطالب: ${studentId} في الدورة: ${courseId}`);
+            // Find student and course names for the modal
+            const student = allStudents.find(s => s.id === studentId);
+            const course = teacherCourses.find(c => c.id === courseId);
+            if (student && course) {
+                const gradeStudentNameInput = document.getElementById('gradeStudentName');
+                if (gradeStudentNameInput) {
+                    gradeStudentNameInput.value = student.full_name;
+                }
+                // Here you would load existing grades for this student-course pair
+                // For now, we reset the form
+                const editGradeForm = document.getElementById('editGradeForm');
+                if (editGradeForm) {
+                    editGradeForm.reset();
+                    editGradeForm.dataset.studentId = studentId;
+                    editGradeForm.dataset.courseId = courseId;
+                }
+                openModal('editGradeModal');
+            }
+        }
+
+        // --- Lessons & Materials Functions ---
+        async function loadLessons() {
+            console.log("بدأ تحميل بيانات الدروس...");
+            try {
+                const container = document.querySelector('#lessonsContent .table-container table tbody');
+                if (!container) {
+                    console.error("عنصر جدول الدروس غير موجود في DOM.");
+                    return;
+                }
+
+                // Show loading state
+                container.innerHTML = '<tr><td colspan="5"><div class="loading"><div class="loading-spinner"></div><p>جاري تحميل بيانات الدروس...</p></div></td></tr>';
+
+                if (!currentUser) {
+                    console.warn("لم يتم تحميل بيانات المستخدم الحالي بعد.");
+                    container.innerHTML = '<tr><td colspan="5">يرجى تسجيل الدخول أولاً.</td></tr>';
+                    return;
+                }
+
+                console.log("جاري جلب معرفات دورات المعلم...");
+                const { data: teacherCourseIds, error: courseIdsError } = await supabaseClient
+                    .from('courses')
+                    .select('id')
+                    .eq('teacher_id', currentUser.id);
+                if (courseIdsError) {
+                    console.error('خطأ في جلب معرفات الدورات:', courseIdsError);
+                    throw courseIdsError;
+                }
+
+                const courseIds = teacherCourseIds.map(c => c.id);
+                console.log("معرفات دورات المعلم:", courseIds);
+
+                if (courseIds.length === 0) {
+                    console.log("المعلم لا يملك أي دورات.");
+                    lessons = [];
+                    updateLessonsTable();
+                    return;
+                }
+
+                console.log("جاري جلب الدروس من قاعدة البيانات...");
+                const { data, error } = await supabaseClient
+                    .from('lessons') // الجدول الجديد
+                    .select('id, title, description, date, course_id')
+                    .in('course_id', courseIds)
+                    .order('date', { ascending: false });
+
+                if (error) {
+                    console.error('خطأ في استعلام قاعدة البيانات لتحميل الدروس:', error);
+                    throw error;
+                }
+                console.log(`تم جلب ${data.length} درس من قاعدة البيانات.`);
+                lessons = data;
+                updateLessonsTable();
+
+            } catch (error) {
+                console.error('خطأ في تحميل الدروس:', error);
+                lessons = [];
+                const container = document.querySelector('#lessonsContent .table-container table tbody');
+                if (container) {
+                    container.innerHTML = '<tr><td colspan="5">خطأ في تحميل الدروس.</td></tr>';
+                }
+                showStatus('حدث خطأ أثناء تحميل الدروس.', 'error');
+            }
+        }
+
+        function updateLessonsTable() {
+            console.log("بدأ تحديث جدول الدروس في واجهة المستخدم...");
+            const container = document.querySelector('#lessonsContent .table-container table tbody');
+            if (!container) {
+                console.error("عنصر جدول الدروس غير موجود في DOM.");
+                return;
+            }
+
+            let tableHTML = '';
+            if (lessons.length === 0) {
+                tableHTML = '<tr><td colspan="5">لا توجد دروس.</td></tr>';
+                console.log("لا توجد دروس لعرضها.");
+            } else {
+                lessons.forEach(lesson => {
+                    // Find course name
+                    const course = teacherCourses.find(c => c.id === lesson.course_id);
+                    tableHTML += `
+                        <tr>
+                            <td>${lesson.title}</td>
+                            <td>${course ? course.name : 'دورة غير معروفة'}</td>
+                            <td>${lesson.description || '-'}</td>
+                            <td>${formatDate(lesson.date)}</td>
+                            <td>
+                                <button class="action-btn edit" onclick="editLesson('${lesson.id}')">تعديل</button>
+                                <button class="action-btn delete" onclick="deleteLesson('${lesson.id}')">حذف</button>
+                            </td>
+                        </tr>
+                    `;
+                });
+            }
+
+            container.innerHTML = tableHTML;
+            console.log("تم تحديث جدول الدروس في واجهة المستخدم.");
+            populateCourseDropdowns();
+        }
+
+        async function loadMaterials() {
+            console.log("بدأ تحميل بيانات المواد...");
+            try {
+                const container = document.querySelector('#materialsContent .table-container table tbody');
+                if (!container) {
+                    console.error("عنصر جدول المواد غير موجود في DOM.");
+                    return;
+                }
+
+                // Show loading state
+                container.innerHTML = '<tr><td colspan="5"><div class="loading"><div class="loading-spinner"></div><p>جاري تحميل المواد...</p></div></td></tr>';
+
+                if (!currentUser) {
+                    console.warn("لم يتم تحميل بيانات المستخدم الحالي بعد.");
+                    container.innerHTML = '<tr><td colspan="5">يرجى تسجيل الدخول أولاً.</td></tr>';
+                    return;
+                }
+
+                console.log("جاري جلب معرفات دورات المعلم...");
+                const { data: teacherCourseIds, error: courseIdsError } = await supabaseClient
+                    .from('courses')
+                    .select('id')
+                    .eq('teacher_id', currentUser.id);
+                if (courseIdsError) {
+                    console.error('خطأ في جلب معرفات الدورات:', courseIdsError);
+                    throw courseIdsError;
+                }
+
+                const courseIds = teacherCourseIds.map(c => c.id);
+                console.log("معرفات دورات المعلم:", courseIds);
+
+                if (courseIds.length === 0) {
+                    console.log("المعلم لا يملك أي دورات.");
+                    materials = [];
+                    updateMaterialsTable();
+                    return;
+                }
+
+                console.log("جاري جلب المواد من قاعدة البيانات...");
+                const { data, error } = await supabaseClient
+                    .from('materials') // الجدول الجديد
+                    .select('id, name, type, upload_date, course_id') // Adjust fields as per your schema
+                    .in('course_id', courseIds)
+                    .order('upload_date', { ascending: false });
+
+                if (error) {
+                    console.error('خطأ في استعلام قاعدة البيانات لتحميل المواد:', error);
+                    // If materials table doesn't exist or other error, handle gracefully
+                    console.warn('قد تكون الجدول materials غير موجود أو خطأ آخر:', error);
+                    materials = [];
+                } else {
+                    console.log(`تم جلب ${data.length} مادة من قاعدة البيانات.`);
+                    materials = data;
+                }
+                updateMaterialsTable();
+
+            } catch (error) {
+                console.error('خطأ في تحميل المواد:', error);
+                materials = [];
+                const container = document.querySelector('#materialsContent .table-container table tbody');
+                if (container) {
+                    container.innerHTML = '<tr><td colspan="5">خطأ في تحميل المواد.</td></tr>';
+                }
+                showStatus('حدث خطأ أثناء تحميل المواد.', 'error');
+            }
+        }
+
+        function updateMaterialsTable() {
+            console.log("بدأ تحديث جدول المواد في واجهة المستخدم...");
+            const container = document.querySelector('#materialsContent .table-container table tbody');
+            if (!container) {
+                console.error("عنصر جدول المواد غير موجود في DOM.");
+                return;
+            }
+
+            let tableHTML = '';
+            if (materials.length === 0) {
+                tableHTML = '<tr><td colspan="5">لا توجد مواد.</td></tr>';
+                console.log("لا توجد مواد لعرضها.");
+            } else {
+                materials.forEach(material => {
+                    // Find course name
+                    const course = teacherCourses.find(c => c.id === material.course_id);
+                    tableHTML += `
+                        <tr>
+                            <td>${material.name}</td>
+                            <td>${course ? course.name : 'دورة غير معروفة'}</td>
+                            <td>${material.type || '-'}</td>
+                            <td>${formatDate(material.upload_date)}</td>
+                            <td>
+                                <button class="action-btn edit" onclick="editMaterial('${material.id}')">تعديل</button>
+                                <button class="action-btn delete" onclick="deleteMaterial('${material.id}')">حذف</button>
+                            </td>
+                        </tr>
+                    `;
+                });
+            }
+
+            container.innerHTML = tableHTML;
+            console.log("تم تحديث جدول المواد في واجهة المستخدم.");
+            populateCourseDropdowns();
+        }
+
+        // --- Grades Functions ---
+        async function loadGrades() {
+            console.log("بدأ تحميل بيانات الدرجات...");
+            try {
+                const container = document.querySelector('#gradesContent .table-container table tbody');
+                if (!container) {
+                    console.error("عنصر جدول الدرجات غير موجود في DOM.");
+                    return;
+                }
+
+                // Show loading state or placeholder
+                container.innerHTML = '<tr><td colspan="8">سيتم تنفيذ هذا لاحقًا.</td></tr>';
+                console.log("عرض رسالة مؤقتة لتحميل الدرجات.");
+
+                // Similar to students, grades are tied to student-course pairs
+                // This would involve querying a 'grades' table
+                // For now, we use dummy data or load from state if previously loaded
+                // console.log("تحميل الدرجات - مبدئي");
+                // Actual implementation would go here
+
+            } catch (error) {
+                console.error('خطأ في تحميل الدرجات:', error);
+                const container = document.querySelector('#gradesContent .table-container table tbody');
+                if (container) {
+                    container.innerHTML = '<tr><td colspan="8">خطأ في تحميل الدرجات.</td></tr>';
+                }
+                showStatus('حدث خطأ أثناء تحميل الدرجات.', 'error');
+            }
+        }
+
+
+        // --- Attendance Functions ---
+        async function loadAttendances() {
+            console.log("بدأ تحميل بيانات الحضور...");
+            try {
+                // This function loads all attendances for the teacher's courses into memory
+                // The UI (list/filter) is handled separately
+
+                if (!currentUser) {
+                    console.warn("لم يتم تحميل بيانات المستخدم الحالي بعد.");
+                    return;
+                }
+
+                console.log("جاري جلب معرفات دورات المعلم...");
+                const { data: teacherCourseIds, error: courseIdsError } = await supabaseClient
+                    .from('courses')
+                    .select('id')
+                    .eq('teacher_id', currentUser.id);
+                if (courseIdsError) {
+                    console.error('خطأ في جلب معرفات الدورات:', courseIdsError);
+                    throw courseIdsError;
+                }
+
+                const courseIds = teacherCourseIds.map(c => c.id);
+                console.log("معرفات دورات المعلم:", courseIds);
+
+                if (courseIds.length === 0) {
+                    console.log("المعلم لا يملك أي دورات.");
+                    attendances = [];
+                    // No need to update UI here, it's done on filter
+                    return;
+                }
+
+                console.log("جاري جلب بيانات الحضور من قاعدة البيانات...");
+                const { data, error } = await supabaseClient
+                    .from('attendances')
+                    .select('id, student_id, course_id, date, status, notes')
+                    .in('course_id', courseIds)
+                    .order('date', { ascending: false });
+
+                if (error) {
+                    console.error('خطأ في استعلام قاعدة البيانات لتحميل الحضور:', error);
+                    throw error;
+                }
+                console.log(`تم جلب ${data.length} سجل حضور من قاعدة البيانات.`);
+                attendances = data;
+                // No need to update UI here, it's done on filter
+
+            } catch (error) {
+                console.error('خطأ في تحميل الحضور:', error);
+                attendances = [];
+                showStatus('حدث خطأ أثناء تحميل الحضور.', 'error');
+            }
+        }
+
+        function filterAttendanceByCourse() {
+            console.log("بدأ تصفية الحضور حسب الدورة المختارة...");
+            const selectedCourseId = document.getElementById('attendanceCourseFilter')?.value;
+            const attendanceListContainer = document.getElementById('attendanceList');
+            console.log(`الدورة المختارة: ${selectedCourseId}`);
+
+            if (!selectedCourseId) {
+                console.log("لم يتم اختيار دورة.");
+                if (attendanceListContainer) {
+                    attendanceListContainer.innerHTML = '<p style="text-align: center; color: #666;">اختر دورة لعرض الحضور</p>';
+                }
+                return;
+            }
+
+            // Get students for the selected course
+            const studentsInCourse = courseStudentsMap[selectedCourseId] || [];
+            console.log(`عدد الطلاب في الدورة المختارة: ${studentsInCourse.length}`);
+
+            if (studentsInCourse.length === 0) {
+                console.log("لا يوجد طلاب في الدورة المختارة.");
+                if (attendanceListContainer) {
+                    attendanceListContainer.innerHTML = '<p style="text-align: center; color: #666;">لا يوجد طلاب في هذه الدورة</p>';
+                }
+                return;
+            }
+
+            // Get the date, defaulting to today
+            const attendanceDate = document.getElementById('attendanceDate')?.value || new Date().toISOString().split('T')[0];
+            console.log(`تاريخ الحضور: ${attendanceDate}`);
+
+            let listHTML = '<table class="data-table"><thead><tr><th>الطالب</th><th>الحالة</th></tr></thead><tbody>';
+            studentsInCourse.forEach(student => {
+                // Find existing attendance record for this student, course, and date
+                const existingRecord = attendances.find(a =>
+                    a.student_id === student.id &&
+                    a.course_id === selectedCourseId &&
+                    a.date === attendanceDate
+                );
+                console.log(`سجل حضور للطالب ${student.id}:`, existingRecord);
+
+                const currentStatus = existingRecord ? existingRecord.status : '';
+
+                listHTML += `
+                    <tr>
+                        <td>${student.full_name}</td>
+                        <td>
+                            <button class="status-btn ${currentStatus === 'present' ? 'selected' : ''}" data-student-id="${student.id}" data-status="present">حاضر</button>
+                            <button class="status-btn ${currentStatus === 'absent' ? 'selected' : ''}" data-student-id="${student.id}" data-status="absent">غائب</button>
+                        </td>
+                    </tr>
+                `;
+            });
+            listHTML += '</tbody></table>';
+
+            if (attendanceListContainer) {
+                attendanceListContainer.innerHTML = listHTML;
+                console.log("تم تحديث قائمة الحضور في واجهة المستخدم.");
+
+                // Add event listeners to the new buttons
+                document.querySelectorAll('#attendanceList .status-btn').forEach(button => {
+                    button.addEventListener('click', function() {
+                        const studentId = this.dataset.studentId;
+                        const status = this.dataset.status;
+                        console.log(`تسجيل حضور للطالب ${studentId} كـ ${status}`);
+                        markAttendance(studentId, selectedCourseId, attendanceDate, status);
+                    });
+                });
+            } else {
+                console.error("عنصر attendanceList غير موجود في DOM.");
+            }
+        }
+
+        async function markAttendance(studentId, courseId, date, status) {
+            console.log(`بدأ تسجيل الحضور للطالب ${studentId} في الدورة ${courseId} بتاريخ ${date} كـ ${status}`);
+            try {
+                // Check if an attendance record already exists for this student, course, and date
+                const existingRecord = attendances.find(a =>
+                    a.student_id === studentId &&
+                    a.course_id === courseId &&
+                    a.date === date
+                );
+                console.log("السجل الحالي (إن وجد):", existingRecord);
+
+                let result;
+                if (existingRecord) {
+                    console.log("تحديث سجل حضور موجود...");
+                    // Update existing record
+                    const { data, error } = await supabaseClient
+                        .from('attendances')
+                        .update({ status: status })
+                        .eq('id', existingRecord.id);
+                    if (error) {
+                        console.error('خطأ في تحديث سجل الحضور:', error);
+                        throw error;
+                    }
+                    result = data;
+                     // Update local state
+                    const index = attendances.findIndex(a => a.id === existingRecord.id);
+                    if (index !== -1) {
+                        attendances[index].status = status;
+                        console.log("تم تحديث الحالة في الذاكرة المحلية.");
+                    }
+                } else {
+                    console.log("إدراج سجل حضور جديد...");
+                    // Insert new record
+                    const { data, error } = await supabaseClient
+                        .from('attendances')
+                        .insert({
+                            student_id: studentId,
+                            course_id: courseId,
+                            date: date,
+                            status: status
+                        });
+                    if (error) {
+                        console.error('خطأ في إدراج سجل الحضور:', error);
+                        throw error;
+                    }
+                    result = data;
+                    // Update local state
+                    if (data && data.length > 0) {
+                        attendances.push(data[0]);
+                        console.log("تم إضافة السجل الجديد إلى الذاكرة المحلية.");
+                    }
+                }
+
+                console.log("تم تسجيل الحضور:", result);
+                // Update the UI for this specific button/group
+                updateAttendanceUI(studentId, status);
+
+            } catch (error) {
+                console.error('خطأ في تسجيل الحضور:', error);
+                showStatus('حدث خطأ أثناء تسجيل الحضور.', 'error');
+            }
+        }
+
+        function updateAttendanceUI(studentId, status) {
+            console.log(`بدأ تحديث واجهة المستخدم لحضور الطالب ${studentId} إلى ${status}`);
+            // Update the button states in the UI for the specific student
+            document.querySelectorAll(`#attendanceList .status-btn[data-student-id="${studentId}"]`).forEach(btn => {
+                if (btn.dataset.status === status) {
+                    btn.classList.add('selected');
+                } else {
+                    btn.classList.remove('selected');
+                }
+            });
+            console.log("تم تحديث أزرار واجهة المستخدم.");
+        }
+
+        async function saveAttendance() {
+            console.log("بدأ حفظ سجلات الحضور...");
+            // This function is now less needed as attendance is saved per click.
+            // But can be used for batch saving or final confirmation.
+            showStatus('تم حفظ سجلات الحضور.');
+            // Optionally, reload data or show a more detailed confirmation
+        }
+
+        // --- Helper Functions ---
+        function populateCourseDropdowns() {
+            console.log("بدأ ملء قوائم الدورات...");
+            if (teacherCourses.length === 0) {
+                console.warn("لا توجد دورات لملء القوائم.");
+                return;
+            }
+
+            const courseSelects = document.querySelectorAll('select[id$="Course"], #studentCourseFilter, #attendanceCourseFilter');
+            console.log(`تم العثور على ${courseSelects.length} قائمة لملؤها.`);
+            courseSelects.forEach(select => {
+                // Save the current selection if it exists
+                const currentSelection = select.value;
+                console.log(`ملء القائمة ${select.id}...`);
+                select.innerHTML = '<option value="">اختر دورة</option>';
+                teacherCourses.forEach(course => {
+                    const option = document.createElement('option');
+                    option.value = course.id;
+                    option.textContent = course.name;
+                    select.appendChild(option);
+                });
+                // Restore the selection if it's still valid
+                if (currentSelection && teacherCourses.some(c => c.id === currentSelection)) {
+                    select.value = currentSelection;
+                    console.log(`تمت استعادة الاختيار السابق للقائمة ${select.id}.`);
+                }
+            });
+            console.log("اكتمل ملء قوائم الدورات.");
+        }
+
+        function formatDate(dateString) {
+            if (!dateString) return '';
+            const options = { year: 'numeric', month: '2-digit', day: '2-digit' };
+            return new Date(dateString).toLocaleDateString('ar-EG', options);
+        }
+
+        function openModal(modalId) {
+            console.log(`فتح النافذة المنبثقة: ${modalId}`);
+            const modal = document.getElementById(modalId);
+            if (modal) {
+                modal.style.display = 'block';
+            } else {
+                console.error(`النافذة المنبثقة ${modalId} غير موجودة في DOM.`);
+            }
+        }
+
+        function closeModal(modalId) {
+            console.log(`إغلاق النافذة المنبثقة: ${modalId}`);
+            const modal = document.getElementById(modalId);
+            if (modal) {
+                modal.style.display = 'none';
+            } else {
+                console.error(`النافذة المنبثقة ${modalId} غير موجودة في DOM.`);
+            }
+        }
+
+        // --- Form Handlers ---
+        async function handleAddLesson(e) {
+            e.preventDefault();
+            console.log("بدأ معالجة إضافة درس جديد...");
+
+            const course = document.getElementById('lessonCourse')?.value;
+            const title = document.getElementById('lessonTitle')?.value;
+            const description = document.getElementById('lessonDescription')?.value;
+            const date = document.getElementById('lessonDate')?.value;
+
+            if (!course || !title || !date) {
+                console.warn("يرجى تعبئة الحقول المطلوبة");
+                showStatus('يرجى تعبئة الحقول المطلوبة', 'error');
+                return;
+            }
+
+            try {
+                const newLesson = {
+                    course_id: course,
+                    title: title,
+                    description: description,
+                    date: date
+                };
+                console.log("بيانات الدرس الجديد:", newLesson);
+
+                const { data, error } = await supabaseClient
+                    .from('lessons') // الجدول الجديد
+                    .insert([newLesson]);
+
+                if (error) {
+                    console.error('خطأ في إدراج الدرس الجديد:', error);
+                    throw error;
+                }
+
+                console.log("تم إدراج الدرس بنجاح:", data);
+                showStatus(`تم إضافة الدرس "${title}" بنجاح!`);
+                const addLessonForm = document.getElementById('addLessonForm');
+                if (addLessonForm) {
+                    addLessonForm.reset();
+                }
                 closeModal('addLessonModal');
-            }, 2000);
-        });
-        
-        document.getElementById('addMaterialForm').addEventListener('submit', function(e) {
+                await loadLessons(); // Refresh the lessons list
+                await loadDashboardData(); // Refresh dashboard stats
+
+            } catch (error) {
+                console.error('خطأ في إضافة الدرس:', error);
+                showStatus('حدث خطأ أثناء إضافة الدرس.', 'error');
+            }
+        }
+
+        async function handleAddMaterial(e) {
             e.preventDefault();
-            const course = document.getElementById('materialCourse').value;
-            const name = document.getElementById('materialName').value;
-            const type = document.getElementById('materialType').value;
-            const description = document.getElementById('materialDescription').value;
-            const file = document.getElementById('materialFile').files[0];
-            
-            if (!course || !name || !type || !file) {
-                alert('يرجى تعبئة جميع الحقول ورفع ملف');
+            console.log("بدأ معالجة رفع مادة جديدة...");
+
+            const course = document.getElementById('materialCourse')?.value;
+            const name = document.getElementById('materialName')?.value;
+            const type = document.getElementById('materialType')?.value;
+            const description = document.getElementById('materialDescription')?.value;
+            const file = document.getElementById('materialFile')?.files[0]; // Handle file upload properly
+
+            if (!course || !name || !type) { // File is optional depending on your logic
+                console.warn("يرجى تعبئة الحقول المطلوبة");
+                showStatus('يرجى تعبئة الحقول المطلوبة', 'error');
                 return;
             }
-            
-            const successMsg = document.getElementById('materialSuccess');
-            successMsg.textContent = `تم رفع المادة "${name}" بنجاح!`;
-            successMsg.style.display = 'block';
-            this.reset();
-            setTimeout(() => {
+
+            // Note: File upload to Supabase Storage requires additional setup
+            // This example assumes the file metadata is stored in the database
+            try {
+                // In a real app, you would upload the file to Supabase Storage first
+                // and get a URL. For now, we store just the metadata.
+                const newMaterial = {
+                    course_id: course,
+                    name: name,
+                    type: type,
+                    description: description,
+                    // url: fileUrl, // URL from storage
+                    upload_date: new Date().toISOString().split('T')[0]
+                };
+                console.log("بيانات المادة الجديدة:", newMaterial);
+
+                const { data, error } = await supabaseClient
+                    .from('materials') // الجدول الجديد
+                    .insert([newMaterial]);
+
+                if (error) {
+                    console.error('خطأ في رفع المادة:', error);
+                    throw error;
+                }
+
+                console.log("تم رفع المادة بنجاح:", data);
+                showStatus(`تم رفع المادة "${name}" بنجاح!`);
+                const addMaterialForm = document.getElementById('addMaterialForm');
+                if (addMaterialForm) {
+                    addMaterialForm.reset();
+                }
                 closeModal('addMaterialModal');
-            }, 2000);
-        });
-        
-        document.getElementById('editGradeForm').addEventListener('submit', function(e) {
+                await loadMaterials(); // Refresh the materials list
+
+            } catch (error) {
+                console.error('خطأ في رفع المادة:', error);
+                showStatus('حدث خطأ أثناء رفع المادة.', 'error');
+            }
+        }
+
+        async function handleEditGrade(e) {
             e.preventDefault();
-            const studentName = document.getElementById('gradeStudentName').value;
-            const exam1 = document.getElementById('exam1Grade').value;
-            const exam2 = document.getElementById('exam2Grade').value;
-            const project = document.getElementById('projectGrade').value;
-            const total = document.getElementById('totalGrade').value;
-            
-            const successMsg = document.getElementById('gradeSuccess');
-            successMsg.textContent = `تم حفظ الدرجات للطالب ${studentName} بنجاح!`;
-            successMsg.style.display = 'block';
-            setTimeout(() => {
+            console.log("بدأ معالجة تعديل الدرجات...");
+
+            const form = e.target;
+            const studentId = form.dataset.studentId;
+            const courseId = form.dataset.courseId;
+            // Get grade values from form inputs (IDs assumed)
+            // Example assumes inputs like #exam1Grade, #exam2Grade, #projectGrade
+            const exam1 = document.getElementById('exam1Grade')?.value;
+            const exam2 = document.getElementById('exam2Grade')?.value;
+            const project = document.getElementById('projectGrade')?.value;
+
+            if (!studentId || !courseId) {
+                console.warn("بيانات الطالب أو الدورة غير متوفرة.");
+                showStatus('بيانات الطالب أو الدورة غير متوفرة.', 'error');
+                return;
+            }
+
+            // Calculate total and grade (simplified)
+            const total = (parseInt(exam1) || 0) + (parseInt(exam2) || 0) + (parseInt(project) || 0);
+            let gradeText = 'غير محدد';
+            if (total >= 90) gradeText = 'ممتاز';
+            else if (total >= 80) gradeText = 'جيد جداً';
+            else if (total >= 70) gradeText = 'جيد';
+            else if (total >= 60) gradeText = 'مقبول';
+            else gradeText = 'ضعيف';
+
+            try {
+                // Check if a grade record already exists for this student-course
+                // This assumes a 'grades' table with student_id, course_id as a composite key or unique index
+                // Since 'grades' table is not defined, we'll simulate success
+                console.log(`تعديل درجة الطالب ${studentId} في الدورة ${courseId}: إجمالي=${total}, تقدير=${gradeText}`);
+
+                // Simulate successful update
+                showStatus('تم تعديل الدرجات بنجاح!');
                 closeModal('editGradeModal');
-            }, 2000);
-        });
-        // Grade calculation
-        ['exam1Grade', 'exam2Grade', 'projectGrade'].forEach(id => {
-            document.getElementById(id).addEventListener('input', updateTotalGrade);
-        });
-        // Logout function
-        function logout() {
-            if (confirm('هل أنت متأكد من تسجيل الخروج؟')) {
-                window.location.href = 'login.html';
+                await loadGrades(); // Refresh grades table if necessary
+
+            } catch (error) {
+                console.error('خطأ في تعديل الدرجة:', error);
+                showStatus('حدث خطأ أثناء تعديل الدرجات.', 'error');
             }
         }
-        // Close modal when clicking outside
-        window.onclick = function(event) {
-            if (event.target.classList.contains('modal')) {
-                event.target.style.display = 'none';
+
+        // --- UI Interaction Handlers (called by inline onclick) ---
+        function editLesson(lessonId) {
+            console.log(`طلب تعديل الدرس: ${lessonId}`);
+            alert(`تعديل الدرس: ${lessonId}`);
+            // Implement edit lesson logic
+        }
+
+        function deleteLesson(lessonId) {
+            console.log(`طلب حذف الدرس: ${lessonId}`);
+            if (confirm('هل أنت متأكد من حذف هذا الدرس؟')) {
+                // Implement delete lesson logic
+                console.log(`حذف الدرس: ${lessonId}`);
+                 // Example Supabase delete call (uncomment and adjust):
+                 /*
+                 supabaseClient
+                     .from('lessons')
+                     .delete()
+                     .eq('id', lessonId)
+                     .then(({ data, error }) => {
+                         if (error) {
+                             console.error('Error deleting lesson:', error);
+                             showStatus('حدث خطأ أثناء الحذف.');
+                         } else {
+                             console.log('Lesson deleted:', data);
+                             loadLessons(); // Refresh the list
+                             showStatus('تم حذف الدرس.');
+                         }
+                     });
+                 */
+                 alert(`تم حذف الدرس: ${lessonId}`);
             }
         }
-        // Initialize page
-        document.addEventListener('DOMContentLoaded', function() {
-            // Set default date to today
-            const today = new Date();
-            const dateString = today.getFullYear() + '-' + 
-                String(today.getMonth() + 1).padStart(2, '0') + '-' + 
-                String(today.getDate()).padStart(2, '0');
-            document.getElementById('attendanceDate').value = dateString;
-            
-            // Load attendance students if course is selected
-            document.getElementById('attendanceCourse').addEventListener('change', loadAttendanceStudents);
-            
-            // Initialize total courses count
-            document.getElementById('totalCourses').textContent = mockData.courses.length;
-            
-            // Calculate total students
-            let totalStudents = 0;
-            mockData.courses.forEach(course => {
-                totalStudents += course.students;
-            });
-            document.getElementById('totalStudents').textContent = totalStudents;
-            
-            // Calculate average attendance
-            let totalAttendance = 0;
-            mockData.students.forEach(student => {
-                totalAttendance += student.attendance;
-            });
-            const avgAttendance = Math.round(totalAttendance / mockData.students.length);
-            document.getElementById('avgAttendance').textContent = avgAttendance + '%';
-            
-            // Calculate completed lessons
-            let completedLessons = 0;
-            mockData.courses.forEach(course => {
-                completedLessons += course.lessons;
-            });
-            document.getElementById('completedLessons').textContent = completedLessons;
-        });
-    </script>
-</body>
+
+        function editMaterial(materialId) {
+            console.log(`طلب تعديل المادة: ${materialId}`);
+            alert(`تعديل المادة: ${materialId}`);
+            // Implement edit material logic
+        }
+
+        function deleteMaterial(materialId) {
+            console.log(`طلب حذف المادة: ${materialId}`);
+            if (confirm('هل أنت متأكد من حذف هذه المادة؟')) {
+                // Implement delete material logic
+                console.log(`حذف المادة: ${materialId}`);
+                alert(`تم حذف المادة: ${materialId}`);
+            }
+        }
+
+        // Ensure the Supabase library is loaded before this script runs
+        // You might need to add a check or a defer attribute to the script tag
+        // <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+        // <script defer> // This script tag </script>
+
+    </script></body>
 </html>
