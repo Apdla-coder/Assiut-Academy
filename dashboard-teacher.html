@@ -8,10 +8,8 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-
-
     <style>
-            :root {
+        :root {
             --primary: #f97316;
             --primary-dark: #ea580c;
             --secondary: #059669;
@@ -26,7 +24,9 @@
             --waiting: #8b5cf6;
             --sidebar-width: 250px;
             --header-height: 60px;
+            --sidebar-collapsed-width: 60px;
         }
+
         * {
             box-sizing: border-box;
             margin: 0;
@@ -60,11 +60,13 @@
         .sidebar.collapsed {
             width: var(--sidebar-collapsed-width);
         }
-.sidebar img {
+
+        .sidebar img {
             width: 100%;
             height: auto;
             margin-bottom: 20px;
         }
+
         .sidebar h3 {
             text-align: center;
             margin: 0 0 20px;
@@ -122,6 +124,7 @@
             margin-right: var(--sidebar-width);
             padding: 20px;
             transition: margin 0.3s ease;
+            margin-top: var(--header-height);
         }
 
         .content.sidebar-collapsed {
@@ -226,20 +229,28 @@
             background-color: var(--primary-dark);
         }
 
+        .btn-secondary {
+            background-color: var(--gray);
+        }
+
+        .btn-secondary:hover {
+            background-color: #555;
+        }
+
         .btn-xs {
             padding: 4px 8px;
             font-size: 0.8rem;
         }
 
         /* Status Message */
- .status-message {
-    padding: 10px 15px;
-    border-radius: 5px;
-    margin: 40px 10px 0;
-    display: none;
-    text-align: center;
-    font-weight: bold;
-}
+        .status-message {
+            padding: 10px 15px;
+            border-radius: 5px;
+            margin: 20px 0 0;
+            display: none;
+            text-align: center;
+            font-weight: bold;
+        }
 
         .status-message.success {
             background: #d1fae5;
@@ -257,7 +268,6 @@
         .tab-content {
             display: none;
             animation: fadeIn 0.5s;
-            margin-top: calc(var(--header-height) + 20px);
         }
 
         @keyframes fadeIn {
@@ -314,55 +324,56 @@
             position: relative;
             margin-bottom: 20px;
         }
-.course-box {
-    background: white;
-    border-radius: 8px;
-    padding: 15px;
-    margin-bottom: 20px;
-    box-shadow: 0 1px 4px rgba(0,0,0,0.08);
-}
 
-.course-title {
-    font-size: 1.2rem;
-    font-weight: bold;
-    color: var(--primary);
-    border-bottom: 2px solid #f0f0f0;
-    padding-bottom: 8px;
-    margin-bottom: 15px;
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-}
+        .course-box {
+            background: white;
+            border-radius: 8px;
+            padding: 15px;
+            margin-bottom: 20px;
+            box-shadow: 0 1px 4px rgba(0, 0, 0, 0.08);
+        }
 
-.student-count {
-    font-size: 0.9rem;
-    color: var(--gray);
-}
+        .course-title {
+            font-size: 1.2rem;
+            font-weight: bold;
+            color: var(--primary);
+            border-bottom: 2px solid #f0f0f0;
+            padding-bottom: 8px;
+            margin-bottom: 15px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
 
-.student-card {
-    background: #fafafa;
-    border: 1px solid #eee;
-    transition: 0.3s;
-}
+        .student-count {
+            font-size: 0.9rem;
+            color: var(--gray);
+        }
 
-.student-card:hover {
-    background: #fff;
-    box-shadow: 0 2px 6px rgba(0,0,0,0.1);
-}
+        .student-card {
+            background: #fafafa;
+            border: 1px solid #eee;
+            transition: 0.3s;
+        }
 
-.card-field {
-    padding: 4px 0;
-}
+        .student-card:hover {
+            background: #fff;
+            box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
+        }
 
-.card-field .field-label {
-    color: var(--dark);
-    font-weight: bold;
-    margin-left: 5px;
-}
+        .card-field {
+            padding: 4px 0;
+        }
 
-.card-field .field-value {
-    color: var(--gray);
-}
+        .card-field .field-label {
+            color: var(--dark);
+            font-weight: bold;
+            margin-left: 5px;
+        }
+
+        .card-field .field-value {
+            color: var(--gray);
+        }
 
         /* Card-based List Styles */
         .card-list {
@@ -461,92 +472,112 @@
             }
         }
 
-/* Modal Styles */
-.modal {
-    display: none;
-    position: fixed;
-    z-index: 1001;
-    left: 0;
-    top: 0;
-    width: 100%;
-    height: 100%;
-    background-color: rgba(0, 0, 0, 0.5);
-    justify-content: center;
-    align-items: center;
-    padding: 10px;
-}
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            background: #fff;
+            margin-top: 10px;
+            box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
+        }
 
-.modal-content {
-    background-color: #fefefe;
-    margin: auto;
-    padding: 0;
-    border: none;
-    border-radius: 8px;
-    width: 100%;
-    max-width: 800px;
-    max-height: 90vh; /* تحديد أقصى ارتفاع بالنسبة للشاشة */
-    overflow: scroll; /* منع التمرير في الحاوية نفسها */
-    display: flex;
-    flex-direction: column;
-}
+        th,
+        td {
+            padding: 10px;
+            border-bottom: 1px solid #ddd;
+            text-align: center;
+        }
 
-.modal-header {
-    padding: 15px 20px;
-    background-color: var(--dark);
-    color: white;
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-}
+        th {
+            background: #4CAF50;
+            color: white;
+        }
 
-.modal-title {
-    margin: 0;
-    font-size: 1.2rem;
-}
+        input.score-input {
+            width: 60px;
+            padding: 4px;
+            text-align: center;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+        }
 
-.close {
-    color: white;
-    font-size: 1.5rem;
-    font-weight: bold;
-    cursor: pointer;
-}
+        button.save-score {
+            padding: 5px 10px;
+            border: none;
+            border-radius: 4px;
+            background: #4CAF50;
+            color: #fff;
+            cursor: pointer;
+        }
 
-.modal-body {
-    padding: 15px;
-    overflow-y: auto; /* جعل المحتوى الداخلي قابل للتمرير */
-    flex: 1; /* تمدد لملء المساحة المتبقية */
-}
+        button.save-score:hover {
+            background: #45a049;
+        }
 
-.modal-footer {
-    padding: 15px 20px;
-    background-color: #f9fafb;
-    text-align: left;
-    border-top: 1px solid #eee;
-}
+        /* Modal Styles */
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 1001;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.5);
+            justify-content: center;
+            align-items: center;
+            padding: 10px;
+        }
 
-/* تحسينات للموبايل */
-@media (max-width: 768px) {
-    .modal {
-        padding: 5px;
-    }
+        .modal-content {
+            background-color: #fefefe;
+            margin: auto;
+            padding: 0;
+            border: none;
+            border-radius: 8px;
+            width: 100%;
+            max-width: 800px;
+            max-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            overflow: scroll;
+        }
 
-    .modal-content {
-        max-height: 95vh; /* على الشاشات الصغيرة نسمح بارتفاع أكبر */
-    }
+        .modal-header {
+            padding: 15px 20px;
+            background-color: var(--dark);
+            color: white;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
 
-    .modal-header,
-    .modal-footer {
-        padding: 12px 15px;
-    }
+        .modal-title {
+            margin: 0;
+            font-size: 1.2rem;
+        }
 
-    .modal-title {
-        font-size: 1.1rem;
-    }
+        .close {
+            color: white;
+            font-size: 1.5rem;
+            font-weight: bold;
+            cursor: pointer;
+        }
 
-    .modal-body {
-        padding: 12px;
-    }
-}
+        .modal-body {
+            padding: 15px;
+            overflow-y: auto;
+            flex: 1;
+        }
+
+        .modal-footer {
+            padding: 15px 20px;
+            background-color: #f9fafb;
+            text-align: left;
+            border-top: 1px solid #eee;
+            display: flex;
+            justify-content: flex-start;
+            gap: 10px;
+        }
 
         /* Course Detail Tabs */
         .course-detail-tabs {
@@ -673,6 +704,117 @@
             font-size: 0.8rem;
         }
 
+        /* تحسينات نافذة الحضور للهواتف المحمولة */
+        @media (max-width: 768px) {
+            .student-attendance-actions {
+                flex-direction: column;
+                gap: 8px;
+            }
+
+            .student-attendance-actions .btn {
+                width: 100%;
+                text-align: center;
+                justify-content: center;
+            }
+
+            .student-list-container {
+                max-height: 40vh;
+                /* تحديد ارتفاع أقصى لقائمة الطلاب */
+                overflow-y: auto;
+                /* إضافة تمرير عمودي */
+                border: 1px solid #eee;
+                border-radius: 5px;
+                padding: 10px;
+            }
+
+            .student-item {
+                padding: 12px 10px;
+                border-bottom: 1px solid #f0f0f0;
+                display: flex;
+                flex-direction: column;
+                gap: 8px;
+            }
+
+            .student-item:last-child {
+                border-bottom: none;
+            }
+
+            .student-header {
+                display: flex;
+                justify-content: space-between;
+                align-items: center;
+            }
+
+            .student-name {
+                font-weight: bold;
+                font-size: 0.95rem;
+            }
+
+            .student-status-select {
+                width: 100%;
+                padding: 8px;
+                border: 1px solid #ddd;
+                border-radius: 4px;
+                background-color: white;
+                font-size: 0.9rem;
+            }
+
+            .search-box {
+                margin-bottom: 15px;
+            }
+
+            .modal-footer {
+                flex-direction: column;
+                gap: 10px;
+            }
+
+            .modal-footer .btn {
+                width: 100%;
+                justify-content: center;
+            }
+        }
+
+        /* تنسيقات إضافية لعناصر نافذة الحضور */
+        .student-item {
+            background-color: #fafafa;
+            border-radius: 6px;
+            margin-bottom: 10px;
+            padding: 15px;
+            box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+            transition: all 0.2s ease;
+        }
+
+        .student-item:hover {
+            background-color: #f0f0f0;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        }
+
+        .student-checkbox {
+            transform: scale(1.2);
+            margin-left: 10px;
+        }
+
+        .btn-sm {
+            padding: 6px 12px;
+            font-size: 0.85rem;
+        }
+
+        .btn-sm i {
+            font-size: 0.9rem;
+        }
+
+        /* تحسين تخطيط زر الإغلاق في الهيدر */
+        .modal-header .close {
+            padding: 5px 10px;
+            background-color: rgba(255, 255, 255, 0.2);
+            border-radius: 4px;
+            transition: background-color 0.2s;
+        }
+
+        .modal-header .close:hover {
+            background-color: rgba(255, 255, 255, 0.3);
+        }
+
         /* Mobile Responsive */
         @media (max-width: 768px) {
             :root {
@@ -680,12 +822,15 @@
                 --sidebar-collapsed-width: 0;
                 --header-height: 50px;
             }
-.user-info{
-    gap: 70px;
-}
-.app-title{
-    display: none;
-}
+
+            .user-info {
+                gap: 70px;
+            }
+
+            .app-title {
+                display: none;
+            }
+
             .sidebar {
                 transform: translateX(100%);
                 width: var(--sidebar-width);
@@ -849,6 +994,12 @@
                         class="fas fa-tachometer-alt"></i><span>نظرة عامة</span></a></li>
             <li><a href="#" class="nav-link" onclick="switchTab('courses'); setActiveLink(this)"><i
                         class="fas fa-book"></i><span>كورساتي</span></a></li>
+            <li class="nav-item">
+                <a class="nav-link" href="#" onclick="switchTab('exams')">
+                    <i class="fas fa-file-alt"></i>
+                    <span>اختباراتي</span>
+                </a>
+            </li>
             <li><a href="#" class="nav-link" onclick="switchTab('students'); setActiveLink(this)"><i
                         class="fas fa-users"></i><span>طلابي</span></a></li>
             <li><a href="#" class="nav-link" onclick="switchTab('attendances'); setActiveLink(this)"><i
@@ -857,7 +1008,6 @@
                         class="fas fa-user-check"></i><span>حضوري</span></a></li>
         </ul>
     </div>
-
     <!-- Main Content -->
     <div class="content" id="mainContent">
         <!-- App Header -->
@@ -878,10 +1028,8 @@
                 </div>
             </div>
         </div>
-
         <!-- Status Message -->
         <div id="statusMessage" class="status-message"></div>
-
         <!-- Dashboard Tab -->
         <div id="dashboardContent" class="tab-content" style="display:block;">
             <div class="stats-container">
@@ -905,21 +1053,30 @@
                 <canvas id="lessonsPerCourseChart"></canvas>
             </div>
         </div>
-
+        <!-- تبويب الاختبارات -->
+        <div id="examsContent" class="tab-content" style="display: none;">
+            <div class="dashboard-header">
+                <h1>اختباراتي</h1>
+            </div>
+            <div id="examsContainer">
+                <div class="loading">
+                    <div class="loading-spinner"></div>
+                    <p>جاري تحميل بيانات الاختبارات...</p>
+                </div>
+            </div>
+        </div>
         <!-- Courses Tab -->
         <div id="coursesContent" class="tab-content">
             <div id="coursesContainer">
                 <p class="no-data">جاري تحميل بيانات الكورسات...</p>
             </div>
         </div>
-
         <!-- Students Tab -->
         <div id="studentsContent" class="tab-content">
             <div id="studentsContainer">
                 <p class="no-data">جاري تحميل بيانات الطلاب...</p>
             </div>
         </div>
-
         <!-- Student Attendances Tab -->
         <div id="attendancesContent" class="tab-content">
             <div style="margin-bottom: 15px;">
@@ -930,7 +1087,6 @@
                 <p class="no-data">جاري تحميل بيانات الحضور...</p>
             </div>
         </div>
-
         <!-- My Attendance Tab -->
         <div id="myattendanceContent" class="tab-content">
             <h3>سجل حضوري</h3>
@@ -940,7 +1096,6 @@
             </div>
         </div>
     </div>
-
     <!-- Course Detail Modal -->
     <div id="courseDetailModal" class="modal">
         <div class="modal-content">
@@ -954,7 +1109,6 @@
                     <button class="tab-button active" onclick="switchCourseDetailTab('overview')">نظرة عامة</button>
                     <button class="tab-button" onclick="switchCourseDetailTab('modules')">الوحدات</button>
                 </div>
-
                 <!-- Overview Tab Content -->
                 <div id="courseOverviewTab" class="course-detail-tab-content active">
                     <div class="card-content">
@@ -980,7 +1134,6 @@
                         </div>
                     </div>
                 </div>
-
                 <!-- Modules Tab Content -->
                 <div id="courseModulesTab" class="course-detail-tab-content">
                     <div id="modulesList">
@@ -990,7 +1143,6 @@
             </div>
         </div>
     </div>
-
     <!-- Add Attendance Modal -->
     <div id="attendanceModal" class="modal">
         <div class="modal-content">
@@ -1016,44 +1168,99 @@
                         <label for="attendanceDate">تاريخ الحضور:</label>
                         <input type="date" id="attendanceDate" disabled required>
                     </div>
+
+                    <div class="attendance-form-group">
+                        <label>إجراءات جماعية:</label>
+                        <div class="student-attendance-actions">
+                            <button type="button" class="btn btn-success btn-sm" onclick="setAllAttendance('present')">
+                                <i class="fas fa-user-check"></i> الجميع حاضر
+                            </button>
+                            <button type="button" class="btn btn-danger btn-sm" onclick="setAllAttendance('absent')">
+                                <i class="fas fa-user-times"></i> الجميع غائب
+                            </button>
+                            <button type="button" class="btn btn-warning btn-sm" onclick="setAllAttendance('late')">
+                                <i class="fas fa-user-clock"></i> الجميع متأخر
+                            </button>
+                            <button type="button" class="btn btn-secondary btn-sm" onclick="clearAllAttendance()">
+                                <i class="fas fa-eraser"></i> مسح الكل
+                            </button>
+                        </div>
+                    </div>
+
                     <div class="attendance-form-group">
                         <label>الطلاب:</label>
-                        <div class="student-attendance-actions">
-                            <div class="btn-group-sm">
-                                <button type="button" class="btn btn-success"
-                                    onclick="setAllAttendance('present')">الجميع حاضر</button>
-                                <button type="button" class="btn btn-danger"
-                                    onclick="setAllAttendance('absent')">الجميع غائب</button>
-                                <button type="button" class="btn" style="background-color: #f59e0b; color: white;"
-                                    onclick="setAllAttendance('late')">الجميع متأخر</button>
-                                <button type="button" class="btn btn-secondary"
-                                    onclick="clearAllAttendance()">مسح</button>
-                            </div>
+                        <div class="student-search-container">
+                            <input type="text" id="studentSearchInModal" class="search-box"
+                                placeholder="بحث في أسماء الطلاب...">
                         </div>
-                        <div id="studentAttendanceList">
+                        <div id="studentAttendanceList" class="student-list-container">
                             <p class="no-data" style="text-align: center; margin: 20px 0;">اختر درسًا أولاً</p>
                         </div>
                     </div>
+
                     <div class="attendance-form-group">
                         <label for="attendanceNotes">ملاحظات:</label>
                         <textarea id="attendanceNotes" placeholder="ملاحظات عامة..."></textarea>
                     </div>
                 </div>
                 <div class="modal-footer">
-                    <button type="submit" class="btn btn-primary"><i class="fas fa-save"></i> تسجيل</button>
-                    <button type="button" class="btn btn-secondary" onclick="closeModal('attendanceModal')"><i
-                            class="fas fa-times"></i> إلغاء</button>
+                    <button type="submit" class="btn btn-primary">
+                        <i class="fas fa-save"></i> تسجيل الحضور
+                    </button>
+                    <button type="button" class="btn btn-secondary" onclick="closeModal('attendanceModal')">
+                        <i class="fas fa-times"></i> إلغاء
+                    </button>
                 </div>
             </form>
         </div>
     </div>
-
+    <!-- Exam Detail Modal -->
+    <div id="examDetailModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2 class="modal-title" id="examDetailTitle">تفاصيل الاختبار</h2>
+                <span class="close" onclick="closeModal('examDetailModal')">&times;</span>
+            </div>
+            <div class="modal-body">
+                <div class="card">
+                    <div class="card-header">
+                        <div class="card-title" id="examDetailModalName"></div>
+                    </div>
+                    <div class="card-content">
+                        <div class="card-field">
+                            <span class="field-label">الدرجة الكلية:</span>
+                            <span class="field-value" id="examDetailModalMaxScore"></span>
+                        </div>
+                        <div class="card-field">
+                            <span class="field-label">التاريخ:</span>
+                            <span class="field-value" id="examDetailModalDate"></span>
+                        </div>
+                    </div>
+                </div>
+                <div class="exam-stats-container">
+                    <h3>الإحصائيات</h3>
+                    <div id="examStatsContainer">
+                        <p class="no-data">جاري تحميل الإحصائيات...</p>
+                    </div>
+                </div>
+                <div class="student-scores-container">
+                    <h3>درجات الطلاب</h3>
+                    <div id="studentScoresContainer">
+                        <p class="no-data">جاري تحميل بيانات الطلاب والدرجات...</p>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" onclick="closeModal('examDetailModal')">إلغاء</button>
+                <button type="button" class="btn btn-primary" onclick="saveExamScores()">حفظ الدرجات</button>
+            </div>
+        </div>
+    </div>
     <script>
         // Supabase Configuration
         const supabaseUrl = "https://zefsmckaihzfiqqbdake.supabase.co"
         const supabaseKey = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InplZnNtY2thaWh6ZmlxcWJkYWtlIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTQyMzUzNTgsImV4cCI6MjA2OTgxMTM1OH0.vktk2VkEPtMclb6jb_pFa1DbrqWX9SOZRsBR577o5mc"
         const supabaseClient = supabase.createClient(supabaseUrl, supabaseKey)
-
         // متغيرات عامة
         let currentUserId = null;
         let currentUserData = null;
@@ -1065,12 +1272,11 @@
         let currentCourseLessons = [];
         let lessonsPerCourseChart = null;
         let lessonsByCourse = {};
-
+        let exams = []; // لتخزين بيانات الاختبارات
         // DOM Elements
         const sidebar = document.getElementById('sidebar');
         const mainContent = document.getElementById('mainContent');
         const menuToggle = document.getElementById('menuToggle');
-
         // Toggle sidebar on mobile
         menuToggle.addEventListener('click', () => {
             if (window.innerWidth <= 768) {
@@ -1080,17 +1286,15 @@
                 mainContent.classList.toggle('sidebar-collapsed');
             }
         });
-
         // Close sidebar when clicking outside on mobile
         document.addEventListener('click', (event) => {
-            if (window.innerWidth <= 768 && 
-                !sidebar.contains(event.target) && 
-                !menuToggle.contains(event.target) && 
+            if (window.innerWidth <= 768 &&
+                !sidebar.contains(event.target) &&
+                !menuToggle.contains(event.target) &&
                 sidebar.classList.contains('active')) {
                 sidebar.classList.remove('active');
             }
         });
-
         // دالة لعرض رسائل الحالة
         function showStatus(message, type = 'success') {
             const statusDiv = document.getElementById('statusMessage');
@@ -1101,7 +1305,6 @@
                 statusDiv.style.display = 'none';
             }, 5000);
         }
-
         // دالة لإغلاق النوافذ المنبثقة
         function closeModal(modalId) {
             const modal = document.getElementById(modalId);
@@ -1109,7 +1312,6 @@
                 modal.style.display = 'none';
             }
         }
-
         // دالة لتبديل التبويبات الرئيسية
         function switchTab(tabName) {
             // إخفاء جميع محتويات التبويبات
@@ -1130,16 +1332,19 @@
                 loadTeacherStudents();
             } else if (tabName === 'attendances') {
                 loadTeacherAttendances();
+            } else if (tabName === 'exams') { // إضافة تبويب الاختبارات
+                loadTeacherExams(); // تحميل الاختبارات
             } else if (tabName === 'myattendance') {
                 loadMyAttendance();
             }
-            
             // Close sidebar on mobile after selection
             if (window.innerWidth <= 768) {
-                sidebar.classList.remove('active');
+                const sidebar = document.getElementById('sidebar');
+                if (sidebar) {
+                    sidebar.classList.remove('active');
+                }
             }
         }
-
         // دالة لتحديد الرابط النشط في القائمة الجانبية
         function setActiveLink(element) {
             document.querySelectorAll('.nav-link').forEach(link => {
@@ -1147,19 +1352,16 @@
             });
             element.classList.add('active');
         }
-
         // دوال مساعدة للتنسيق
         function formatCurrency(amount) {
             if (amount === null || amount === undefined || isNaN(amount)) return '0.00 ج.م';
             return `${parseFloat(amount).toFixed(2)} ج.م`;
         }
-
         function formatDate(dateString) {
             if (!dateString) return '-';
             const options = { year: 'numeric', month: 'numeric', day: 'numeric' };
             return new Date(dateString).toLocaleDateString('ar-EG', options);
         }
-
         // دالة لتبديل تبويبات تفاصيل الكورس داخل النافذة المنبثقة
         function switchCourseDetailTab(tabName) {
             // إزالة الفئة النشطة من جميع أزرار التبويب
@@ -1186,7 +1388,6 @@
                 }
             }
         }
-
         // دالة لتحميل بيانات المستخدم الحالي
         async function loadUserData() {
             try {
@@ -1229,7 +1430,6 @@
                 showStatus('خطأ في تحميل بيانات المستخدم', 'error');
             }
         }
-
         // دالة لتحميل بيانات لوحة التحكم (الإحصائيات)
         async function loadDashboardData() {
             try {
@@ -1240,7 +1440,6 @@
                     .eq('teacher_id', currentUserId);
                 if (coursesCountError) throw coursesCountError;
                 document.getElementById('totalCourses').textContent = coursesCount || 0;
-                
                 // 2. عدد الدروس في الكورسات المسندة للمعلم
                 const { data: teacherCourses, error: coursesError } = await supabaseClient
                     .from('courses')
@@ -1258,7 +1457,6 @@
                     lessonsCount = count || 0;
                 }
                 document.getElementById('totalLessons').textContent = lessonsCount;
-                
                 // 3. عدد الطلاب في الكورسات المسندة للمعلم
                 let studentsCount = 0;
                 if (courseIds.length > 0) {
@@ -1270,7 +1468,6 @@
                     studentsCount = count || 0;
                 }
                 document.getElementById('totalStudents').textContent = studentsCount;
-                
                 // 4. إنشاء الرسم البياني
                 await loadLessonsPerCourseChartData();
             } catch (error) {
@@ -1278,13 +1475,11 @@
                 showStatus('خطأ في تحميل بيانات لوحة التحكم', 'error');
             }
         }
-
         // دالة لتحميل بيانات الرسم البياني (عدد الدروس لكل كورس)
         async function loadLessonsPerCourseChartData() {
             try {
                 const chartCtx = document.getElementById('lessonsPerCourseChart');
                 if (!chartCtx) return;
-                
                 // أولاً نجيب الكورسات الخاصة بالمعلم
                 const { data: teacherCourses, error: coursesError } = await supabaseClient
                     .from('courses')
@@ -1293,7 +1488,6 @@
                 if (coursesError) throw coursesError;
                 const courseIds = (teacherCourses || []).map(c => c.id);
                 const courseNames = (teacherCourses || []).map(c => c.name);
-                
                 // بعدين نحسب عدد الدروس لكل كورس
                 const lessonsPerCourse = {};
                 if (courseIds.length > 0) {
@@ -1306,15 +1500,12 @@
                         lessonsPerCourse[lesson.course_id] = (lessonsPerCourse[lesson.course_id] || 0) + 1;
                     });
                 }
-                
                 // تحضير البيانات للرسم البياني
                 const lessonCounts = courseIds.map(id => lessonsPerCourse[id] || 0);
-                
                 // تدمير الرسم البياني السابق إذا كان موجودًا
                 if (lessonsPerCourseChart) {
                     lessonsPerCourseChart.destroy();
                 }
-                
                 // إنشاء الرسم البياني الجديد
                 lessonsPerCourseChart = new Chart(chartCtx, {
                     type: 'bar',
@@ -1349,7 +1540,6 @@
                 }
             }
         }
-
         // دالة لعرض تفاصيل الكورس في نافذة منبثقة
         async function showCourseDetails(courseId) {
             const course = courses.find(c => c.id === courseId);
@@ -1362,7 +1552,6 @@
                 return;
             }
             currentCourseId = courseId;
-            
             // ملء بيانات النافذة المنبثقة
             document.getElementById('courseDetailTitle').textContent = course.name;
             document.getElementById('detailCourseName').textContent = course.name;
@@ -1370,7 +1559,6 @@
             document.getElementById('detailCoursePrice').textContent = formatCurrency(course.price).replace('SAR', 'ج.م').replace('ج.م', '');
             document.getElementById('detailCourseStartDate').textContent = course.start_date ? formatDate(course.start_date) : '-';
             document.getElementById('detailCourseEndDate').textContent = course.end_date ? formatDate(course.end_date) : '-';
-            
             // عرض النافذة المنبثقة
             const modal = document.getElementById('courseDetailModal');
             if (modal) {
@@ -1379,7 +1567,6 @@
                 showStatus('خطأ في فتح نافذة التفاصيل', 'error');
                 return;
             }
-            
             // إعادة تعيين تبويبات النافذة المنبثقة إلى "نظرة عامة"
             document.querySelectorAll('#courseDetailModal .tab-button').forEach(btn => {
                 btn.classList.remove('active');
@@ -1389,11 +1576,9 @@
                 tab.classList.remove('active');
             });
             document.getElementById('courseOverviewTab').classList.add('active');
-            
             // تفريغ محتوى الوحدات والدروس
             document.getElementById('modulesList').innerHTML = '<p class="no-data">جاري التحميل...</p>';
         }
-
         // دالة لتحميل الوحدات والدروس الخاصة بكورس معين
         async function loadCourseModulesAndLessons(courseId) {
             const modulesListContainer = document.getElementById('modulesList');
@@ -1414,7 +1599,6 @@
                     throw modulesError;
                 }
                 currentCourseModules = modulesData || [];
-                
                 // 2. تحميل جميع الدروس لهذا الكورس
                 const { data: lessonsData, error: lessonsError } = await supabaseClient
                     .from('lessons')
@@ -1424,7 +1608,6 @@
                     throw lessonsError;
                 }
                 currentCourseLessons = lessonsData || [];
-                
                 // 3. عرض الوحدات والدروس
                 displayModulesAndLessons();
             } catch (error) {
@@ -1434,7 +1617,6 @@
                 showStatus(`خطأ في تحميل بيانات الوحدات والدروس: ${errorMessage}`, 'error');
             }
         }
-
         // دالة لعرض الوحدات والدروس في نافذة تفاصيل الكورس
         function displayModulesAndLessons() {
             const modulesListContainer = document.getElementById('modulesList');
@@ -1445,7 +1627,6 @@
                 modulesListContainer.innerHTML = '<p class="no-data">لا توجد وحدات في هذا الكورس.</p>';
                 return;
             }
-            
             // تجميع الدروس حسب module_id
             const lessonsByModule = {};
             currentCourseLessons.forEach(lesson => {
@@ -1454,7 +1635,6 @@
                 }
                 lessonsByModule[lesson.module_id].push(lesson);
             });
-            
             // إنشاء HTML للوحدات والدروس
             let modulesHtml = '';
             currentCourseModules.forEach(module => {
@@ -1484,13 +1664,11 @@
             });
             modulesListContainer.innerHTML = modulesHtml;
         }
-
         // دالة لتحميل الكورسات الخاصة بالمعلم
         async function loadCourses() {
             try {
                 const container = document.getElementById('coursesContainer');
                 container.innerHTML = `<div class="loading"><div class="loading-spinner"></div><p>جاري تحميل بيانات الكورسات...</p></div>`;
-                
                 // جلب الكورسات الخاصة بالمعلم فقط
                 const { data, error } = await supabaseClient
                     .from('courses')
@@ -1499,12 +1677,10 @@
                     .order('created_at', { ascending: false });
                 if (error) throw error;
                 courses = data;
-                
                 if (!courses || courses.length === 0) {
                     container.innerHTML = `<p class="no-data">لا توجد كورسات مسندة لك.</p>`;
                     return;
                 }
-                
                 // إنشاء قائمة بطاقات الكورسات
                 let coursesHtml = '<div class="card-list">';
                 data.forEach(course => {
@@ -1542,88 +1718,209 @@
                 document.getElementById('coursesContainer').innerHTML = `<p class="no-data error">خطأ في تحميل الكورسات: ${error.message}</p>`;
             }
         }
-
-async function loadTeacherStudents() {
-    try {
-        const container = document.getElementById('studentsContainer');
-        container.innerHTML = `
+        async function loadTeacherExams() {
+            console.log("🔍 [اختباراتي] بدء تحميل الاختبارات للمعلم:", currentUserId);
+            const container = document.getElementById('examsContainer');
+            if (!container) {
+                console.error("❌ عنصر examsContainer غير موجود");
+                return;
+            }
+            container.innerHTML = '<p>⏳ جاري تحميل بيانات الاختبارات...</p>';
+            try {
+                // 1. جلب الكورسات الخاصة بالمعلم
+                const { data: teacherCourses, error: coursesError } = await supabaseClient
+                    .from('courses')
+                    .select('id, name')
+                    .eq('teacher_id', currentUserId);
+                if (coursesError) throw coursesError;
+                if (!teacherCourses?.length) {
+                    container.innerHTML = '<p>⚠️ لا يوجد كورسات مسندة لك.</p>';
+                    return;
+                }
+                const courseIds = teacherCourses.map(c => c.id);
+                const courseMap = Object.fromEntries(teacherCourses.map(c => [c.id, c.name]));
+                // 2. جلب الوحدات الخاصة بهذه الكورسات
+                const { data: modulesData, error: modulesError } = await supabaseClient
+                    .from('modules')
+                    .select('id, title, course_id')
+                    .in('course_id', courseIds);
+                if (modulesError) throw modulesError;
+                if (!modulesData?.length) {
+                    container.innerHTML = '<p>⚠️ لا توجد وحدات مرتبطة بكورساتك.</p>';
+                    return;
+                }
+                const moduleIds = modulesData.map(m => m.id);
+                const moduleMap = Object.fromEntries(modulesData.map(m => [m.id, m.title]));
+                // 3. جلب جميع الطلاب المشتركين في هذه الكورسات
+                const { data: studentsData, error: studentsError } = await supabaseClient
+                    .from('subscriptions')
+                    .select('student_id, course_id, students:student_id(full_name)')
+                    .in('course_id', courseIds);
+                if (studentsError) throw studentsError;
+                if (!studentsData?.length) {
+                    container.innerHTML = '<p>⚠️ لا يوجد طلاب مشتركين في كورساتك.</p>';
+                    return;
+                }
+                // 4. جلب جميع الامتحانات المرتبطة بالوحدات
+                const { data: examsData, error: examsError } = await supabaseClient
+                    .from('exams')
+                    .select('*')
+                    .in('module_id', moduleIds);
+                if (examsError) throw examsError;
+                if (!examsData?.length) {
+                    container.innerHTML = '<p>⚠️ لا توجد اختبارات مرتبطة بوحدات كورساتك.</p>';
+                    return;
+                }
+                // 5. إنشاء حقل بحث
+                let html = `
+            <input type="text" id="studentSearch" placeholder="🔍 ابحث باسم الطالب" style="padding:8px; margin-bottom:15px; width:100%; max-width:300px;">
+        `;
+                // 6. عرض جدول الطلاب مع اختيار الامتحان وإدخال الدرجة وتعديل التاريخ
+                courseIds.forEach(courseId => {
+                    const courseName = courseMap[courseId] || '-';
+                    html += `<h3 style="margin-top:20px; color:#2c3e50;">📚 ${courseName}</h3>`;
+                    html += `<table class="teacher-table">
+                        <thead>
+                            <tr>
+                                <th>اسم الطالب</th>
+                                <th>اختر الاختبار</th>
+                                <th>تاريخ الامتحان</th>
+                                <th>الدرجة</th>
+                                <th>حفظ</th>
+                            </tr>
+                        </thead>
+                        <tbody>`;
+                    studentsData.filter(s => s.course_id === courseId).forEach(student => {
+                        html += `<tr>
+                            <td>${student.students?.full_name || '-'}</td>
+                            <td>
+                                <select id="exam-select-${student.student_id}" style="padding:5px;">
+                                    <option value="">-- اختر اختبار --</option>
+                                    ${examsData.filter(e => e.course_id === courseId).map(exam => `
+                                        <option value="${exam.id}">${exam.title} (/${exam.max_score})</option>
+                                    `).join('')}
+                                </select>
+                            </td>
+                            <td>
+                                <input type="date" id="exam-date-${student.student_id}" style="padding:5px;">
+                            </td>
+                            <td>
+                                <input type="number" id="score-${student.student_id}" min="0" style="width:70px; padding:5px;" />
+                            </td>
+                            <td>
+                                <button onclick="saveStudentScore('${student.student_id}')" style="padding:5px 10px; background:#27ae60; color:white; border:none; cursor:pointer;">💾 حفظ</button>
+                            </td>
+                        </tr>`;
+                    });
+                    html += `</tbody></table>`;
+                });
+                container.innerHTML = html;
+                // 7. إضافة خاصية البحث
+                document.getElementById('studentSearch').addEventListener('input', function () {
+                    const searchValue = this.value.toLowerCase();
+                    document.querySelectorAll('.teacher-table tbody tr').forEach(row => {
+                        const studentName = row.cells[0].innerText.toLowerCase();
+                        row.style.display = studentName.includes(searchValue) ? '' : 'none';
+                    });
+                });
+            } catch (error) {
+                console.error('💥 خطأ غير متوقع في loadTeacherExams:', error);
+                container.innerHTML = '<p>❌ حدث خطأ أثناء تحميل بيانات الاختبارات.</p>';
+            }
+        }
+        async function saveStudentScore(studentId) {
+            const examId = document.getElementById(`exam-select-${studentId}`).value;
+            const score = document.getElementById(`score-${studentId}`).value;
+            const examDate = document.getElementById(`exam-date-${studentId}`).value;
+            if (!examId) {
+                alert('⚠️ يرجى اختيار الاختبار.');
+                return;
+            }
+            if (score === '' || isNaN(score)) {
+                alert('⚠️ يرجى إدخال درجة صحيحة.');
+                return;
+            }
+            console.log(`💾 حفظ الدرجة ${score} للطالب ${studentId} في الاختبار ${examId} بتاريخ ${examDate}`);
+            const { error } = await supabaseClient
+                .from('exam_scores')
+                .upsert({
+                    exam_id: examId,
+                    student_id: studentId,
+                    score: score,
+                    exam_date: examDate || null
+                });
+            if (error) {
+                console.error('❌ خطأ أثناء حفظ الدرجة:', error);
+                alert('حدث خطأ أثناء حفظ الدرجة');
+            } else {
+                alert('✅ تم حفظ الدرجة بنجاح');
+            }
+        }
+        async function loadTeacherStudents() {
+            try {
+                const container = document.getElementById('studentsContainer');
+                container.innerHTML = `
             <div class="loading">
                 <div class="loading-spinner"></div>
                 <p>جاري تحميل بيانات الطلاب...</p>
             </div>
         `;
-
-        // 1. جلب الكورسات الخاصة بالمعلم
-        const { data: teacherCourses, error: coursesError } = await supabaseClient
-            .from('courses')
-            .select('id, name')
-            .eq('teacher_id', currentUserId);
-
-        if (coursesError) throw coursesError;
-
-        const courseIds = (teacherCourses || []).map(c => c.id);
-        const courseMap = {};
-        (teacherCourses || []).forEach(c => {
-            courseMap[c.id] = c.name;
-        });
-
-        if (courseIds.length === 0) {
-            container.innerHTML = `<p class="no-data">لا يوجد كورسات مسندة لك، وبالتالي لا يوجد طلاب.</p>`;
-            return;
-        }
-
-        // 2. جلب اشتراكات الطلاب
-        const { data: subscriptionsData, error: subscriptionsError } = await supabaseClient
-            .from('subscriptions')
-            .select('student_id, course_id, subscribed_at')
-            .in('course_id', courseIds);
-
-        if (subscriptionsError) throw subscriptionsError;
-
-        const studentSubscriptions = subscriptionsData || [];
-
-        // 3. جلب بيانات الطلاب
-        const studentIds = [...new Set(studentSubscriptions.map(sub => sub.student_id))];
-        let studentData = [];
-
-        if (studentIds.length > 0) {
-            const { data: studentsData, error: studentsError } = await supabaseClient
-                .from('students')
-                .select('id, full_name, phone, email');
-
-            if (studentsError) throw studentsError;
-            studentData = studentsData || [];
-        }
-
-        const studentMap = {};
-        studentData.forEach(s => {
-            studentMap[s.id] = s;
-        });
-
-        if (studentSubscriptions.length === 0) {
-            container.innerHTML = `<p class="no-data">لا يوجد طلاب مسجلين في كورساتك.</p>`;
-            return;
-        }
-
-        // 4. عرض الطلاب + إضافة صندوق البحث
-        let studentsHtml = `
+                // 1. جلب الكورسات الخاصة بالمعلم
+                const { data: teacherCourses, error: coursesError } = await supabaseClient
+                    .from('courses')
+                    .select('id, name')
+                    .eq('teacher_id', currentUserId);
+                if (coursesError) throw coursesError;
+                const courseIds = (teacherCourses || []).map(c => c.id);
+                const courseMap = {};
+                (teacherCourses || []).forEach(c => {
+                    courseMap[c.id] = c.name;
+                });
+                if (courseIds.length === 0) {
+                    container.innerHTML = `<p class="no-data">لا يوجد كورسات مسندة لك، وبالتالي لا يوجد طلاب.</p>`;
+                    return;
+                }
+                // 2. جلب اشتراكات الطلاب
+                const { data: subscriptionsData, error: subscriptionsError } = await supabaseClient
+                    .from('subscriptions')
+                    .select('student_id, course_id, subscribed_at')
+                    .in('course_id', courseIds);
+                if (subscriptionsError) throw subscriptionsError;
+                const studentSubscriptions = subscriptionsData || [];
+                // 3. جلب بيانات الطلاب
+                const studentIds = [...new Set(studentSubscriptions.map(sub => sub.student_id))];
+                let studentData = [];
+                if (studentIds.length > 0) {
+                    const { data: studentsData, error: studentsError } = await supabaseClient
+                        .from('students')
+                        .select('id, full_name, phone, email');
+                    if (studentsError) throw studentsError;
+                    studentData = studentsData || [];
+                }
+                const studentMap = {};
+                studentData.forEach(s => {
+                    studentMap[s.id] = s;
+                });
+                if (studentSubscriptions.length === 0) {
+                    container.innerHTML = `<p class="no-data">لا يوجد طلاب مسجلين في كورساتك.</p>`;
+                    return;
+                }
+                // 4. عرض الطلاب + إضافة صندوق البحث
+                let studentsHtml = `
             <input type="text" id="studentSearch" class="search-box" placeholder="🔍 ابحث عن طالب...">
         `;
-
-        courseIds.forEach(courseId => {
-            const courseName = courseMap[courseId] || 'غير معروف';
-            const courseStudents = studentSubscriptions.filter(sub => sub.course_id === courseId);
-
-            studentsHtml += `
+                courseIds.forEach(courseId => {
+                    const courseName = courseMap[courseId] || 'غير معروف';
+                    const courseStudents = studentSubscriptions.filter(sub => sub.course_id === courseId);
+                    studentsHtml += `
                 <div class="course-group" data-course="${courseId}">
                     <h3 class="course-title">${courseName}</h3>
                     <div class="card-list">
             `;
-
-            if (courseStudents.length > 0) {
-                courseStudents.forEach(sub => {
-                    const student = studentMap[sub.student_id];
-                    studentsHtml += `
+                    if (courseStudents.length > 0) {
+                        courseStudents.forEach(sub => {
+                            const student = studentMap[sub.student_id];
+                            studentsHtml += `
                         <div class="card student-card" 
                              data-name="${student ? student.full_name.toLowerCase() : ''}" 
                              data-phone="${student ? student.phone : ''}" 
@@ -1647,49 +1944,43 @@ async function loadTeacherStudents() {
                             </div>
                         </div>
                     `;
-                });
-            } else {
-                studentsHtml += `<p class="no-data">لا يوجد طلاب مسجلين.</p>`;
-            }
-
-            studentsHtml += `
+                        });
+                    } else {
+                        studentsHtml += `<p class="no-data">لا يوجد طلاب مسجلين.</p>`;
+                    }
+                    studentsHtml += `
                     </div>
                 </div>
             `;
-        });
-
-        container.innerHTML = studentsHtml;
-
-        // 🔍 إضافة البحث
-        document.getElementById('studentSearch').addEventListener('input', function () {
-            const searchValue = this.value.toLowerCase();
-            document.querySelectorAll('.student-card').forEach(card => {
-                const name = card.dataset.name || '';
-                const phone = card.dataset.phone || '';
-                const email = card.dataset.email || '';
-                if (name.includes(searchValue) || phone.includes(searchValue) || email.includes(searchValue)) {
-                    card.style.display = '';
-                } else {
-                    card.style.display = 'none';
-                }
-            });
-        });
-
-    } catch (error) {
-        console.error('Error loading teacher students:', error);
-        const errorMessage = error.message || 'خطأ غير معروف';
-        document.getElementById('studentsContainer').innerHTML = `
+                });
+                container.innerHTML = studentsHtml;
+                // 🔍 إضافة البحث
+                document.getElementById('studentSearch').addEventListener('input', function () {
+                    const searchValue = this.value.toLowerCase();
+                    document.querySelectorAll('.student-card').forEach(card => {
+                        const name = card.dataset.name || '';
+                        const phone = card.dataset.phone || '';
+                        const email = card.dataset.email || '';
+                        if (name.includes(searchValue) || phone.includes(searchValue) || email.includes(searchValue)) {
+                            card.style.display = '';
+                        } else {
+                            card.style.display = 'none';
+                        }
+                    });
+                });
+            } catch (error) {
+                console.error('Error loading teacher students:', error);
+                const errorMessage = error.message || 'خطأ غير معروف';
+                document.getElementById('studentsContainer').innerHTML = `
             <p class="no-data error">خطأ في تحميل بيانات الطلاب: ${errorMessage}</p>
         `;
-    }
-}
-
-// دالة محدثة لتحميل الكورسات والدروس في نافذة الحضور
-async function loadCoursesAndLessonsForAttendance() {
-    try {
-        // تحميل الكورسات
-        if (courses.length === 0) await loadCourses();
-
+            }
+        }
+        // دالة محدثة لتحميل الكورسات والدروس في نافذة الحضور
+ async function loadCoursesAndLessonsForAttendance() {
+            try {
+                // تحميل الكورسات
+                if (courses.length === 0) await loadCourses();
                 // ملء قائمة الكورسات في النافذة
                 const courseSelect = document.getElementById('attendanceCourseFilter');
                 courseSelect.innerHTML = '<option value="">اختر كورسًا</option>';
@@ -1699,12 +1990,13 @@ async function loadCoursesAndLessonsForAttendance() {
                     option.textContent = course.name;
                     courseSelect.appendChild(option);
                 });
-                
                 // إعادة تعيين قائمة الدروس
                 document.getElementById('attendanceLesson').innerHTML = '<option value="">اختر كورسًا أولاً</option>';
                 document.getElementById('studentAttendanceList').innerHTML = '<p class="no-data" style="text-align: center; margin: 20px 0;">اختر درسًا أولاً</p>';
-                document.getElementById('attendanceDate').value = '';
-                document.getElementById('attendanceDate').disabled = true;
+                // تعيين تاريخ اليوم الحالي بشكل افتراضي
+                const today = new Date().toISOString().split('T')[0];
+                document.getElementById('attendanceDate').value = today;
+                document.getElementById('attendanceDate').disabled = false; // تمكين الحقل ليتمكن المعلم من تعديله إذا أراد
                 
                 // تحميل الدروس لكل كورس
                 lessonsByCourse = {};
@@ -1721,6 +2013,31 @@ async function loadCoursesAndLessonsForAttendance() {
                         lessonsByCourse[course.id] = [];
                     }
                 }
+
+                // تحديد الكورس والدرس تلقائيًا بناءً على تاريخ اليوم
+                const todayDate = new Date().toISOString().split('T')[0];
+                let foundLesson = false;
+                for (const courseId in lessonsByCourse) {
+                    const lessons = lessonsByCourse[courseId];
+                    const todayLesson = lessons.find(lesson => lesson.date === todayDate);
+                    if (todayLesson) {
+                        // تحديد الكورس
+                        courseSelect.value = courseId;
+                        courseSelect.dispatchEvent(new Event('change'));
+                        // انتظار قليلاً لتحميل الدروس
+                        await new Promise(resolve => setTimeout(resolve, 100));
+                        // تحديد الدرس
+                        const lessonSelect = document.getElementById('attendanceLesson');
+                        lessonSelect.value = todayLesson.id;
+                        lessonSelect.dispatchEvent(new Event('change'));
+                        foundLesson = true;
+                        break; // توقف عند أول كورس يحتوي على درس اليوم
+                    }
+                }
+                if (!foundLesson) {
+                    console.log("لم يتم العثور على درس لليوم الحالي.");
+                }
+
             } catch (error) {
                 console.error('Error loading courses and lessons for attendance:', error);
                 showStatus('خطأ في تحميل الكورسات والدروس', 'error');
@@ -1746,8 +2063,10 @@ async function loadCoursesAndLessonsForAttendance() {
             }
             // إعادة تعيين باقي الحقول
             document.getElementById('studentAttendanceList').innerHTML = '<p class="no-data" style="text-align: center; margin: 20px 0;">اختر درسًا أولاً</p>';
-            document.getElementById('attendanceDate').value = '';
-            document.getElementById('attendanceDate').disabled = true;
+            // تعيين تاريخ اليوم الحالي بشكل افتراضي
+            const today = new Date().toISOString().split('T')[0];
+            document.getElementById('attendanceDate').value = today;
+            document.getElementById('attendanceDate').disabled = false; // تمكين الحقل ليتمكن المعلم من تعديله إذا أراد
         });
 
         // عند تغيير اختيار الدرس
@@ -1756,16 +2075,11 @@ async function loadCoursesAndLessonsForAttendance() {
             const dateInput = document.getElementById('attendanceDate');
             const listContainer = document.getElementById('studentAttendanceList');
             if (lessonId) {
-                // تحديد التاريخ من الدرس
-                const selectedLesson = Object.values(lessonsByCourse).flat().find(l => l.id === lessonId);
-                if (selectedLesson && selectedLesson.date) {
-                    dateInput.value = selectedLesson.date;
-                    dateInput.disabled = true;
-                } else {
-                    const today = new Date().toISOString().split('T')[0];
-                    dateInput.value = today;
-                    dateInput.disabled = false;
-                }
+                // تعيين تاريخ اليوم الحالي بشكل افتراضي بغض النظر عن تاريخ الدرس
+                const today = new Date().toISOString().split('T')[0];
+                dateInput.value = today;
+                dateInput.disabled = false; // تمكين الحقل ليتمكن المعلم من تعديله إذا أراد
+                
                 // تحميل طلاب الكورس
                 const courseId = document.getElementById('attendanceCourseFilter').value;
                 if (courseId) {
@@ -1791,7 +2105,6 @@ async function loadCoursesAndLessonsForAttendance() {
                     showStatus('من فضلك اختر الدرس وتأكد من التاريخ', 'error');
                     return;
                 }
-                
                 // جمع بيانات الطلاب المختارين
                 const attendanceRecords = [];
                 document.querySelectorAll('.student-checkbox:checked').forEach(checkbox => {
@@ -1811,7 +2124,6 @@ async function loadCoursesAndLessonsForAttendance() {
                     showStatus('من فضلك اختر على الأقل طالب واحد', 'error');
                     return;
                 }
-                
                 // إرسال البيانات لقاعدة البيانات
                 const { data, error } = await supabaseClient
                     .from('attendances')
@@ -1827,122 +2139,104 @@ async function loadCoursesAndLessonsForAttendance() {
                 showStatus(`خطأ في تسجيل الحضور: ${error.message}`, 'error');
             }
         }
-
-// ربط حدث الإرسال مرة واحدة فقط عند تحميل الصفحة
-document.getElementById('attendanceForm').addEventListener('submit', async function (e) {
-    e.preventDefault();
-    await addAttendance();
-});
-
-// دالة فتح نافذة تسجيل الحضور
-async function showAddAttendanceModal() {
-    try {
-        const modal = document.getElementById('attendanceModal');
-        if (!modal) {
-            console.error('نافذة attendanceModal غير موجودة');
-            showStatus('خطأ في فتح نافذة الحضور', 'error');
-            return;
-        }
-
-        // تحميل الكورسات والدروس
-        await loadCoursesAndLessonsForAttendance();
-
-        // تجهيز النموذج
-        document.getElementById('attendanceModalTitle').textContent = 'تسجيل حضور الدرس';
-        document.getElementById('attendanceForm').reset();
-        document.getElementById('studentAttendanceList').innerHTML =
-            '<p class="no-data" style="text-align: center; margin: 20px 0;">اختر درسًا أولاً</p>';
-
-        // عرض النافذة
-        modal.style.display = 'flex';
-
-    } catch (error) {
-        console.error('Error showing add attendance modal:', error);
-        showStatus('خطأ في فتح نافذة الحضور', 'error');
-    }
-}
-// دالة محدثة لتحميل وعرض الطلاب حسب الكورسات في تبويب "حضور الطلاب"
-async function loadTeacherAttendances() {
-    try {
-        const container = document.getElementById('attendancesContainer');
-        if (!container) {
-            console.error('Container for attendances not found.');
-            return;
-        }
-        container.innerHTML = `<div class="loading"><div class="loading-spinner"></div><p>جاري تحميل بيانات الحضور...</p></div>`;
-
-        // 1. جلب الكورسات الخاصة بالمعلم
-        const { data: teacherCourses, error: coursesError } = await supabaseClient
-            .from('courses')
-            .select('id, name')
-            .eq('teacher_id', currentUserId)
-            .order('name', { ascending: true }); // ترتيب الكورسات أبجديًا
-        if (coursesError) throw coursesError;
-
-        const courseIds = (teacherCourses || []).map(c => c.id);
-        const courseMap = {};
-        (teacherCourses || []).forEach(c => courseMap[c.id] = c.name);
-
-        // تحقق من إن في كورسات قبل ما تكمل
-        if (courseIds.length === 0) {
-            container.innerHTML = `<p class="no-data">لا يوجد كورسات مسندة لك.</p>`;
-            return;
-        }
-
-        // 2. جلب اشتراكات الطلاب في كورسات المعلم
-        const { data: subscriptionsData, error: subscriptionsError } = await supabaseClient
-            .from('subscriptions')
-            .select('student_id, course_id')
-            .in('course_id', courseIds);
-        if (subscriptionsError) throw subscriptionsError;
-
-        // 3. جلب بيانات الطلاب
-        const studentIds = [...new Set(subscriptionsData.map(sub => sub.student_id))]; // IDs فريدة
-        let studentData = [];
-        if (studentIds.length > 0) {
-            const { data: studentsData, error: studentsError } = await supabaseClient
-                .from('students')
-                .select('id, full_name');
-            if (studentsError) throw studentsError;
-            studentData = studentsData || [];
-        }
-
-        const studentMap = {};
-        studentData.forEach(s => {
-            studentMap[s.id] = s;
+        // ربط حدث الإرسال مرة واحدة فقط عند تحميل الصفحة
+        document.getElementById('attendanceForm').addEventListener('submit', async function (e) {
+            e.preventDefault();
+            await addAttendance();
         });
-
-        // 4. تجميع الطلاب حسب الكورس
-        const studentsByCourse = {}; // {courseId: [studentSubscription, ...]}
-        subscriptionsData.forEach(sub => {
-            const courseId = sub.course_id;
-            if (!studentsByCourse[courseId]) {
-                studentsByCourse[courseId] = [];
+        // دالة فتح نافذة تسجيل الحضور
+        async function showAddAttendanceModal() {
+            try {
+                const modal = document.getElementById('attendanceModal');
+                if (!modal) {
+                    console.error('نافذة attendanceModal غير موجودة');
+                    showStatus('خطأ في فتح نافذة الحضور', 'error');
+                    return;
+                }
+                // تحميل الكورسات والدروس
+                await loadCoursesAndLessonsForAttendance();
+                // تجهيز النموذج
+                document.getElementById('attendanceModalTitle').textContent = 'تسجيل حضور الدرس';
+                document.getElementById('attendanceForm').reset();
+                document.getElementById('studentAttendanceList').innerHTML =
+                    '<p class="no-data" style="text-align: center; margin: 20px 0;">اختر درسًا أولاً</p>';
+                // عرض النافذة
+                modal.style.display = 'flex';
+            } catch (error) {
+                console.error('Error showing add attendance modal:', error);
+                showStatus('خطأ في فتح نافذة الحضور', 'error');
             }
-            studentsByCourse[courseId].push(sub); // ن pushes الاشتراك
-        });
-
-        // 5. عرض الكورسات والطلاب
-        let html = '';
-
-        // التكرار على كل كورس يوجد فيه طلاب
-        for (const courseId in studentsByCourse) {
-            const courseName = courseMap[courseId] || 'غير معروف';
-            const courseStudentsSubs = studentsByCourse[courseId]; // قائمة الاشتراكات لهذا الكورس
-
-            html += `
+        }
+        // دالة محدثة لتحميل وعرض الطلاب حسب الكورسات في تبويب "حضور الطلاب"
+        async function loadTeacherAttendances() {
+            try {
+                const container = document.getElementById('attendancesContainer');
+                if (!container) {
+                    console.error('Container for attendances not found.');
+                    return;
+                }
+                container.innerHTML = `<div class="loading"><div class="loading-spinner"></div><p>جاري تحميل بيانات الحضور...</p></div>`;
+                // 1. جلب الكورسات الخاصة بالمعلم
+                const { data: teacherCourses, error: coursesError } = await supabaseClient
+                    .from('courses')
+                    .select('id, name')
+                    .eq('teacher_id', currentUserId)
+                    .order('name', { ascending: true }); // ترتيب الكورسات أبجديًا
+                if (coursesError) throw coursesError;
+                const courseIds = (teacherCourses || []).map(c => c.id);
+                const courseMap = {};
+                (teacherCourses || []).forEach(c => courseMap[c.id] = c.name);
+                // تحقق من إن في كورسات قبل ما تكمل
+                if (courseIds.length === 0) {
+                    container.innerHTML = `<p class="no-data">لا يوجد كورسات مسندة لك.</p>`;
+                    return;
+                }
+                // 2. جلب اشتراكات الطلاب في كورسات المعلم
+                const { data: subscriptionsData, error: subscriptionsError } = await supabaseClient
+                    .from('subscriptions')
+                    .select('student_id, course_id')
+                    .in('course_id', courseIds);
+                if (subscriptionsError) throw subscriptionsError;
+                // 3. جلب بيانات الطلاب
+                const studentIds = [...new Set(subscriptionsData.map(sub => sub.student_id))]; // IDs فريدة
+                let studentData = [];
+                if (studentIds.length > 0) {
+                    const { data: studentsData, error: studentsError } = await supabaseClient
+                        .from('students')
+                        .select('id, full_name');
+                    if (studentsError) throw studentsError;
+                    studentData = studentsData || [];
+                }
+                const studentMap = {};
+                studentData.forEach(s => {
+                    studentMap[s.id] = s;
+                });
+                // 4. تجميع الطلاب حسب الكورس
+                const studentsByCourse = {}; // {courseId: [studentSubscription, ...]}
+                subscriptionsData.forEach(sub => {
+                    const courseId = sub.course_id;
+                    if (!studentsByCourse[courseId]) {
+                        studentsByCourse[courseId] = [];
+                    }
+                    studentsByCourse[courseId].push(sub); // ن pushes الاشتراك
+                });
+                // 5. عرض الكورسات والطلاب
+                let html = '';
+                // التكرار على كل كورس يوجد فيه طلاب
+                for (const courseId in studentsByCourse) {
+                    const courseName = courseMap[courseId] || 'غير معروف';
+                    const courseStudentsSubs = studentsByCourse[courseId]; // قائمة الاشتراكات لهذا الكورس
+                    html += `
                 <div class="course-box"> <!-- بداية صندوق الكورس -->
                     <div class="course-title">${courseName}</div> <!-- عنوان الكورس -->
                     <div class="card-list"> <!-- قائمة بطاقات الطلاب لهذا الكورس -->
             `;
-
-            if (courseStudentsSubs.length > 0) {
-                courseStudentsSubs.forEach(sub => {
-                    const student = studentMap[sub.student_id];
-                    const studentName = student ? student.full_name : 'غير معروف';
-                    const studentId = student ? student.id : null;
-
-                    html += `
+                    if (courseStudentsSubs.length > 0) {
+                        courseStudentsSubs.forEach(sub => {
+                            const student = studentMap[sub.student_id];
+                            const studentName = student ? student.full_name : 'غير معروف';
+                            const studentId = student ? student.id : null;
+                            html += `
                         <div class="card student-card">
                             <div class="card-header">
                                 <div class="card-title">${studentName}</div>
@@ -1954,48 +2248,41 @@ async function loadTeacherAttendances() {
                             </div>
                         </div>
                     `;
-                });
-            } else {
-                html += `<p class="no-data">لا يوجد طلاب مسجلين.</p>`;
-            }
-
-            html += `
+                        });
+                    } else {
+                        html += `<p class="no-data">لا يوجد طلاب مسجلين.</p>`;
+                    }
+                    html += `
                     </div> <!-- نهاية قائمة بطاقات الطلاب لهذا الكورس -->
                 </div> <!-- نهاية صندوق الكورس -->
             `;
+                }
+                // إذا لم يكن هناك طلاب في أي كورس
+                if (html === '') {
+                    html = `<p class="no-data">لا يوجد طلاب مسجلين في كورساتك.</p>`;
+                }
+                container.innerHTML = html;
+            } catch (error) {
+                console.error('Error loading teacher attendances (by course):', error);
+                const errorMessage = error.message || 'خطأ غير معروف';
+                const container = document.getElementById('attendancesContainer');
+                if (container) {
+                    container.innerHTML = `<p class="no-data error">خطأ في تحميل بيانات الحضور: ${errorMessage}</p>`;
+                }
+                showStatus(`خطأ في تحميل بيانات الحضور: ${errorMessage}`, 'error');
+            }
         }
-
-        // إذا لم يكن هناك طلاب في أي كورس
-        if (html === '') {
-             html = `<p class="no-data">لا يوجد طلاب مسجلين في كورساتك.</p>`;
-        }
-
-        container.innerHTML = html;
-
-    } catch (error) {
-        console.error('Error loading teacher attendances (by course):', error);
-        const errorMessage = error.message || 'خطأ غير معروف';
-        const container = document.getElementById('attendancesContainer');
-        if (container) {
-            container.innerHTML = `<p class="no-data error">خطأ في تحميل بيانات الحضور: ${errorMessage}</p>`;
-        }
-        showStatus(`خطأ في تحميل بيانات الحضور: ${errorMessage}`, 'error');
-    }
-}
-
-// دالة لعرض سجل حضور طالب محدد في كورس محدد داخل نافذة منبثقة
-async function showStudentAttendanceRecords(studentId, courseId) {
-    if (!studentId || !courseId) {
-        showStatus('بيانات الطالب أو الكورس غير متوفرة.', 'error');
-        return;
-    }
-
-    const modalId = 'studentAttendanceRecordsModal';
-    let modal = document.getElementById(modalId);
-
-    // إنشاء النافذة المنبثقة إذا لم تكن موجودة
-    if (!modal) {
-        const modalHTML = `
+        // دالة لعرض سجل حضور طالب محدد في كورس محدد داخل نافذة منبثقة
+        async function showStudentAttendanceRecords(studentId, courseId) {
+            if (!studentId || !courseId) {
+                showStatus('بيانات الطالب أو الكورس غير متوفرة.', 'error');
+                return;
+            }
+            const modalId = 'studentAttendanceRecordsModal';
+            let modal = document.getElementById(modalId);
+            // إنشاء النافذة المنبثقة إذا لم تكن موجودة
+            if (!modal) {
+                const modalHTML = `
             <div id="${modalId}" class="modal">
                 <div class="modal-content">
                     <div class="modal-header">
@@ -2013,63 +2300,54 @@ async function showStudentAttendanceRecords(studentId, courseId) {
                 </div>
             </div>
         `;
-        document.body.insertAdjacentHTML('beforeend', modalHTML);
-        modal = document.getElementById(modalId); // تحديث المتغير بعد الإنشاء
-    }
-
-    // تجهيز النافذة المنبثقة
-    const modalTitle = document.getElementById('studentAttendanceModalTitle');
-    const modalContent = document.getElementById('studentAttendanceModalContent');
-    modalTitle.textContent = 'جاري التحميل...';
-    modalContent.innerHTML = '<div class="loading"><div class="loading-spinner"></div><p>جاري تحميل سجل الحضور...</p></div>';
-
-    // عرض النافذة
-    modal.style.display = 'flex';
-
-    try {
-        // 1. جلب اسم الطالب
-        const { data: studentData, error: studentError } = await supabaseClient
-            .from('students')
-            .select('full_name')
-            .eq('id', studentId)
-            .single();
-        if (studentError) throw studentError;
-        const studentName = studentData?.full_name || 'غير معروف';
-
-        // 2. جلب اسم الكورس
-        const { data: courseData, error: courseError } = await supabaseClient
-            .from('courses')
-            .select('name')
-            .eq('id', courseId)
-            .single();
-        if (courseError) throw courseError;
-        const courseName = courseData?.name || 'غير معروف';
-
-        // 3. تحديث عنوان النافذة
-        modalTitle.textContent = `سجل حضور: ${studentName} - ${courseName}`;
-
-        // 4. جلب سجلات الحضور للطالب في هذا الكورس
-        const { data: attendanceRecords, error: attendanceError } = await supabaseClient
-            .from('attendances')
-            .select(`
+                document.body.insertAdjacentHTML('beforeend', modalHTML);
+                modal = document.getElementById(modalId); // تحديث المتغير بعد الإنشاء
+            }
+            // تجهيز النافذة المنبثقة
+            const modalTitle = document.getElementById('studentAttendanceModalTitle');
+            const modalContent = document.getElementById('studentAttendanceModalContent');
+            modalTitle.textContent = 'جاري التحميل...';
+            modalContent.innerHTML = '<div class="loading"><div class="loading-spinner"></div><p>جاري تحميل سجل الحضور...</p></div>';
+            // عرض النافذة
+            modal.style.display = 'flex';
+            try {
+                // 1. جلب اسم الطالب
+                const { data: studentData, error: studentError } = await supabaseClient
+                    .from('students')
+                    .select('full_name')
+                    .eq('id', studentId)
+                    .single();
+                if (studentError) throw studentError;
+                const studentName = studentData?.full_name || 'غير معروف';
+                // 2. جلب اسم الكورس
+                const { data: courseData, error: courseError } = await supabaseClient
+                    .from('courses')
+                    .select('name')
+                    .eq('id', courseId)
+                    .single();
+                if (courseError) throw courseError;
+                const courseName = courseData?.name || 'غير معروف';
+                // 3. تحديث عنوان النافذة
+                modalTitle.textContent = `سجل حضور: ${studentName} - ${courseName}`;
+                // 4. جلب سجلات الحضور للطالب في هذا الكورس
+                const { data: attendanceRecords, error: attendanceError } = await supabaseClient
+                    .from('attendances')
+                    .select(`
                 date,
                 status,
                 notes,
                 lessons (title)
             `)
-            .eq('student_id', studentId)
-            .eq('course_id', courseId)
-            .order('date', { ascending: false }); // الأحدث أولاً
-
-        if (attendanceError) throw attendanceError;
-
-        // 5. عرض السجلات
-        if (!attendanceRecords || attendanceRecords.length === 0) {
-            modalContent.innerHTML = `<p class="no-data">لا توجد سجلات حضور لهذا الطالب في هذا الكورس.</p>`;
-            return;
-        }
-
-        let recordsHtml = `
+                    .eq('student_id', studentId)
+                    .eq('course_id', courseId)
+                    .order('date', { ascending: false }); // الأحدث أولاً
+                if (attendanceError) throw attendanceError;
+                // 5. عرض السجلات
+                if (!attendanceRecords || attendanceRecords.length === 0) {
+                    modalContent.innerHTML = `<p class="no-data">لا توجد سجلات حضور لهذا الطالب في هذا الكورس.</p>`;
+                    return;
+                }
+                let recordsHtml = `
             <table style="width:100%; border-collapse: collapse; text-align: right;">
                 <thead>
                     <tr style="border-bottom: 1px solid #eee; background-color: #f8f9fa;">
@@ -2081,15 +2359,13 @@ async function showStudentAttendanceRecords(studentId, courseId) {
                 </thead>
                 <tbody>
         `;
-
-        attendanceRecords.forEach(record => {
-            const lessonTitle = record.lessons?.title || 'درس غير محدد';
-            const statusText = record.status === 'present' ? 'حاضر' :
-                               record.status === 'absent' ? 'غائب' :
-                               record.status === 'late' ? 'متأخر' : record.status || '-';
-            const notes = record.notes || '-';
-
-            recordsHtml += `
+                attendanceRecords.forEach(record => {
+                    const lessonTitle = record.lessons?.title || 'درس غير محدد';
+                    const statusText = record.status === 'present' ? 'حاضر' :
+                        record.status === 'absent' ? 'غائب' :
+                            record.status === 'late' ? 'متأخر' : record.status || '-';
+                    const notes = record.notes || '-';
+                    recordsHtml += `
                 <tr style="border-bottom: 1px solid #f5f5f5;">
                     <td style="padding: 8px;">${lessonTitle}</td>
                     <td style="padding: 8px;">${record.date ? formatDate(record.date) : '-'}</td>
@@ -2097,78 +2373,103 @@ async function showStudentAttendanceRecords(studentId, courseId) {
                     <td style="padding: 8px;">${notes}</td>
                 </tr>
             `;
-        });
-
-        recordsHtml += `
+                });
+                recordsHtml += `
                 </tbody>
             </table>
         `;
-
-        modalContent.innerHTML = recordsHtml;
-
-    } catch (error) {
-        console.error('Error loading student attendance records:', error);
-        const errorMessage = error.message || 'خطأ غير معروف';
-        const modalContent = document.getElementById('studentAttendanceModalContent');
-        if (modalContent) {
-            modalContent.innerHTML = `<p class="no-data error">خطأ في تحميل سجل الحضور: ${errorMessage}</p>`;
+                modalContent.innerHTML = recordsHtml;
+            } catch (error) {
+                console.error('Error loading student attendance records:', error);
+                const errorMessage = error.message || 'خطأ غير معروف';
+                const modalContent = document.getElementById('studentAttendanceModalContent');
+                if (modalContent) {
+                    modalContent.innerHTML = `<p class="no-data error">خطأ في تحميل سجل الحضور: ${errorMessage}</p>`;
+                }
+                showStatus(`خطأ في تحميل سجل الحضور: ${errorMessage}`, 'error');
+            }
         }
-        showStatus(`خطأ في تحميل سجل الحضور: ${errorMessage}`, 'error');
-    }
-}
+        // دالة لتحديث عرض قائمة الطلاب في نافذة الحضور
+        function updateStudentListDisplay(students) {
+            const listContainer = document.getElementById('studentAttendanceList');
+            const searchTerm = document.getElementById('studentSearchInModal').value.toLowerCase();
 
+            let html = '';
 
-        // دالة لجلب طلاب كورس معين وعرضهم في النافذة
+            students.forEach(student => {
+                // تطبيق الفلترة
+                if (searchTerm && !student.full_name.toLowerCase().includes(searchTerm)) {
+                    return; // تخطي هذا الطالب إذا لم يتطابق مع البحث
+                }
+
+                html += `
+        <div class="student-item">
+            <div class="student-header">
+                <label class="student-name">
+                    <input type="checkbox" class="student-checkbox" data-student-id="${student.id}" checked>
+                    ${student.full_name}
+                </label>
+            </div>
+            <select class="student-status-select" data-student-id="${student.id}">
+                <option value="present" selected>حاضر</option>
+                <option value="absent">غائب</option>
+                <option value="late">متأخر</option>
+            </select>
+        </div>
+        `;
+            });
+
+            if (html === '') {
+                html = '<p class="no-data" style="text-align: center; margin: 20px 0; color: #666;">لا توجد نتائج للبحث.</p>';
+            }
+
+            listContainer.innerHTML = html;
+
+            // إعادة ربط الأحداث
+            document.querySelectorAll('.student-checkbox').forEach(checkbox => {
+                checkbox.addEventListener('change', updateSelectAllCheckbox);
+            });
+        }
+
+        // دالة لجلب طلاب كورس معين وعرضهم في النافذة (نسخة محدثة)
         async function loadStudentsForCourse(courseId) {
             try {
                 const listContainer = document.getElementById('studentAttendanceList');
                 listContainer.innerHTML = '<p class="no-data" style="text-align: center; margin: 20px 0;">جاري تحميل الطلاب...</p>';
+
                 const { data: subscriptions, error: subsError } = await supabaseClient
                     .from('subscriptions')
                     .select('student_id')
                     .eq('course_id', courseId);
+
                 if (subsError) throw subsError;
+
                 const studentIds = subscriptions.map(sub => sub.student_id);
                 if (studentIds.length === 0) {
                     listContainer.innerHTML = '<p class="no-data" style="text-align: center; margin: 20px 0; color: #666;">لا يوجد طلاب مسجلين.</p>';
                     return;
                 }
+
                 const { data: students, error: studentsError } = await supabaseClient
                     .from('students')
                     .select('id, full_name')
                     .in('id', studentIds)
                     .order('full_name', { ascending: true });
+
                 if (studentsError) throw studentsError;
                 if (!students || students.length === 0) {
                     listContainer.innerHTML = '<p class="no-data" style="text-align: center; margin: 20px 0; color: #666;">لا توجد بيانات طلاب.</p>';
                     return;
                 }
-                
-                // إنشاء قائمة بطاقات الطلاب مع خيارات الحضور
-                let html = '<div class="card-list">';
-                students.forEach(student => {
-                    html += `
-                    <div class="card">
-                        <div class="card-content">
-                            <div class="card-field">
-                                <span class="field-label">
-                                    <input type="checkbox" class="student-checkbox" data-student-id="${student.id}" checked>
-                                    ${student.full_name}
-                                </span>
-                                <span class="field-value">
-                                    <select class="student-status" data-student-id="${student.id}">
-                                        <option value="present" selected>حاضر</option>
-                                        <option value="absent">غائب</option>
-                                        <option value="late">متأخر</option>
-                                    </select>
-                                </span>
-                            </div>
-                        </div>
-                    </div>
-                    `;
+
+                // عرض الطلاب
+                updateStudentListDisplay(students);
+
+                // ربط البحث
+                document.getElementById('studentSearchInModal').addEventListener('input', function () {
+                    updateStudentListDisplay(students);
                 });
-                html += '</div>';
-                listContainer.innerHTML = html;
+
                 updateSelectAllCheckbox();
             } catch (error) {
                 console.error('Error loading students for course:', error);
@@ -2176,6 +2477,30 @@ async function showStudentAttendanceRecords(studentId, courseId) {
                 listContainer.innerHTML = `<p class="no-data error" style="text-align: center; margin: 20px 0; color: var(--danger);">خطأ في تحميل طلاب الكورس: ${error.message}</p>`;
                 showStatus(`خطأ في تحميل طلاب الكورس: ${error.message}`, 'error');
             }
+        }
+
+        // تعديل دالة setAllAttendance لتتناسب مع التصميم الجديد
+        function setAllAttendance(status) {
+            document.querySelectorAll('.student-status-select').forEach(select => {
+                select.value = status;
+            });
+            document.querySelectorAll('.student-checkbox').forEach(checkbox => {
+                checkbox.checked = true;
+            });
+            updateSelectAllCheckbox();
+            showStatus(`تم تحديد الحضور "${getStatusText(status)}" للجميع.`, 'success');
+        }
+
+        // تعديل دالة clearAllAttendance
+        function clearAllAttendance() {
+            document.querySelectorAll('.student-checkbox').forEach(checkbox => {
+                checkbox.checked = false;
+            });
+            document.querySelectorAll('.student-status-select').forEach(select => {
+                select.selectedIndex = 0;
+            });
+            updateSelectAllCheckbox();
+            showStatus('تم مسح جميع الاختيارات.', 'success');
         }
 
         // دالة لتحديث حالة زر "تحديد الجميع"
@@ -2188,7 +2513,6 @@ async function showStudentAttendanceRecords(studentId, courseId) {
                 selectAllCheckbox.indeterminate = !allChecked && Array.from(studentCheckboxes).some(cb => cb.checked);
             }
         }
-
         // دالة لتحديد/إلغاء تحديد جميع الطلاب
         function toggleAllStudents(isChecked) {
             document.querySelectorAll('.student-checkbox').forEach(checkbox => {
@@ -2196,14 +2520,12 @@ async function showStudentAttendanceRecords(studentId, courseId) {
             });
             updateSelectAllCheckbox();
         }
-
         // عند تغيير حالة أي خانة اختيار طالب
         document.getElementById('studentAttendanceList').addEventListener('change', function (e) {
             if (e.target && e.target.classList.contains('student-checkbox')) {
                 updateSelectAllCheckbox();
             }
         });
-
         // دوال لتحديد الحضور الجماعي
         function setAllAttendance(status) {
             document.querySelectorAll('.student-status').forEach(select => {
@@ -2215,7 +2537,6 @@ async function showStudentAttendanceRecords(studentId, courseId) {
             updateSelectAllCheckbox();
             showStatus(`تم تحديد الحضور "${getStatusText(status)}" للجميع.`, 'success');
         }
-
         function clearAllAttendance() {
             document.querySelectorAll('.student-checkbox').forEach(checkbox => {
                 checkbox.checked = false;
@@ -2226,7 +2547,6 @@ async function showStudentAttendanceRecords(studentId, courseId) {
             updateSelectAllCheckbox();
             showStatus('تم مسح جميع الاختيارات.', 'success');
         }
-
         // دالة مساعدة لتحويل الحالة إلى نص عربي
         function getStatusText(status) {
             switch (status) {
@@ -2236,7 +2556,6 @@ async function showStudentAttendanceRecords(studentId, courseId) {
                 default: return status;
             }
         }
-
         // دوال الحضور الشخصي للمعلم
         async function checkTodayStatus() {
             const today = new Date().toISOString().split('T')[0];
@@ -2246,7 +2565,6 @@ async function showStudentAttendanceRecords(studentId, courseId) {
                 document.getElementById('checkOutBtn').disabled = !!data.check_out_time;
             }
         }
-
         async function recordCheckIn() {
             const today = new Date().toISOString().split('T')[0];
             const { data: exists, error: checkError } = await supabaseClient
@@ -2255,21 +2573,17 @@ async function showStudentAttendanceRecords(studentId, courseId) {
                 .eq('teacher_id', currentUserId)
                 .eq('date', today)
                 .single();
-
             if (checkError && checkError.code !== 'PGRST116') {
                 console.error("Error checking attendance:", checkError);
                 showStatus(`خطأ في التحقق من الحضور: ${checkError.message}`, 'error');
                 return;
             }
-
             if (exists) {
                 showStatus(`سجلت حضورك بالفعل في ${exists.check_in_time}`, 'error');
                 return;
             }
-
             // استخدام الوقت بالتنسيق الصحيح (أرقام لاتينية)
             const time = new Date().toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: false });
-
             const { error: insertError } = await supabaseClient
                 .from('teacher_attendance')
                 .insert([
@@ -2279,7 +2593,6 @@ async function showStudentAttendanceRecords(studentId, courseId) {
                         check_in_time: time
                     }
                 ]);
-
             if (insertError) {
                 console.error("Error recording check-in:", insertError);
                 showStatus(`خطأ في تسجيل الحضور: ${insertError.message}`, 'error');
@@ -2290,7 +2603,6 @@ async function showStudentAttendanceRecords(studentId, courseId) {
                 loadMyAttendance();
             }
         }
-
         async function recordCheckOut() {
             const today = new Date().toISOString().split('T')[0];
             const { data: row, error: fetchError } = await supabaseClient
@@ -2299,31 +2611,25 @@ async function showStudentAttendanceRecords(studentId, courseId) {
                 .eq('teacher_id', currentUserId)
                 .eq('date', today)
                 .single();
-
             if (fetchError && fetchError.code !== 'PGRST116') {
                 console.error("Error fetching attendance record:", fetchError);
                 showStatus(`خطأ في جلب سجل الحضور: ${fetchError.message}`, 'error');
                 return;
             }
-
             if (!row) {
                 showStatus('سجل حضورك أولاً', 'error');
                 return;
             }
-
             if (row.check_out_time) {
                 showStatus(`سجلت انصرافك بالفعل ${row.check_out_time}`, 'error');
                 return;
             }
-
             // استخدام الوقت بالتنسيق الصحيح (أرقام لاتينية)
             const time = new Date().toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: false });
-
             const { error: updateError } = await supabaseClient
                 .from('teacher_attendance')
                 .update({ check_out_time: time })
                 .eq('id', row.id);
-
             if (updateError) {
                 console.error("Error recording check-out:", updateError);
                 showStatus(`خطأ في تسجيل الانصراف: ${updateError.message}`, 'error');
@@ -2334,21 +2640,17 @@ async function showStudentAttendanceRecords(studentId, courseId) {
                 loadMyAttendance();
             }
         }
-
         async function loadMyAttendance() {
             const { data } = await supabaseClient.from('teacher_attendance').select('*').eq('teacher_id', currentUserId).order('date', { ascending: false });
             const container = document.getElementById('myAttendanceContainer');
-            
             if (!data || data.length === 0) {
                 container.innerHTML = '<p class="no-data">لا توجد سجلات حضور.</p>';
                 return;
             }
-            
             // إنشاء قائمة بطاقات الحضور الشخصي
             let attendanceHtml = '<div class="card-list">';
             data.forEach(r => {
                 const stay = (r.check_in_time && r.check_out_time) ? calcStay(r.check_in_time, r.check_out_time) : '-';
-                
                 attendanceHtml += `
                 <div class="card">
                     <div class="card-header">
@@ -2374,7 +2676,6 @@ async function showStudentAttendanceRecords(studentId, courseId) {
             attendanceHtml += '</div>';
             container.innerHTML = attendanceHtml;
         }
-
         function calcStay(start, end) {
             const [sh, sm] = start.split(':').map(Number);
             const [eh, em] = end.split(':').map(Number);
@@ -2383,11 +2684,9 @@ async function showStudentAttendanceRecords(studentId, courseId) {
             const m = mins % 60;
             return `${h}س ${m}د`;
         }
-
         document.getElementById('searchMyAttendance').addEventListener('input', function () {
             const term = this.value.trim().toLowerCase();
             const cards = document.querySelectorAll('#myAttendanceContainer .card');
-            
             cards.forEach(card => {
                 const cardText = card.textContent.toLowerCase();
                 if (cardText.includes(term)) {
@@ -2397,13 +2696,11 @@ async function showStudentAttendanceRecords(studentId, courseId) {
                 }
             });
         });
-
-// عند تحميل الصفحة
-document.addEventListener('DOMContentLoaded', async () => {
-    await loadUserData(); // أولاً حمّل بيانات المستخدم
-    switchTab('dashboard'); // بعدها انتقل للتبويب المطلوب
-});
-
+        // عند تحميل الصفحة
+        document.addEventListener('DOMContentLoaded', async () => {
+            await loadUserData(); // أولاً حمّل بيانات المستخدم
+            switchTab('dashboard'); // بعدها انتقل للتبويب المطلوب
+        });
     </script>
 </body>
 
