@@ -143,13 +143,24 @@ function switchTab(tabName) {
     case 'teacherExams':
       loadTeacherExamsForSecretary();
       break;
+    case 'parents': // <-- إضافة حالة جديدة
+      loadStudentsForParents();
+      break;
     default:
       console.warn('تبويب غير معروف:', tabName);
   }
+    // --- إضافة جديدة: إخفاء الشريط الجانبي في شاشات الموبايل بعد اختيار التبويب ---
+  // التحقق مما إذا كنا في شاشة موبايل (بناءً على نقطة التوقف في CSS @media)
+  if (window.innerWidth <= 768) {
+    const sidebar = document.querySelector('.sidebar');
+    // إذا كان الشريط الجانبي مفتوحًا (يحتوي على الفئة 'active')، قم بإغلاقه
+    if (sidebar && sidebar.classList.contains('active')) {
+      sidebar.classList.remove('active');
+    }
+  }
+
 }
 
-// =============================================================================
-// إغلاق النماذج (Modal)
 // =============================================================================
 function closeModal(modalId) {
   const modal = document.getElementById(modalId);
@@ -206,7 +217,7 @@ function closeModal(modalId) {
                 }
             }
         });
-        // Load dashboard data
+// Load dashboard data
 async function loadDashboardData() {
     try {
         // Load students count
@@ -231,14 +242,29 @@ async function loadDashboardData() {
         document.getElementById('totalSubscriptions').textContent = subscriptionsData.length;
 
         // بدل إجمالي الإيرادات بعدد الطلاب الحاضرين اليوم
-        const today = new Date().toISOString().split('T')[0];
-        const { data: attendancesData, error: attendancesError } = await supabaseClient
-            .from('attendances')
-            .select('id')
-            .eq('date', today)
-            .eq('status', 'present'); // تعديل اسم العمود
-        if (attendancesError) throw attendancesError;
-        document.getElementById('totalRevenue').textContent = attendancesData.length;
+        try {
+            // جلب كل الحضور اللي حالته 'present'
+            const { data: allPresentAttendances, error: attendancesError } = await supabaseClient
+                .from('attendances')
+                .select('date'); // جلب التاريخ فقط عشان نحسب
+
+            if (attendancesError) throw attendancesError;
+
+            // حساب تاريخ اليوم المحلي (بدون توقيت)
+            const today = new Date();
+            const todayString = today.toISOString().split('T')[0]; // YYYY-MM-DD
+
+            // عد السجلات اللي تاريخها بيساوي تاريخ اليوم دلوقتي
+            const todayPresentCount = allPresentAttendances.filter(att => att.date === todayString).length;
+
+            document.getElementById('totalRevenue').textContent = todayPresentCount;
+        } catch (err) {
+            console.error("Error calculating today's attendance:", err);
+            // في حالة حصل خطأ، نسيب العداد صفر علشان ما يوقفش البرنامج
+            document.getElementById('totalRevenue').textContent = 0;
+            // اختياري: نعرض رسالة خطأ
+            // showStatus('خطأ في حساب عدد الحاضرين اليوم', 'error');
+        }
 
         // Initialize charts
         initCharts();
@@ -247,8 +273,6 @@ async function loadDashboardData() {
         showStatus('خطأ في تحميل بيانات لوحة التحكم', 'error');
     }
 }
-        // Initialize charts
-// Initialize charts with real data
 async function initCharts() {
     try {
         // Destroy existing charts if they exist
@@ -520,7 +544,8 @@ async function initCharts() {
                                 <tr>
                                     <th>الاسم</th>
                                     <th>البريد الإلكتروني</th>
-                                    <th>رقم الهاتف</th>
+                                    <th>رقم هاتف الطالب</th>
+                                    <th>رقم ولي الأمر</th> <!-- عنوان جديد -->
                                     <th>تاريخ التسجيل</th>
                                     <th>الإجراءات</th>
                                 </tr>
@@ -531,6 +556,7 @@ async function initCharts() {
                                         <td>${student.full_name}</td>
                                         <td>${student.email || '-'}</td>
                                         <td>${student.phone || '-'}</td>
+                                        <td>${student.parent_phone || '-'}</td> <!-- عمود جديد -->
                                         <td>${formatDate(student.created_at)}</td>
                                         <td class="action-buttons">
                                             <button class="action-btn view-btn" onclick="showStudentFullDetails('${student.id}')">
@@ -559,12 +585,13 @@ async function initCharts() {
         // Filter students
         function filterStudents() {
             const searchTerm = document.getElementById('studentSearch').value.toLowerCase()
-            const filteredStudents = students.filter(student => 
+            const filteredStudents = students.filter(student =>
                 student.full_name.toLowerCase().includes(searchTerm) ||
                 (student.email && student.email.toLowerCase().includes(searchTerm)) ||
-                (student.phone && student.phone.includes(searchTerm))
+                (student.phone && student.phone.includes(searchTerm)) ||
+                (student.parent_phone && student.parent_phone.includes(searchTerm)) // إضافة فلترة لرقم ولي الأمر
             )
-            
+
             const container = document.getElementById('studentsContainer')
             container.innerHTML = `
                 <div class="table-container">
@@ -576,7 +603,8 @@ async function initCharts() {
                             <tr>
                                 <th>الاسم</th>
                                 <th>البريد الإلكتروني</th>
-                                <th>رقم الهاتف</th>
+                                <th>رقم هاتف الطالب</th>
+                                <th>رقم ولي الأمر</th> <!-- عنوان جديد -->
                                 <th>تاريخ التسجيل</th>
                                 <th>الإجراءات</th>
                             </tr>
@@ -587,6 +615,7 @@ async function initCharts() {
                                     <td>${student.full_name}</td>
                                     <td>${student.email || '-'}</td>
                                     <td>${student.phone || '-'}</td>
+                                    <td>${student.parent_phone || '-'}</td> <!-- عمود جديد -->
                                     <td>${formatDate(student.created_at)}</td>
                                     <td class="action-buttons">
                                         <button class="action-btn view-btn" onclick="showStudentFullDetails('${student.id}')">
@@ -611,11 +640,11 @@ async function initCharts() {
         function showAddStudentModal() {
             const modal = document.getElementById('studentModal')
             modal.style.display = 'flex'
-            
+
             document.getElementById('studentModalTitle').textContent = 'إضافة طالب جديد'
             document.getElementById('studentForm').reset()
             document.getElementById('studentId').value = ''
-            
+
             document.getElementById('studentForm').onsubmit = async function(e) {
                 e.preventDefault()
                 await addStudent()
@@ -629,13 +658,15 @@ async function initCharts() {
 
             const modal = document.getElementById('studentModal')
             modal.style.display = 'flex'
-            
+
             document.getElementById('studentModalTitle').textContent = 'تعديل بيانات الطالب'
             document.getElementById('studentId').value = student.id
             document.getElementById('fullName').value = student.full_name
             document.getElementById('email').value = student.email || ''
             document.getElementById('phone').value = student.phone || ''
-            
+            // تعبئة حقل رقم ولي الأمر
+            document.getElementById('parentPhone').value = student.parent_phone || '' // <-- جديد
+
             document.getElementById('studentForm').onsubmit = async function(e) {
                 e.preventDefault()
                 await updateStudent(studentId)
@@ -648,6 +679,8 @@ async function initCharts() {
                 const fullName = document.getElementById('fullName').value
                 const email = document.getElementById('email').value
                 const phone = document.getElementById('phone').value
+                // الحصول على رقم ولي الأمر
+                const parentPhone = document.getElementById('parentPhone').value // <-- جديد
 
                 const { data, error } = await supabaseClient
                     .from('students')
@@ -655,6 +688,7 @@ async function initCharts() {
                         full_name: fullName,
                         email: email,
                         phone: phone,
+                        parent_phone: parentPhone, // <-- جديد
                         created_at: new Date().toISOString()
                     }])
 
@@ -675,13 +709,16 @@ async function initCharts() {
                 const fullName = document.getElementById('fullName').value
                 const email = document.getElementById('email').value
                 const phone = document.getElementById('phone').value
+                // الحصول على رقم ولي الأمر
+                const parentPhone = document.getElementById('parentPhone').value // <-- جديد
 
                 const { data, error } = await supabaseClient
                     .from('students')
                     .update({
                         full_name: fullName,
                         email: email,
-                        phone: phone
+                        phone: phone,
+                        parent_phone: parentPhone // <-- جديد
                     })
                     .eq('id', studentId)
 
@@ -696,27 +733,314 @@ async function initCharts() {
             }
         }
 
-        // Delete student
-        async function deleteStudent(studentId) {
-            if (!confirm('هل أنت متأكد من حذف هذا الطالب؟')) {
-                return
-            }
+        // دالة لعرض التفاصيل الكاملة للطالب (تعديل لعرض parent_phone)
+        async function showStudentFullDetails(studentId) {
+            // ... (الكود السابق للحصول على studentData, subscriptions, payments, attendances) ...
 
-            try {
-                const { error } = await supabaseClient
-                    .from('students')
-                    .delete()
-                    .eq('id', studentId)
+            // داخل كود إنشاء محتوى النافذة (innerHTML) للـ modal
+            // ابحث عن قسم "معلومات أساسية" وقم بتعديله كما يلي:
 
-                if (error) throw error
+            // مثال على الجزء المعدل:
+            content.innerHTML = `
+            <div class="modal-header">
+                <h2>تفاصيل الطالب: ${studentData.full_name}</h2>
+                <button class="close" onclick="closeModal('studentDetailModal')">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div class="detail-section">
+                    <h4>معلومات أساسية</h4>
+                    <p><strong>البريد الإلكتروني:</strong> ${studentData.email || '-'}</p>
+                    <p><strong>رقم هاتف الطالب:</strong> ${studentData.phone || '-'}</p>
+                    <p><strong>رقم هاتف ولي الأمر:</strong> ${studentData.parent_phone || '-'}</p> <!-- جديد -->
+                    <p><strong>تاريخ التسجيل:</strong> ${studentData.created_at ? formatDate(studentData.created_at) : '-'}</p>
+                </div>
+                <!-- ... بقية أقسام التفاصيل ... -->
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-secondary" onclick="printStudentDetails('${studentData.full_name}')">طباعة</button>
+                <button class="btn btn-secondary" onclick="closeModal('studentDetailModal')">إغلاق</button>
+            </div>
+        `;
 
-                showStatus('تم حذف الطالب بنجاح')
-                loadStudents()
-            } catch (error) {
-                console.error('Error deleting student:', error)
-                showStatus('خطأ في حذف الطالب', 'error')
+            // ... (باقي الكود) ...
+        }
+
+
+// --- New Functions for Parents Tab ---
+
+
+// Function to load students specifically for the Parents tab (with send report button)
+async function loadStudentsForParents() {
+    const container = document.getElementById('parentsContainer');
+    try {
+        // ---> Use supabaseClient instead of supabase <---
+        const { data: students, error } = await supabaseClient
+            .from('students')
+            .select('*') // <-- تعديل: جلب parent_phone أيضًا
+            .order('full_name', { ascending: true });
+
+        if (error) throw error;
+
+        if (students && students.length > 0) {
+            let html = '<div class="table-container"><table id="parentsStudentsTable">';
+            html += '<thead><tr><th>الاسم</th><th>البريد الإلكتروني</th><th>رقم هاتف الطالب</th><th>رقم ولي الأمر</th><th>الإجراءات</th></tr></thead><tbody>'; // <-- تعديل العناوين
+            students.forEach(student => {
+                html += `
+                    <tr>
+                        <td>${escapeHtml(student.full_name || '')}</td>
+                        <td>${escapeHtml(student.email || '')}</td>
+                        <td>${escapeHtml(student.phone || '')}</td>
+                        <td>${escapeHtml(student.parent_phone || '')}</td> <!-- جديد -->
+                        <td>
+                            <button class="btn btn-primary" onclick="generateAndSendReport('${student.id}')">
+                                <i class="fas fa-paper-plane"></i> إرسال التقرير
+                            </button>
+                        </td>
+                    </tr>
+                `;
+            });
+            html += '</tbody></table></div>';
+            container.innerHTML = html;
+        } else {
+            container.innerHTML = '<p class="no-data">لا توجد بيانات طلاب.</p>';
+        }
+    } catch (error) {
+        console.error('Error loading students for parents:', error);
+        showStatus('حدث خطأ أثناء تحميل بيانات الطلاب.', 'error');
+        container.innerHTML = '<p class="no-data">فشل تحميل البيانات.</p>';
+    }
+}
+
+// Function to filter students in the Parents tab
+function filterParents() {
+    const searchTerm = document.getElementById('parentSearch').value.toLowerCase();
+    const table = document.getElementById('parentsStudentsTable');
+    if (!table) return;
+    const rows = table.getElementsByTagName('tr');
+
+    for (let i = 1; i < rows.length; i++) { // Start from 1 to skip header
+        const cells = rows[i].getElementsByTagName('td');
+        let found = false;
+        // تعديل: تضمين رقم ولي الأمر في البحث
+        for (let j = 0; j < cells.length - 1; j++) { // Exclude the last cell (actions)
+            if (cells[j].textContent.toLowerCase().includes(searchTerm)) {
+                found = true;
+                break;
             }
         }
+        rows[i].style.display = found ? '' : 'none';
+    }
+}
+
+
+// --- WhatsApp Report Generation and Sending ---
+
+// Function to generate a comprehensive report for a student and send via WhatsApp
+async function generateAndSendReport(studentId) {
+    try {
+        // Fetch student details (include parent_phone)
+        const { data: student, error: studentError } = await supabaseClient
+            .from('students')
+            .select('full_name, phone, parent_phone')
+            .eq('id', studentId)
+            .single();
+
+        if (studentError) throw studentError;
+
+        // التحقق من وجود بيانات الطالب
+        if (!student) {
+             showStatus('لم يتم العثور على بيانات الطالب.', 'error');
+             console.error('Student data not found for ID:', studentId);
+             return;
+        }
+
+        // تحديد رقم الهاتف لإرسال التقرير إليه (ولي الأمر أولاً)
+        let rawPhoneNumber = student.parent_phone || student.phone;
+
+        // التحقق من وجود رقم الهاتف
+        if (!rawPhoneNumber) {
+            showStatus('بيانات الطالب (رقم الهاتف أو رقم ولي الأمر) غير متوفرة لإرسال التقرير.', 'error');
+            console.warn('No phone number found for student ID:', studentId);
+            return;
+        }
+
+        // معالجة رقم الهاتف لتحويله إلى صيغة E.164 الدولية (+20xxxxxxxxx) لمصر
+        let formattedPhoneNumber = '';
+        // إزالة أي مسافات أو شرطات
+        rawPhoneNumber = rawPhoneNumber.replace(/\s+/g, '').replace(/-/g, '');
+
+        if (rawPhoneNumber.startsWith('+20')) {
+            // بالفعل بتنسيق E.164
+            formattedPhoneNumber = rawPhoneNumber;
+        } else if (rawPhoneNumber.startsWith('0')) {
+            // رقم محلي مصري يبدأ بـ 0، نحوله إلى دولي
+            formattedPhoneNumber = '+20' + rawPhoneNumber.substring(1);
+        } else if (/^[0-9]{10}$/.test(rawPhoneNumber)) {
+            // رقم محلي مصري بدون رمز الدولة أو الصفر الم前置 (مفترض أنه رقم مصري)
+            formattedPhoneNumber = '+20' + rawPhoneNumber;
+        } else if (rawPhoneNumber.startsWith('20') && /^[0-9]{11,12}$/.test(rawPhoneNumber)) {
+             // رقم ربما نسي المستخدم إضافة +
+             formattedPhoneNumber = '+' + rawPhoneNumber;
+        } else {
+            // تنسيق غير معروف أو غير مدعوم
+            showStatus(`خطأ: رقم الهاتف "${rawPhoneNumber}" غير صحيح أو بتنسيق غير مدعوم.`, 'error');
+            console.error('Invalid or unsupported phone number format for student ID:', studentId, 'Number:', rawPhoneNumber);
+            return;
+        }
+
+        // التحقق النهائي من صيغة E.164 باستخدام تعبير منتظم أكثر مرونة
+        // يسمح بـ + متبوعًا بأرقام فقط (10-15 رقمًا إجماليًا بعد +)
+        if (!/^\+[0-9]{10,15}$/.test(formattedPhoneNumber)) {
+             showStatus(`خطأ: تعذر تنسيق رقم الهاتف "${rawPhoneNumber}" بشكل صحيح لإرسال التقرير.`, 'error');
+             console.error('Could not format phone number correctly for student ID:', studentId, 'Raw:', rawPhoneNumber, 'Formatted:', formattedPhoneNumber);
+             return;
+        }
+
+        const studentName = student.full_name || 'غير محدد';
+
+        // Fetch subscriptions
+        const { data: subscriptions, error: subsError } = await supabaseClient
+            .from('subscriptions')
+            .select(`
+                subscribed_at,
+                status,
+                notes,
+                course:courses (name)
+            `)
+            .eq('student_id', studentId);
+
+        if (subsError) throw subsError;
+
+        // Fetch payments
+        const { data: payments, error: payError } = await supabaseClient
+            .from('payments')
+            .select(`
+                amount,
+                paid_at,
+                method,
+                status,
+                notes,
+                course:courses (name)
+            `)
+            .eq('student_id', studentId);
+
+        if (payError) throw payError;
+
+        // Fetch attendance
+        const { data: attendances, error: attError } = await supabaseClient
+            .from('attendances')
+            .select(`
+                date,
+                status,
+                notes,
+                course:courses (name)
+            `)
+            .eq('student_id', studentId);
+
+        if (attError) throw attError;
+
+        // --- Construct the Report Message ---
+        let message = `*تقرير الطالب: ${studentName}*\n\n`;
+
+        // Subscriptions Section
+        message += "*الاشتراكات:*\n";
+        if (subscriptions && subscriptions.length > 0) {
+            subscriptions.forEach(sub => {
+                const courseName = sub.course?.name || 'غير محدد';
+                const statusText = sub.status === 'active' ? 'نشط' : sub.status === 'inactive' ? 'غير نشط' : sub.status || 'غير محدد';
+                let dateStr = 'غير محدد';
+                if (sub.subscribed_at) {
+                    const dateObj = new Date(sub.subscribed_at);
+                    if (!isNaN(dateObj)) {
+                         dateStr = `${dateObj.getDate().toString().padStart(2, '0')}/${(dateObj.getMonth() + 1).toString().padStart(2, '0')}/${dateObj.getFullYear()}`;
+                    }
+                }
+                message += `  - كورس: ${courseName}\n    تاريخ: ${dateStr}\n    حالة: ${statusText}\n`;
+                if (sub.notes) message += `    ملاحظات: ${sub.notes}\n`;
+                message += "\n";
+            });
+        } else {
+            message += "  لا توجد اشتراكات.\n\n";
+        }
+
+        // Payments Section
+        message += "*المدفوعات:*\n";
+        if (payments && payments.length > 0) {
+            payments.forEach(pay => {
+                const courseName = pay.course?.name || 'غير محدد';
+                const methodText = pay.payment_method === 'cash' ? 'نقداً' : pay.payment_method === 'card' ? 'بطاقة' : pay.payment_method === 'transfer' ? 'تحويل' : pay.payment_method || 'غير محددة';
+                const statusText = pay.status === 'paid' ? 'مدفوع' : pay.status === 'pending' ? 'معلق' : pay.status === 'cancelled' ? 'ملغى' : pay.status || 'غير محددة';
+                let dateStr = 'غير محدد';
+                if (pay.paid_at) {
+                    const dateObj = new Date(pay.paid_at);
+                    if (!isNaN(dateObj)) {
+                         dateStr = `${dateObj.getDate().toString().padStart(2, '0')}/${(dateObj.getMonth() + 1).toString().padStart(2, '0')}/${dateObj.getFullYear()} ${dateObj.getHours().toString().padStart(2, '0')}:${dateObj.getMinutes().toString().padStart(2, '0')}`;
+                    }
+                }
+                message += `  - كورس: ${courseName}\n    مبلغ: ${parseFloat(pay.amount || 0).toFixed(2)} ج.م\n    تاريخ: ${dateStr}\n    طريقة: ${methodText}\n    حالة: ${statusText}\n`;
+                if (pay.notes) message += `    ملاحظات: ${pay.notes}\n`;
+                message += "\n";
+            });
+        } else {
+            message += "  لا توجد مدفوعات.\n\n";
+        }
+
+        // Attendance Section
+        message += "*الحضور:*\n";
+        if (attendances && attendances.length > 0) {
+            const presentCount = attendances.filter(a => a.status === 'present').length;
+            const absentCount = attendances.filter(a => a.status === 'absent').length;
+            const lateCount = attendances.filter(a => a.status === 'late').length;
+            message += `  - حاضر: ${presentCount} مرة\n  - غائب: ${absentCount} مرة\n  - متأخر: ${lateCount} مرة\n\n`;
+        } else {
+            message += "  لا توجد بيانات حضور.\n\n";
+        }
+
+        message += "\n*تم إرسال التقرير من أكاديمية أسيوط.*";
+
+        // Encode the message for URL
+        const encodedMessage = encodeURIComponent(message);
+
+        // Construct the WhatsApp URL (using wa.me link) - تأكد من عدم وجود مسافات
+        const whatsappUrl = `https://wa.me/${encodeURIComponent(formattedPhoneNumber)}?text=${encodedMessage}`; // <-- بدون مسافات
+
+        // Open the WhatsApp link in a new tab
+        window.open(whatsappUrl, '_blank');
+
+        showStatus(`جارٍ فتح الواتساب لإرسال التقرير إلى ${studentName} (${formattedPhoneNumber})...`, 'success');
+
+    } catch (error) {
+        console.error('Error generating or sending report for student ID:', studentId, error);
+        // Provide more specific error feedback
+        if (error.message && (error.message.includes('phone') || error.message.includes('column') || error.message.includes('relation'))) {
+             showStatus('خطأ: يوجد خطأ في بيانات التقرير أو رقم الهاتف.', 'error');
+        } else {
+             showStatus('حدث خطأ أثناء إنشاء أو إرسال التقرير. يرجى المحاولة لاحقًا.', 'error');
+        }
+    }
+}
+
+// Ensure setActiveLink is defined or use the existing one
+// This function should remove 'active' class from all nav-links and add it to the clicked one
+function setActiveLink(element) {
+    // Remove active class from all links
+    document.querySelectorAll('.nav-link').forEach(link => link.classList.remove('active'));
+    // Add active class to the clicked link
+    element.classList.add('active');
+}
+
+// Helper function to escape HTML (prevents XSS)
+function escapeHtml(text) {
+    if (!text) return '';
+    return text
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "<")
+        .replace(/>/g, ">")
+        .replace(/"/g, "&quot;")
+        .replace(/'/g, "&#039;");
+}
+
+// --- End of New Functions ---
 
 async function showStudentFullDetails(studentId) {
     try {
@@ -3771,7 +4095,7 @@ function formatCurrency(amount) {
                 event.target.style.display = 'none'
             }
         }
-        // تفعيل زر التوجل للسايد بار
+// تفعيل زر التوجل للسايد بار
 document.getElementById('menuToggle').addEventListener('click', function() {
   const sidebar = document.querySelector('.sidebar');
   sidebar.classList.toggle('active');
