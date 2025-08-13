@@ -4,7 +4,7 @@ const urlsToCache = [
   './',
   './index.html',
   './manifest.json',
-  './logo2.png',
+  './logo2.jpg',
   'https://fonts.googleapis.com/css2?family=Cairo:wght@400;500;600;700&display=swap',
   'https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css'
 ];
