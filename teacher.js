@@ -507,157 +507,375 @@
                 }
             }
             
-            async function loadTeacherExams() {
-                console.log("🔍 [اختباراتي] بدء تحميل الاختبارات للمعلم:", currentUserId);
-                const container = document.getElementById('examsContainer');
-                if (!container) {
-                    console.error("❌ عنصر examsContainer غير موجود");
-                    return;
-                }
-                container.innerHTML = '<p>⏳ جاري تحميل بيانات الاختبارات...</p>';
-                
-                try {
-                    // 1. جلب الكورسات الخاصة بالمعلم
-                    const { data: teacherCourses, error: coursesError } = await supabaseClient
-                        .from('courses')
-                        .select('id, name')
-                        .eq('teacher_id', currentUserId);
-                    if (coursesError) throw coursesError;
-                    if (!teacherCourses?.length) {
-                        container.innerHTML = '<p>⚠️ لا يوجد كورسات مسندة لك.</p>';
-                        return;
-                    }
-                    const courseIds = teacherCourses.map(c => c.id);
-                    const courseMap = Object.fromEntries(teacherCourses.map(c => [c.id, c.name]));
-                    
-                    // 2. جلب الوحدات الخاصة بهذه الكورسات
-                    const { data: modulesData, error: modulesError } = await supabaseClient
-                        .from('modules')
-                        .select('id, title, course_id')
-                        .in('course_id', courseIds);
-                    if (modulesError) throw modulesError;
-                    if (!modulesData?.length) {
-                        container.innerHTML = '<p>⚠️ لا توجد وحدات مرتبطة بكورساتك.</p>';
-                        return;
-                    }
-                    const moduleIds = modulesData.map(m => m.id);
-                    const moduleMap = Object.fromEntries(modulesData.map(m => [m.id, m.title]));
-                    
-                    // 3. جلب جميع الطلاب المشتركين في هذه الكورسات
-                    const { data: studentsData, error: studentsError } = await supabaseClient
-                        .from('subscriptions')
-                        .select('student_id, course_id, students:student_id(full_name)')
-                        .in('course_id', courseIds);
-                    if (studentsError) throw studentsError;
-                    if (!studentsData?.length) {
-                        container.innerHTML = '<p>⚠️ لا يوجد طلاب مشتركين في كورساتك.</p>';
-                        return;
-                    }
-                    
-                    // 4. جلب جميع الامتحانات المرتبطة بالوحدات
-                    const { data: examsData, error: examsError } = await supabaseClient
-                        .from('exams')
-                        .select('*')
-                        .in('module_id', moduleIds);
-                    if (examsError) throw examsError;
-                    if (!examsData?.length) {
-                        container.innerHTML = '<p>⚠️ لا توجد اختبارات مرتبطة بوحدات كورساتك.</p>';
-                        return;
-                    }
-                    
-                    // 5. إنشاء حقل بحث
-                    let html = `
-                <input type="text" id="studentSearch" placeholder="🔍 ابحث باسم الطالب" style="padding:8px; margin-bottom:15px; width:100%; max-width:300px;">
+// دالة محدثة لتحميل الاختبارات الخاصة بالمعلم بشكل تدريجي
+async function loadTeacherExams() {
+    console.log("🔍 [اختباراتي] بدء تحميل الاختبارات للمعلم:", currentUserId);
+    const container = document.getElementById('examsContainer');
+    if (!container) {
+        console.error("❌ عنصر examsContainer غير موجود");
+        showStatus('خطأ في عرض بيانات الاختبارات.', 'error');
+        return;
+    }
+
+    try {
+        // 1. جلب الكورسات الخاصة بالمعلم
+        const { data: teacherCourses, error: coursesError } = await supabaseClient
+            .from('courses')
+            .select('id, name')
+            .eq('teacher_id', currentUserId);
+        if (coursesError) throw coursesError;
+
+        if (!teacherCourses?.length) {
+            container.innerHTML = '<p class="no-data">⚠️ لا توجد كورسات مسندة لك.</p>';
+            return;
+        }
+
+        // 2. جلب جميع الامتحانات الخاصة بهذه الكورسات
+        const courseIds = teacherCourses.map(c => c.id);
+        const { data: examsData, error: examsError } = await supabaseClient
+            .from('exams')
+            .select('*')
+            .in('course_id', courseIds);
+        if (examsError) throw examsError;
+
+        // إنشاء خريطة لتسهيل الوصول إلى اسم الكورس وامتحاناته
+        const courseMap = {};
+        const examsByCourse = {}; // { courseId: [exam1, exam2, ...] }
+        teacherCourses.forEach(course => {
+            courseMap[course.id] = course.name;
+            examsByCourse[course.id] = [];
+        });
+        examsData.forEach(exam => {
+            if (examsByCourse[exam.course_id]) {
+                examsByCourse[exam.course_id].push(exam);
+            }
+        });
+
+
+        // 3. إنشاء واجهة التصفية (كورس -> امتحان)
+let html = `
+    <div class="filter-section" style="
+        margin-bottom: 20px; 
+        padding: 20px; 
+        border: 1px solid #ddd; 
+        border-radius: 8px; 
+        background-color: #f9f9f9;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+    ">
+        <div style="display: flex; flex-wrap: wrap; gap: 15px; align-items: end;">
+            <div style="flex: 1; min-width: 250px;">
+                <label for="examCourseFilter" style="display: block; margin-bottom: 6px; font-weight: 600;     color: var(--primary);
+">
+                    اختر الكورس:
+                </label>
+                <select id="examCourseFilter" style="
+                    width: 100%; 
+                    padding: 10px; 
+                    border: 1px solid #ccc; 
+                    border-radius: 4px; 
+                    font-size: 16px;
+                    background-color: #fff;
+                    box-sizing: border-box;
+                ">
+                    <option value="">-- اختر كورسًا --</option>
+                    ${teacherCourses.map(course => `<option value="${course.id}">${course.name}</option>`).join('')}
+                </select>
+            </div>
+
+            <div style="flex: 1; min-width: 250px;">
+                <label for="examSelectFilter" style="display: block; margin-bottom: 6px; font-weight: 600;     color: var(--primary);
+">
+                    اختر الاختبار:
+                </label>
+                <select id="examSelectFilter" style="
+                    width: 100%; 
+                    padding: 10px; 
+                    border: 1px solid #ccc; 
+                    border-radius: 4px; 
+                    font-size: 16px;
+    background-color: var(--sidebar-width);
+                    box-sizing: border-box;
+                " disabled>
+                    <option value="">-- اختر كورسًا أولاً --</option>
+                </select>
+            </div>
+
+            <div style="flex-shrink: 0;">
+                <button id="loadExamDataBtn" style="
+                    padding: 10px 20px; 
+                    background-color: #3498db; 
+                    color: white; 
+                    border: none; 
+                    border-radius: 4px; 
+                    cursor: pointer; 
+                    font-size: 16px;
+                    font-weight: 500;
+                    height: 100%;
+                    display: none;
+                    transition: background-color 0.3s;
+                " onmouseover="this.style.backgroundColor='#2980b9'" onmouseout="this.style.backgroundColor='#3498db'">
+                    عرض بيانات الطلاب
+                </button>
+            </div>
+        </div>
+    </div>
+    <div id="examStudentsTableContainer"></div>
+`;
+        container.innerHTML = html;
+
+        const courseFilter = document.getElementById('examCourseFilter');
+        const examFilter = document.getElementById('examSelectFilter');
+        const loadBtn = document.getElementById('loadExamDataBtn');
+        const tableContainer = document.getElementById('examStudentsTableContainer');
+
+        // 4. عند تغيير اختيار الكورس
+        courseFilter.addEventListener('change', function () {
+            const selectedCourseId = this.value;
+            examFilter.innerHTML = '<option value="">-- اختر اختبار --</option>';
+            examFilter.disabled = true;
+            loadBtn.style.display = 'none';
+            tableContainer.innerHTML = '';
+
+            if (selectedCourseId && examsByCourse[selectedCourseId] && examsByCourse[selectedCourseId].length > 0) {
+                examsByCourse[selectedCourseId].forEach(exam => {
+                    const option = document.createElement('option');
+                    option.value = exam.id;
+                    // عرض اسم الامتحان ودرجة التميز
+                    option.textContent = `${exam.title} (/${exam.max_score})`;
+                    examFilter.appendChild(option);
+                });
+                examFilter.disabled = false;
+            } else if (selectedCourseId) {
+                 examFilter.innerHTML = '<option value="">-- لا توجد اختبارات لهذا الكورس --</option>';
+                 examFilter.disabled = true;
+            }
+        });
+
+        // 5. عند تغيير اختيار الامتحان
+        examFilter.addEventListener('change', function() {
+            const selectedExamId = this.value;
+            if (selectedExamId) {
+                loadBtn.style.display = 'inline-block';
+                 // يمكنك اختيارياً تحميل البيانات مباشرة عند اختيار الامتحان بدلاً من النقر على زر
+                 // loadExamStudentData(courseFilter.value, selectedExamId);
+            } else {
+                loadBtn.style.display = 'none';
+                tableContainer.innerHTML = '';
+            }
+        });
+
+        // 6. عند النقر على زر تحميل بيانات الطلاب
+        loadBtn.addEventListener('click', function() {
+             const selectedCourseId = courseFilter.value;
+             const selectedExamId = examFilter.value;
+             if (selectedCourseId && selectedExamId) {
+                 loadExamStudentData(selectedCourseId, selectedExamId);
+             }
+        });
+
+         // (اختياري) تحميل تلقائي عند اختيار الامتحان
+        // examFilter.addEventListener('change', function() {
+        //     const selectedCourseId = courseFilter.value;
+        //     const selectedExamId = this.value;
+        //     if (selectedCourseId && selectedExamId) {
+        //         loadExamStudentData(selectedCourseId, selectedExamId);
+        //     } else {
+        //         tableContainer.innerHTML = '';
+        //     }
+        // });
+
+
+    } catch (error) {
+        console.error('💥 خطأ غير متوقع في loadTeacherExams:', error);
+        container.innerHTML = `<p class="no-data error">❌ حدث خطأ أثناء تحميل بيانات الاختبارات: ${error.message}</p>`;
+        showStatus('خطأ في تحميل بيانات الاختبارات.', 'error');
+    }
+}
+
+// دالة جديدة لتحميل وعرض بيانات الطلاب لكورس واختبار محددين
+
+// دالة محدثة لحفظ درجة الطالب في امتحان معين
+async function saveStudentScore(studentId, examId) {
+    // جلب القيم من الحقول الخاصة بالطالب الحالي
+    const scoreInput = document.getElementById(`score-${studentId}`);
+    const dateInput = document.getElementById(`exam-date-${studentId}`);
+
+    const score = scoreInput ? scoreInput.value : '';
+    const examDate = dateInput ? dateInput.value : '';
+
+    // التحقق من صحة المدخلات
+    if (!examId) {
+        alert('⚠️ خطأ: معرف الاختبار غير متوفر.');
+        return;
+    }
+    if (score === '' || isNaN(score) || parseFloat(score) < 0) {
+        alert('⚠️ يرجى إدخال درجة صحيحة (رقم غير سالب).');
+        return;
+    }
+
+    // جلب درجة التميز من الجدول لإجراء تحقق إضافي (اختياري لكن يُفضل)
+    // أو افترض أنها تم التحقق منها مسبقًا في واجهة المستخدم
+    // const maxScore = ... ; // يمكن جلبه أو تمريره
+
+    // if (parseFloat(score) > maxScore) {
+    //     alert(`⚠️ الدرجة لا يمكن أن تتجاوز درجة التميز (${maxScore}).`);
+    //     return;
+    // }
+
+
+    console.log(`💾 محاولة حفظ الدرجة ${score} للطالب ${studentId} في الاختبار ${examId} بتاريخ ${examDate}`);
+
+    try {
+        const { error } = await supabaseClient
+            .from('exam_scores')
+            .upsert({
+                exam_id: examId,
+                student_id: studentId,
+                score: parseFloat(score), // التأكد من أنها رقم
+                exam_date: examDate || null // السماح بـ null إذا لم يتم إدخال تاريخ
+            }, {
+                onConflict: 'exam_id,student_id' // تحديد الأعمدة للصراع عند التحديث
+            });
+
+        if (error) {
+            console.error('❌ خطأ أثناء حفظ الدرجة:', error);
+            alert(`❌ حدث خطأ أثناء حفظ الدرجة: ${error.message}`);
+            showStatus(`خطأ في حفظ درجة الطالب: ${error.message}`, 'error');
+        } else {
+            console.log(`✅ تم حفظ الدرجة ${score} للطالب ${studentId} بنجاح.`);
+            alert('✅ تم حفظ الدرجة بنجاح');
+            showStatus(`تم حفظ درجة الطالب بنجاح.`, 'success');
+            // (اختياري) تحديث الحقل ليظهر أنه تم الحفظ (مثلاً بتغيير اللون مؤقتًا)
+             scoreInput.style.backgroundColor = '#d4edda'; // لون أخضر فاتح
+             setTimeout(() => { scoreInput.style.backgroundColor = ''; }, 1500);
+        }
+    } catch (err) {
+         console.error('💥 خطأ غير متوقع أثناء حفظ الدرجة:', err);
+         alert('❌ حدث خطأ غير متوقع أثناء حفظ الدرجة.');
+         showStatus('خطأ غير متوقع أثناء حفظ الدرجة.', 'error');
+    }
+}
+
+// دالة جديدة لتحميل وعرض بيانات الطلاب لكورس واختبار محددين
+// دالة جديدة لتحميل وعرض بيانات الطلاب لكورس واختبار محددين
+async function loadExamStudentData(courseId, examId) {
+    const tableContainer = document.getElementById('examStudentsTableContainer');
+    if (!tableContainer) {
+        console.error("❌ عنصر examStudentsTableContainer غير موجود");
+        showStatus('خطأ في عرض بيانات الطلاب.', 'error');
+        return;
+    }
+
+    tableContainer.innerHTML = '<p>⏳ جاري تحميل بيانات الطلاب والاختبار...</p>';
+
+    try {
+        // 1. التحقق من صحة المدخلات
+        if (!courseId || !examId) {
+            tableContainer.innerHTML = '<p class="no-data">⚠️ يرجى تحديد الكورس والاختبار.</p>';
+            return;
+        }
+
+        // 2. جلب معلومات الامتحان المحدد
+        const { data: examData, error: examFetchError } = await supabaseClient // تم تصحيح اسم المتغير
+            .from('exams')
+            .select('title, max_score, course_id')
+            .eq('id', examId)
+            .single();
+        if (examFetchError) throw examFetchError;
+        if (!examData || examData.course_id != courseId) { // تحقق إضافي
+             tableContainer.innerHTML = '<p class="no-data error">❌ خطأ: بيانات الامتحان غير متسقة.</p>';
+             return;
+        }
+
+
+        // 3. جلب الطلاب المشتركين في الكورس المحدد
+        const { data: subscriptions, error: subsError } = await supabaseClient
+            .from('subscriptions')
+            .select('student_id, students:student_id(full_name)')
+            .eq('course_id', courseId);
+        if (subsError) throw subsError;
+
+        if (!subscriptions?.length) {
+            tableContainer.innerHTML = '<p class="no-data">⚠️ لا يوجد طلاب مسجلين في هذا الكورس.</p>';
+            return;
+        }
+
+        const studentIds = subscriptions.map(sub => sub.student_id);
+
+        // 4. جلب الدرجات المحفوظة مسبقًا لهذا الامتحان ولهؤلاء الطلاب
+        const { data: existingScores, error: scoresError } = await supabaseClient // تم تصحيح اسم المتغير
+            .from('exam_scores')
+            .select('student_id, score, exam_date')
+            .eq('exam_id', examId)
+            .in('student_id', studentIds);
+        if (scoresError) throw scoresError;
+
+        const scoresMap = {}; // { student_id: { score, exam_date } }
+        existingScores.forEach(score => {
+            scoresMap[score.student_id] = { score: score.score, exam_date: score.exam_date };
+        });
+
+        // 5. إنشاء جدول عرض الطلاب وإدخال الدرجات
+        let tableHtml = `
+            <h3 style="margin-top: 20px; color: #2c3e50;">📊 ${examData.title} (درجة التميز: ${examData.max_score}) - ${document.querySelector(`#examCourseFilter option[value="${courseId}"]`)?.text || 'الكورس'}</h3>
+            <div style="overflow-x: auto;">
+            <table class="teacher-table">
+                <thead>
+                    <tr>
+                        <th style="width: 40%;">اسم الطالب</th>
+                        <th style="width: 20%;">التاريخ</th>
+                        <th style="width: 20%;">الدرجة (/${examData.max_score})</th>
+                        <th style="width: 20%;">الإجراء</th>
+                    </tr>
+                </thead>
+                <tbody>
+        `;
+
+        // الحصول على تاريخ اليوم بتنسيق YYYY-MM-DD
+        const today = new Date().toISOString().split('T')[0];
+
+        subscriptions.forEach(sub => {
+            const studentName = sub.students?.full_name || 'غير معروف';
+            const studentId = sub.student_id;
+            const existingScoreData = scoresMap[studentId] || {};
+            const existingScore = existingScoreData.score ?? '';
+            // إذا لم توجد بيانات تاريخ محفوظة، استخدم تاريخ اليوم
+            const existingDate = existingScoreData.exam_date ?? today; // تم التعديل هنا
+
+            tableHtml += `
+                <tr>
+                    <td style="font-size: 0.9rem;">${studentName}</td>
+                    <td>
+                        <input type="date" id="exam-date-${studentId}" value="${existingDate}" style="padding: 5px; font-size: 0.85rem; width: 100%;">
+                    </td>
+                    <td>
+                        <input type="number" id="score-${studentId}" min="0" max="${examData.max_score}" value="${existingScore}" style="width: 80px; padding: 5px; font-size: 0.85rem;" />
+                    </td>
+                    <td>
+                        <button onclick="saveStudentScore('${studentId}', '${examId}')" style="padding: 5px 10px; background-color: #27ae60; color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 0.85rem;">💾 حفظ</button>
+                    </td>
+                </tr>
             `;
-                    
-                    // 6. عرض جدول الطلاب مع اختيار الامتحان وإدخال الدرجة وتعديل التاريخ
-                    courseIds.forEach(courseId => {
-                        const courseName = courseMap[courseId] || '-';
-                        html += `<h3 style="margin-top:20px; color:#2c3e50; font-size: 1.1rem;">📚 ${courseName}</h3>`;
-                        html += `<div style="overflow-x: auto;">
-                            <table class="teacher-table">
-                            <thead>
-                                <tr>
-                                    <th>اسم الطالب</th>
-                                    <th>الاختبار</th>
-                                    <th>التاريخ</th>
-                                    <th>الدرجة</th>
-                                    <th>حفظ</th>
-                                </tr>
-                            </thead>
-                            <tbody>`;
-                        studentsData.filter(s => s.course_id === courseId).forEach(student => {
-                            html += `<tr>
-                                <td style="font-size: 0.8rem;">${student.students?.full_name || '-'}</td>
-                                <td>
-                                    <select id="exam-select-${student.student_id}" style="padding:3px; font-size: 0.75rem;">
-                                        <option value="">-- اختر اختبار --</option>
-                                        ${examsData.filter(e => e.course_id === courseId).map(exam => `
-                                            <option value="${exam.id}">${exam.title} (/${exam.max_score})</option>
-                                        `).join('')}
-                                    </select>
-                                </td>
-                                <td>
-                                    <input type="date" id="exam-date-${student.student_id}" style="padding:3px; font-size: 0.75rem;">
-                                </td>
-                                <td>
-                                    <input type="number" id="score-${student.student_id}" min="0" style="width:60px; padding:3px; font-size: 0.75rem;" />
-                                </td>
-                                <td>
-                                    <button onclick="saveStudentScore('${student.student_id}')" style="padding:3px 6px; background:#27ae60; color:white; border:none; cursor:pointer; font-size: 0.75rem;">💾 حفظ</button>
-                                </td>
-                            </tr>`;
-                        });
-                        html += `</tbody></table></div>`;
-                    });
-                    container.innerHTML = html;
-                    
-                    // 7. إضافة خاصية البحث
-                    document.getElementById('studentSearch').addEventListener('input', function () {
-                        const searchValue = this.value.toLowerCase();
-                        document.querySelectorAll('.teacher-table tbody tr').forEach(row => {
-                            const studentName = row.cells[0].innerText.toLowerCase();
-                            row.style.display = studentName.includes(searchValue) ? '' : 'none';
-                        });
-                    });
-                } catch (error) {
-                    console.error('💥 خطأ غير متوقع في loadTeacherExams:', error);
-                    container.innerHTML = '<p>❌ حدث خطأ أثناء تحميل بيانات الاختبارات.</p>';
-                }
-            }
-            
-            async function saveStudentScore(studentId) {
-                const examId = document.getElementById(`exam-select-${studentId}`).value;
-                const score = document.getElementById(`score-${studentId}`).value;
-                const examDate = document.getElementById(`exam-date-${studentId}`).value;
-                
-                if (!examId) {
-                    alert('⚠️ يرجى اختيار الاختبار.');
-                    return;
-                }
-                if (score === '' || isNaN(score)) {
-                    alert('⚠️ يرجى إدخال درجة صحيحة.');
-                    return;
-                }
-                
-                console.log(`💾 حفظ الدرجة ${score} للطالب ${studentId} في الاختبار ${examId} بتاريخ ${examDate}`);
-                const { error } = await supabaseClient
-                    .from('exam_scores')
-                    .upsert({
-                        exam_id: examId,
-                        student_id: studentId,
-                        score: score,
-                        exam_date: examDate || null
-                    });
-                if (error) {
-                    console.error('❌ خطأ أثناء حفظ الدرجة:', error);
-                    alert('حدث خطأ أثناء حفظ الدرجة');
-                } else {
-                    alert('✅ تم حفظ الدرجة بنجاح');
-                }
-            }
-            
-            async function loadTeacherStudents() {
+        });
+
+        tableHtml += `
+                </tbody>
+            </table>
+            </div>
+            <p style="margin-top: 10px; font-size: 0.8rem; color: #7f8c8d;"><i class="fas fa-info-circle"></i> ملاحظة: يمكنك تعديل التاريخ والدرجة ثم الضغط على "حفظ" لكل طالب.</p>
+        `;
+
+        tableContainer.innerHTML = tableHtml;
+
+    } catch (error) {
+        console.error('💥 خطأ في loadExamStudentData:', error);
+        tableContainer.innerHTML = `<p class="no-data error">❌ حدث خطأ أثناء تحميل بيانات الطلاب: ${error.message}</p>`;
+        showStatus('خطأ في تحميل بيانات الطلاب.', 'error');
+    }
+}
+// دالة محدثة لحفظ درجة الطالب في امتحان معين
+
+async function loadTeacherStudents() {
                 try {
                     const container = document.getElementById('studentsContainer');
                     container.innerHTML = `

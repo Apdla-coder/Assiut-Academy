@@ -4,6 +4,8 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>تسجيل الدخول</title>
+    <link rel="manifest" href="manifest.json">
+
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <style>
     body {
@@ -394,5 +396,15 @@ if (userFetchError) {
       }
     });
   </script>
+  <script>
+  // تسجيل Service Worker
+  if ('serviceWorker' in navigator) {
+    window.addEventListener('load', () => {
+      navigator.serviceWorker.register('sw.js')
+        .then(reg => console.log('✅ SW Registered: ', reg.scope))
+        .catch(err => console.log('❌ SW Registration Failed: ', err));
+    });
+  }
+</script>
 </body>
 </html>

@@ -1523,7 +1523,6 @@ function showAddExamModal() {
   document.getElementById('examId').value = '';
   document.getElementById('examTitle').value = '';
   document.getElementById('examMaxScore').value = '';
-  document.getElementById('examDate').value = '';
 
   const courseSelect = document.getElementById('examCourse');
   courseSelect.innerHTML = '<option value="">اختر كورساً</option>';
@@ -1595,16 +1594,15 @@ async function showEditExamModal(examId) {
 
 // =============================================================================
 // حفظ (إضافة أو تعديل) اختبار
-// =============================================================================
+// ============================================================================
 async function saveExam() {
   const examId = document.getElementById('examId').value;
   const title = document.getElementById('examTitle').value.trim();
   const maxScore = parseFloat(document.getElementById('examMaxScore').value);
-  const date = document.getElementById('examDate').value;
   const courseId = document.getElementById('examCourse').value;
   const moduleId = document.getElementById('examModule').value;
 
-  if (!title || !maxScore || !date || !courseId || !moduleId) {
+  if (!title || !maxScore  || !courseId || !moduleId) {
     showStatus('يرجى ملء جميع الحقول المطلوبة.', 'error');
     return;
   }
@@ -1613,7 +1611,6 @@ async function saveExam() {
     const examData = {
       title,
       max_score: maxScore,
-      date,
       course_id: courseId,
       module_id: moduleId
     };
