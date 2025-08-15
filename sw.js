@@ -66,7 +66,7 @@ self.addEventListener('fetch', (event) => {
         event.waitUntil(
           fetch(req).then(networkResponse => {
             if (networkResponse && networkResponse.ok) {
-              caches.open(CACHE_NAME).then(cache => cache.put(req, networkResponse.clone()));
+              if (req.url.startsWith('http')) { caches.open(CACHE_NAME).then(cache => cache.put(req, networkResponse.clone())); };
             }
           }).catch(() => {/* فشل التحديث لا يهم الآن */})
         );
@@ -77,9 +77,9 @@ self.addEventListener('fetch', (event) => {
       return fetch(req).then(networkResponse => {
         if (networkResponse && networkResponse.ok) {
           const copy = networkResponse.clone();
-          caches.open(CACHE_NAME).then(cache => {
+          if (req.url.startsWith('http')) { caches.open(CACHE_NAME).then(cache => {
             cache.put(req, copy);
-          });
+          }); };
         }
         return networkResponse;
       }).catch(() => {

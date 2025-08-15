@@ -1,104 +1,197 @@
- // Supabase Configuration
- const supabaseUrl = "https://zefsmckaihzfiqqbdake.supabase.co"
- const supabaseKey = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InplZnNtY2thaWh6ZmlxcWJkYWtlIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTQyMzUzNTgsImV4cCI6MjA2OTgxMTM1OH0.vktk2VkEPtMclb6jb_pFa1DbrqWX9SOZRsBR577o5mc"
- const supabaseClient = supabase.createClient(supabaseUrl, supabaseKey)
+// ===== Supabase Configuration (لازم يكون قبل أي استخدام لـ supabaseClient) =====
+const supabaseUrl = "https://zefsmckaihzfiqqbdake.supabase.co";
+const supabaseKey = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InplZnNtY2thaWh6ZmlxcWJkYWtlIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTQyMzUzNTgsImV4cCI6MjA2OTgxMTM1OH0.vktk2VkEPtMclb6jb_pFa1DbrqWX9SOZRsBR577o5mc";
+const supabaseClient = supabase.createClient(supabaseUrl, supabaseKey);
 
- // Global variables
- // متغير لتتبع آخر تحديث لجدول الحضور
-let lastAttendanceUpdate = null;
-// متغير لتخزين مؤشر التحديث الدوري
-let attendanceRefreshInterval = null;
- let students = [];
- let courses = [];
- let subscriptions = [];
- let payments = [];
- let attendances = [];
- let teachers = [];
-let modules = []; 
- // Initialize the application
-document.addEventListener('DOMContentLoaded', async function() {
- try {
- // Check if user is authenticated
- const { data: { session } } = await supabaseClient.auth.getSession();
- if (!session) {
- window.location.href = 'index.html';
- return;
- }
+// 🟢 الجداول اللي هنسمع لها Realtime
+const realtimeTables = [
+  'students',
+  'courses',
+  'subscriptions',
+  'payments',
+  'attendances',
+  'exams',
+  'exam_scores',
+  'lessons',
+  'materials',
+  'modules',
+  'teacher_attendance',
+  'users'
+];
 
- // Load user data
- const { data: userData, error: userError } = await supabaseClient
- .from('users')
- .select('full_name, role')
- .eq('id', session.user.id)
- .single();
 
- if (userError && userError.code !== 'PGRST116') {
- throw userError;
- }
+function refreshAllTabsData() {
+  if (typeof loadStudents === 'function') loadStudents();
+  if (typeof loadCourses === 'function') loadCourses();
+  if (typeof loadModules === 'function') loadModules();
+  if (typeof loadTeacherExamsForSecretary === 'function') loadTeacherExamsForSecretary();
+  if (typeof loadSubscriptions === 'function') loadSubscriptions();
+  if (typeof loadPayments === 'function') loadPayments();
+  if (typeof loadAttendances === 'function') loadAttendances();
+  if (typeof loadMaterials === 'function') loadMaterials();
+  if (typeof loadUsers === 'function') loadUsers();
+}
 
- if (userData) {
- document.getElementById('userName').textContent = userData.full_name || 'المسؤول';
- 
- // يمكن تخزين الدور (role) في متغير عالمي إذا كنت ستحتاجه لاحقًا
- window.userRole = userData.role;
- }
-
- // ============== تحميل البيانات الأساسية ==============
- // ترتيب التحميل مهم: لا تبدأ بدون هذه البيانات
-
- // 1. تحميل الكورسات
- const { data: coursesData, error: coursesError } = await supabaseClient
- .from('courses')
- .select('*')
- .order('created_at', { ascending: false });
-
- if (coursesError) throw coursesError;
- courses = coursesData || []; // تأكد من تعريف `let courses = []` في الأعلى
-
- // 2. تحميل الوحدات
- const { data: modulesData, error: modulesError } = await supabaseClient
- .from('modules')
- .select('*')
- .order('course_id')
- .order('order');
-
- if (modulesError) throw modulesError;
- modules = modulesData || []; // تأكد من تعريف `let modules = []` في الأعلى
-
- // 3. تحميل الطلبة
- const { data: studentsData, error: studentsError } = await supabaseClient
- .from('students')
- .select('*')
- .order('created_at', { ascending: false });
-
- if (studentsError) throw studentsError;
- students = studentsData || []; // تأكد من تعريف `let students = []` في الأعلى
-
- // ============== تحميل واجهة النظام بعد تحميل البيانات ==============
- await loadDashboardData();
- await loadRecentActivity();
-
- // إظهار التبويب الافتراضي (لوحة التحكم)
- switchTab('dashboard');
-
- } catch (error) {
- console.error('Error loading user data or initial data:', error);
- showStatus('خطأ في تحميل بيانات المستخدم أو البيانات الأساسية', 'error');
- 
- // تحويل إلى صفحة تسجيل الدخول في حالة الخطأ
- window.location.href = 'index.html';
- }
+// 🟢 الاشتراك في Realtime لكل الجداول
+realtimeTables.forEach(table => {
+  supabaseClient
+    .channel(`realtime-${table}`)
+    .on('postgres_changes', { event: '*', schema: 'public', table }, payload => {
+      console.log(`📡 تحديث من جدول ${table}:`, payload);
+      // نعمل تحديث شامل + تحديث التبويب الحالي
+      refreshAllData().then(() => {
+        refreshCurrentTab();
+        triggerGlobalRefresh();
+        refreshAllTabsData(); // ✅ تحديث كل الأقسام // علشان أي تبويب مفتوح يتحدث
+      });
+    })
+    .subscribe();
 });
 
-// Set active link
- function setActiveLink(element) {
- // Remove active class from all links
- document.querySelectorAll('.nav-link').forEach(link => {
- link.classList.remove('active')
- })
- // Add active class to clicked link
- element.classList.add('active')
- }
+
+// ===== Helpers =====
+// إغلاق المودال
+function closeModal(modalId) {
+  const modal = document.getElementById(modalId);
+  if (modal) {
+    modal.style.display = 'none';
+  }
+}
+
+// تفعيل رابط التبويب
+function setActiveLink(element) {
+  // إزالة Active من كل الروابط
+  document.querySelectorAll('.nav-link').forEach(link => {
+    link.classList.remove('active');
+  });
+  // إضافة Active للرابط الحالي
+  if (element) element.classList.add('active');
+}
+
+// ===== قنوات التحديث بين التبويبات =====
+const bc = new BroadcastChannel('globalRefresh');
+
+// استقبال إشارات التحديث من التبويبات الأخرى
+bc.onmessage = (event) => {
+  if (event.data === 'refresh') {
+    console.log('🔄 تم استقبال إشارة تحديث من تبويب آخر');
+    refreshCurrentTab(); // أو refreshAllData()
+  }
+};
+
+// إرسال إشارة تحديث
+function triggerGlobalRefresh() {
+  bc.postMessage('refresh');
+}
+
+// الاستماع لتحديثات localStorage (لتبويبات قديمة)
+window.addEventListener('storage', function (e) {
+  if (e.key === 'dashboardUpdate') {
+    console.log('🔄 تم استقبال إشارة تحديث من تبويب آخر...');
+    refreshAllData();
+  }
+});
+
+// تشغيل التحديث في كل التبويبات
+function broadcastDashboardUpdate() {
+  localStorage.setItem('dashboardUpdate', String(Date.now()));
+}
+
+// ===== متغيرات عامة =====
+let lastAttendanceUpdate = null;           // آخر تحديث للحضور
+let attendanceRefreshInterval = null;      // مؤشر التحديث الدوري
+let students = [];
+let courses = [];
+let subscriptions = [];
+let payments = [];
+let attendances = [];
+let teachers = [];
+let modules = [];
+
+// ===== تحميل/تحديث شامل للبيانات الأساسية =====
+async function refreshAllData() {
+  try {
+    const [c, m, s] = await Promise.all([
+      supabaseClient.from('courses').select('*').order('created_at', { ascending: false }),
+      supabaseClient.from('modules').select('*').order('course_id').order('order'),
+      supabaseClient.from('students').select('*').order('created_at', { ascending: false }),
+    ]);
+    if (c.error) throw c.error;
+    if (m.error) throw m.error;
+    if (s.error) throw s.error;
+
+    courses  = c.data || [];
+    modules  = m.data || [];
+    students = s.data || [];
+  } catch (err) {
+    console.error('refreshAllData error:', err);
+  }
+}
+
+// تحديث التبويب الحالي بأمان
+function refreshCurrentTab() {
+  const activeTab = document.querySelector('.nav-link.active')?.dataset.tab;
+  if (activeTab && typeof switchTab === 'function') {
+    switchTab(activeTab);
+  }
+}
+
+// ===== بدء التشغيل =====
+document.addEventListener('DOMContentLoaded', async function () {
+  try {
+    // التحقق من تسجيل الدخول
+    const { data: { session } } = await supabaseClient.auth.getSession();
+    if (!session) {
+      window.location.href = 'index.html';
+      return;
+    }
+
+    const user = session.user;
+
+    // تحميل بيانات المستخدم
+    const { data: userData, error: userError } = await supabaseClient
+      .from('users')
+      .select('full_name, role')
+      .eq('id', user.id)
+      .single();
+
+    if (userError && userError.code !== 'PGRST116') throw userError;
+
+    if (userData) {
+      const nameEl = document.getElementById('userName');
+      if (nameEl) nameEl.textContent = userData.full_name || 'المسؤول';
+      window.userRole = userData.role;
+    }
+
+    // تحميل أساسي قبل العرض
+    await refreshAllData();
+
+    // تحميل باقي التبويبات في الخلفية بدون تهنيج
+    setTimeout(() => {
+      try {
+        if (typeof loadDashboardData === 'function') loadDashboardData();
+        if (typeof loadRecentActivity === 'function') loadRecentActivity();
+        if (typeof loadSubscriptions === 'function') loadSubscriptions();
+        if (typeof loadPayments === 'function') loadPayments();
+        if (typeof loadAttendances === 'function') loadAttendances();
+        if (typeof loadTeacherExamsForSecretary === 'function') loadTeacherExamsForSecretary();
+        if (typeof loadStudentsForParents === 'function') loadStudentsForParents();
+      } catch (bgErr) {
+        console.warn('Background preload error:', bgErr);
+      }
+    }, 0);
+
+    // إظهار التبويب الافتراضي
+    if (typeof switchTab === 'function') switchTab('dashboard');
+
+  } catch (error) {
+    console.error('Error loading user data or initial data:', error);
+    if (typeof showStatus === 'function') {
+      showStatus('خطأ في تحميل بيانات المستخدم أو البيانات الأساسية', 'error');
+    }
+    window.location.href = 'index.html';
+  }
+});
 
  // دالة بتحدد التبويب اللي ظاهر حاليًا وتشغل دالة التحديث بتاعته
 function refreshCurrentTab() {
@@ -198,6 +291,9 @@ function switchTab(tabName) {
  case 'parents': // <-- إضافة حالة جديدة
  loadStudentsForParents();
  break;
+ case 'profile':
+ loadUserProfile();
+ break;
  default:
  console.warn('تبويب غير معروف:', tabName);
  }
@@ -207,16 +303,9 @@ function switchTab(tabName) {
  // if (window.innerWidth <= 768) { ... }
 }
 // =============================================================================
-function closeModal(modalId) {
- const modal = document.getElementById(modalId);
- if (modal) {
- modal.style.display = 'none';
- }
-}
-function closeModal(modalId) {
- const modal = document.getElementById(modalId);
- if (modal) modal.style.display = 'none';
-}
+
+
+
 
 // بدء التحديث الدوري لجدول الحضور
  function startAttendanceAutoRefresh() {
@@ -319,10 +408,21 @@ async function loadDashboardData() {
  }
 }
 
+// دالة لإعادة إنشاء الـ canvas لمسح أي context قديم
+function resetCanvas(canvasId) {
+  const oldCanvas = document.getElementById(canvasId);
+  if (oldCanvas) {
+    const newCanvas = oldCanvas.cloneNode(true); // عمل نسخة جديدة
+    oldCanvas.parentNode.replaceChild(newCanvas, oldCanvas);
+    return newCanvas.getContext('2d');
+  }
+  return null;
+}
 
+// دالة الرسم
 async function initCharts(tabName) {
   try {
-    // --- Destroy old charts if exist ---
+    // --- تدمير الرسوم البيانية القديمة ---
     if (window.revenueChartInstance?.destroy) {
       window.revenueChartInstance.destroy();
       window.revenueChartInstance = null;
@@ -331,6 +431,10 @@ async function initCharts(tabName) {
       window.studentsChartInstance.destroy();
       window.studentsChartInstance = null;
     }
+
+    // إعادة إنشاء الـ canvas لمسح أي context قديم
+    const studentsCtx = resetCanvas('studentsChart');
+    const revenueCtx = resetCanvas('revenueChart');
 
     // --- Students Distribution Chart ---
     const { data: courseDistributionData, error: courseDistributionError } =
@@ -345,10 +449,8 @@ async function initCharts(tabName) {
       courseData = courseDistributionData.map(item => item.student_count);
     }
 
-    const studentsCtxElement = document.getElementById('studentsChart');
-    if (studentsCtxElement) {
-      const ctx = studentsCtxElement.getContext('2d');
-      window.studentsChartInstance = new Chart(ctx, {
+    if (studentsCtx) {
+      window.studentsChartInstance = new Chart(studentsCtx, {
         type: 'doughnut',
         data: {
           labels: courseLabels,
@@ -361,7 +463,7 @@ async function initCharts(tabName) {
       });
     }
 
-    // --- Monthly Revenue Chart (Paid vs Remaining) ---
+    // --- Monthly Revenue Chart ---
     const { data: paymentsData, error: paymentsError } = await supabaseClient
       .from('payments')
       .select('amount, paid_at, course_id');
@@ -375,14 +477,12 @@ async function initCharts(tabName) {
     const monthlyPaid = {};
     const monthlyRemaining = {};
 
-    // Process paid amounts
     paymentsData.forEach(p => {
       const date = new Date(p.paid_at);
       const monthKey = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
       monthlyPaid[monthKey] = (monthlyPaid[monthKey] || 0) + parseFloat(p.amount || 0);
     });
 
-    // Process remaining amounts
     subsData.forEach(s => {
       const date = new Date(s.subscribed_at);
       const monthKey = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
@@ -407,10 +507,8 @@ async function initCharts(tabName) {
     const paidData = months.map(m => monthlyPaid[m] || 0);
     const remainingData = months.map(m => monthlyRemaining[m] || 0);
 
-    const revenueCtxElement = document.getElementById('revenueChart');
-    if (revenueCtxElement) {
-      const ctx = revenueCtxElement.getContext('2d');
-      window.revenueChartInstance = new Chart(ctx, {
+    if (revenueCtx) {
+      window.revenueChartInstance = new Chart(revenueCtx, {
         type: 'bar',
         data: {
           labels: monthLabels,
@@ -450,30 +548,42 @@ async function initCharts(tabName) {
   }
 }
 
+
+
 // دالة لتحديث كل البيانات في الصفحة
 async function refreshAllData() {
- console.log("🔄 تحديث كامل للبيانات...");
- try {
- // تحديث لوحة التحكم والأنشطة الأخيرة
- await loadDashboardData();
- await loadRecentActivity();
+  console.log('🔄 تحديث كل البيانات من المصدر...');
+  try {
+    if (typeof loadStudentsFromSupabase === 'function') {
+      await loadStudentsFromSupabase();
+    }
+    if (typeof loadCoursesFromSupabase === 'function') {
+      await loadCoursesFromSupabase();
+    }
+    if (typeof loadExamsFromSupabase === 'function') {
+      await loadExamsFromSupabase();
+    }
+    if (typeof loadSubscriptionsFromSupabase === 'function') {
+      await loadSubscriptionsFromSupabase();
+    }
+    if (typeof loadPaymentsFromSupabase === 'function') {
+      await loadPaymentsFromSupabase();
+    }
 
- // تحديث باقي الجداول
- // استخدام await لكي نتأكد إن كل حاجة اتحدثت
- await loadStudents().catch(err => console.error("خطأ في تحديث الطلبة:", err));
- await loadCourses().catch(err => console.error("خطأ في تحديث الكورسات:", err));
- await loadSubscriptions().catch(err => console.error("خطأ في تحديث الاشتراكات:", err));
- await loadPayments().catch(err => console.error("خطأ في تحديث المدفوعات:", err));
- await loadAttendances().catch(err => console.error("خطأ في تحديث الحضور:", err));
- await loadTeacherExamsForSecretary().catch(err => console.error("خطأ في تحديث الامتحانات:", err));
- await loadStudentsForParents().catch(err => console.error("خطأ في تحديث بيانات أولياء الأمور:", err));
-
- console.log("✅ تم التحديث الكامل للبيانات.");
- } catch (error) {
- console.error("❌ خطأ أثناء التحديث الكامل:", error);
- showStatus('حدث خطأ أثناء التحديث الكامل للبيانات', 'error');
- }
+    if (typeof renderStudents === 'function') renderStudents();
+    if (typeof renderCourses === 'function') renderCourses();
+    if (typeof renderExams === 'function') renderExams();
+    if (typeof renderSubscriptions === 'function') renderSubscriptions();
+    if (typeof renderPayments === 'function') renderPayments();
+    
+  } catch (error) {
+    console.error('❌ فشل في تحديث البيانات:', error);
+    if (typeof showStatus === 'function') {
+      showStatus('فشل في تحديث البيانات', 'error');
+    }
+  }
 }
+
 
  // Load recent activity
  async function loadRecentActivity() {
@@ -584,120 +694,91 @@ async function refreshAllData() {
  }
 
  // Load students
- async function loadStudents() {
- try {
- const container = document.getElementById('studentsContainer')
- container.innerHTML = `<div class="loading"><div class="loading-spinner"></div><p>جارٍ تحميل بيانات الطلبة...</p></div>`
+// تحميل بيانات الطلاب
+async function loadStudents() {
+  try {
+    const container = document.getElementById('studentsContainer');
+    container.innerHTML = `<div class="loading"><div class="loading-spinner"></div><p>جارٍ تحميل بيانات الطلبة...</p></div>`;
 
- const { data, error } = await supabaseClient
- .from('students')
- .select('*')
- .order('created_at', { ascending: false })
+    const { data, error } = await supabaseClient
+      .from('students')
+      .select('*')
+      .order('created_at', { ascending: false });
 
- if (error) throw error
- students = data
+    if (error) throw error;
+    students = data;
 
- container.innerHTML = `
- <div class="table-container">
- <button class="btn btn-primary" onclick="showAddStudentModal()" style="margin-bottom: 20px;">
- <i class="fas fa-plus"></i> إضافة طالب جديد
- </button>
- <table>
- <thead>
- <tr>
- <th>الاسم</th>
- <th>البريد الإلكتروني</th>
- <th>رقم هاتف الطالب</th>
- <th>رقم ولي الأمر</th> <!-- عنوان جديد -->
- <th>تاريخ التسجيل</th>
- <th>الإجراءات</th>
- </tr>
- </thead>
- <tbody>
- ${data.map(student => `
- <tr>
- <td>${student.full_name}</td>
- <td>${student.email || '-'}</td>
- <td>${student.phone || '-'}</td>
- <td>${student.parent_phone || '-'}</td> <!-- عمود جديد -->
- <td>${formatDate(student.created_at)}</td>
- <td class="action-buttons">
- <button class="action-btn view-btn" onclick="showStudentFullDetails('${student.id}')">
- <i class="fas fa-eye"></i>
- </button>
- <button class="action-btn edit-btn" onclick="showEditStudentModal('${student.id}')">
- <i class="fas fa-edit"></i>
- </button>
- <button class="action-btn delete-btn" onclick="deleteStudent('${student.id}')">
- <i class="fas fa-trash"></i>
- </button>
- </td>
- </tr>
- `).join('')}
- </tbody>
- </table>
- </div>
- `
- console.log("✅ تم تحديث جدول الطلبة بنجاح"); // <-- رسالة جديدة
- } catch (error) {
- console.error('Error loading students:', error)
- document.getElementById('studentsContainer').innerHTML = `<div class="loading"><p>خطأ في تحميل بيانات الطلبة</p></div>`
- showStatus('خطأ في تحميل بيانات الطلبة', 'error')
- }
- }
- // Filter students
- function filterStudents() {
- const searchTerm = document.getElementById('studentSearch').value.toLowerCase()
- const filteredStudents = students.filter(student =>
- student.full_name.toLowerCase().includes(searchTerm) ||
- (student.email && student.email.toLowerCase().includes(searchTerm)) ||
- (student.phone && student.phone.includes(searchTerm)) ||
- (student.parent_phone && student.parent_phone.includes(searchTerm)) // إضافة فلترة لرقم ولي الأمر
- )
+    container.innerHTML = `
+      <div class="table-container">
+        <button class="btn btn-primary" onclick="showAddStudentModal()" style="margin-bottom: 20px;">
+          <i class="fas fa-plus"></i> إضافة طالب جديد
+        </button>
+        <table>
+          <thead>
+            <tr>
+              <th>الاسم</th>
+              <th>البريد الإلكتروني</th>
+              <th>رقم هاتف الطالب</th>
+              <th>رقم ولي الأمر</th>
+              <th>تاريخ التسجيل</th>
+              <th>الإجراءات</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${data.map(student => `
+              <tr>
+                <td>${student.full_name}</td>
+                <td>${student.email || '-'}</td>
+                <td>${student.phone || '-'}</td>
+                <td>${student.parent_phone || '-'}</td>
+                <td>${formatDate(student.created_at)}</td>
+                <td class="action-buttons">
+                  <button class="action-btn view-btn" onclick="showStudentFullDetails('${student.id}')">
+                    <i class="fas fa-eye"></i>
+                  </button>
+                  <button class="action-btn edit-btn" onclick="showEditStudentModal('${student.id}')">
+                    <i class="fas fa-edit"></i>
+                  </button>
+                  <button class="action-btn delete-btn" onclick="deleteStudent('${student.id}')">
+                    <i class="fas fa-trash"></i>
+                  </button>
+                </td>
+              </tr>
+            `).join('')}
+          </tbody>
+        </table>
+      </div>
+    `;
+    console.log("✅ تم تحديث جدول الطلبة بنجاح");
+  } catch (error) {
+    console.error('Error loading students:', error);
+    document.getElementById('studentsContainer').innerHTML = `<div class="loading"><p>خطأ في تحميل بيانات الطلبة</p></div>`;
+    showStatus('خطأ في تحميل بيانات الطلبة', 'error');
+  }
+}
 
- const container = document.getElementById('studentsContainer')
- container.innerHTML = `
- <div class="table-container">
- <button class="btn btn-primary" onclick="showAddStudentModal()" style="margin-bottom: 20px;">
- <i class="fas fa-plus"></i> إضافة طالب جديد
- </button>
- <table>
- <thead>
- <tr>
- <th>الاسم</th>
- <th>البريد الإلكتروني</th>
- <th>رقم هاتف الطالب</th>
- <th>رقم ولي الأمر</th> <!-- عنوان جديد -->
- <th>تاريخ التسجيل</th>
- <th>الإجراءات</th>
- </tr>
- </thead>
- <tbody>
- ${filteredStudents.map(student => `
- <tr>
- <td>${student.full_name}</td>
- <td>${student.email || '-'}</td>
- <td>${student.phone || '-'}</td>
- <td>${student.parent_phone || '-'}</td> <!-- عمود جديد -->
- <td>${formatDate(student.created_at)}</td>
- <td class="action-buttons">
- <button class="action-btn view-btn" onclick="showStudentFullDetails('${student.id}')">
- <i class="fas fa-eye"></i>
- </button>
- <button class="action-btn edit-btn" onclick="showEditStudentModal('${student.id}')">
- <i class="fas fa-edit"></i>
- </button>
- <button class="action-btn delete-btn" onclick="deleteStudent('${student.id}')">
- <i class="fas fa-trash"></i>
- </button>
- </td>
- </tr>
- `).join('')}
- </tbody>
- </table>
- </div>
- `
- }
+// حذف طالب
+async function deleteStudent(studentId) {
+  if (!confirm('هل أنت متأكد من حذف هذا الطالب؟')) return;
+
+  try {
+    const { error } = await supabaseClient
+      .from('students')
+      .delete()
+      .eq('id', studentId);
+
+    if (error) throw error;
+
+    showStatus('✅ تم حذف الطالب بنجاح', 'success');
+    broadcastDashboardUpdate();
+await loadStudents();               // تحديث الجدول الحالي
+    broadcastDashboardUpdate();         // إرسال إشارة للتبويبات الأخرى
+
+  } catch (err) {
+    console.error("❌ خطأ أثناء حذف الطالب:", err);
+    showStatus('حدث خطأ أثناء حذف الطالب', 'error');
+  }
+}
 
  // Show add student modal
  async function showAddStudentModal() {
@@ -740,6 +821,7 @@ refreshCurrentTab(); // بعدين تحديث التبويب الحالي // ت�
 
  // Add student
  async function addStudent() {
+    triggerGlobalRefresh();
  try {
  const fullName = document.getElementById('fullName').value
  const email = document.getElementById('email').value
@@ -760,6 +842,7 @@ refreshCurrentTab(); // بعدين تحديث التبويب الحالي // ت�
  if (error) throw error
 
  showStatus('تم إضافة الطالب بنجاح')
+ broadcastDashboardUpdate();
  closeModal('studentModal')
  loadStudents()
  } catch (error) {
@@ -770,6 +853,7 @@ refreshCurrentTab(); // بعدين تحديث التبويب الحالي // ت�
 
  // Update student
  async function updateStudent(studentId) {
+    triggerGlobalRefresh();
  try {
  const fullName = document.getElementById('fullName').value
  const email = document.getElementById('email').value
@@ -790,6 +874,7 @@ refreshCurrentTab(); // بعدين تحديث التبويب الحالي // ت�
  if (error) throw error
 
  showStatus('تم تحديث بيانات الطالب بنجاح')
+ broadcastDashboardUpdate();
  closeModal('studentModal')
  loadStudents()
  } catch (error) {
@@ -1094,6 +1179,7 @@ async function generateAndSendReport(studentId) {
  window.open(whatsappUrl, '_blank');
 
  showStatus(`جارٍ فتح الواتساب لإرسال التقرير إلى ${studentName} (${formattedPhoneNumber})...`, 'success');
+ broadcastDashboardUpdate();
 
  } catch (error) {
  console.error('Error generating or sending report for student ID:', studentId, error);
@@ -1602,47 +1688,49 @@ function searchHandler() {
 // عرض نموذج إضافة اختبار
 // =============================================================================
 async function showAddExamModal() {
- const modal = document.getElementById('examModal');
- if (!modal) return;
+  const modal = document.getElementById('examModal');
+  if (!modal) return;
 
- document.getElementById('examModalTitle').textContent = 'إضافة اختبار جديد';
- document.getElementById('examId').value = '';
- document.getElementById('examTitle').value = '';
- document.getElementById('examMaxScore').value = '';
+  // تأكد من تحميل الوحدات قبل عرض المودال
+  if (!modules.length && typeof loadModules === 'function') {
+    await loadModules();
+  }
 
- const courseSelect = document.getElementById('examCourse');
- courseSelect.innerHTML = '<option value="">اختر كورساً</option>';
+  document.getElementById('examModalTitle').textContent = 'إضافة اختبار جديد';
+  document.getElementById('examId').value = '';
+  document.getElementById('examTitle').value = '';
+  document.getElementById('examMaxScore').value = '';
 
- if (courses && courses.length > 0) {
- courses.forEach(course => {
- const option = document.createElement('option');
- option.value = course.id;
- option.textContent = course.name;
- courseSelect.appendChild(option);
- });
- } else {
- console.warn('قائمة الكورسات فارغة أو غير محملة');
- }
+  const courseSelect = document.getElementById('examCourse');
+  courseSelect.innerHTML = '<option value="">اختر كورساً</option>';
 
- // تحديث الوحدات عند تغيير الدورة
- courseSelect.onchange = function () {
- const moduleSelect = document.getElementById('examModule');
- moduleSelect.innerHTML = '<option value="">اختر وحدة</option>';
- const selectedCourseId = this.value;
- if (!selectedCourseId) return;
+  if (courses && courses.length > 0) {
+    courses.forEach(course => {
+      const option = document.createElement('option');
+      option.value = course.id;
+      option.textContent = course.name;
+      courseSelect.appendChild(option);
+    });
+  } else {
+    console.warn('قائمة الكورسات فارغة أو غير محملة');
+  }
 
- const filteredModules = modules.filter(m => m.course_id == selectedCourseId);
- filteredModules.forEach(mod => {
- const option = document.createElement('option');
- option.value = mod.id;
- option.textContent = mod.title;
- moduleSelect.appendChild(option);
- });
- };
+  courseSelect.onchange = function () {
+    const moduleSelect = document.getElementById('examModule');
+    moduleSelect.innerHTML = '<option value="">اختر وحدة</option>';
+    const selectedCourseId = this.value;
+    if (!selectedCourseId) return;
 
- modal.style.display = 'block';
- await refreshAllData(); // انتظار انتهاء تحديث كل البيانات
-refreshCurrentTab(); // بعدين تحديث التبويب الحالي
+    const filteredModules = modules.filter(m => m.course_id == selectedCourseId);
+    filteredModules.forEach(mod => {
+      const option = document.createElement('option');
+      option.value = mod.id;
+      option.textContent = mod.title;
+      moduleSelect.appendChild(option);
+    });
+  };
+
+  modal.style.display = 'block';
 }
 
 // =============================================================================
@@ -1686,6 +1774,7 @@ refreshCurrentTab(); // بعدين تحديث التبويب الحالي
 // حفظ (إضافة أو تعديل) اختبار
 // ============================================================================
 async function saveExam() {
+    triggerGlobalRefresh();
  const examId = document.getElementById('examId').value;
  const title = document.getElementById('examTitle').value.trim();
  const maxScore = parseFloat(document.getElementById('examMaxScore').value);
@@ -1723,6 +1812,7 @@ async function saveExam() {
  if (error) throw error;
 
  showStatus(`تم ${examId ? 'تحديث' : 'إضافة'} الاختبار بنجاح.`);
+ broadcastDashboardUpdate();
  closeModal('examModal');
  loadTeacherExamsForSecretary();
  } catch (err) {
@@ -1733,6 +1823,7 @@ async function saveExam() {
 
 // --- Delete student (add near other delete functions) ---
 async function deleteStudent(studentId) {
+    triggerGlobalRefresh();
  if (!confirm('هل أنت متأكد من حذف هذا الطالب؟ سيتم أيضاً حذف السجلات المرتبطة (حضور، دفعات، اشتراكات) إذا اخترت المتابعة.')) return;
 
  try {
@@ -1749,6 +1840,7 @@ async function deleteStudent(studentId) {
  const proceed = confirm('يوجد سجلات مرتبطة بهذا الطالب (حضور/دفع/اشتراك). هل تريد حذف هذه السجلات أولاً ثم حذف الطالب؟ اختر "موافق" للحذف الكامل أو "إلغاء" لإيقاف العملية.');
  if (!proceed) {
  showStatus('تم إلغاء حذف الطالب', 'info');
+ broadcastDashboardUpdate();
         await refreshAllData();
         refreshCurrentTab();
         await refreshTab('dashboard');
@@ -1779,6 +1871,7 @@ async function deleteStudent(studentId) {
  if (error) throw error;
 
  showStatus('تم حذف الطالب وجميع السجلات المرتبطة (إن وجدت).');
+ broadcastDashboardUpdate();
  loadStudents();
  } catch (err) {
  console.error('Error deleting student:', err);
@@ -1797,6 +1890,7 @@ refreshCurrentTab(); // بعدين تحديث التبويب الحالي // <--
 // حذف اختبار
 // =============================================================================
 async function deleteExam(examId) {
+    triggerGlobalRefresh();
  if (!confirm('هل أنت متأكد من حذف هذا الاختبار؟')) return;
 
  const { error } = await supabaseClient.from('exams').delete().eq('id', examId);
@@ -1815,6 +1909,7 @@ async function deleteExam(examId) {
         await refreshTab('teacherExams');
  } else {
  showStatus('تم حذف الاختبار بنجاح');
+ broadcastDashboardUpdate();
  loadTeacherExamsForSecretary();
  }
  await refreshAllData(); // انتظار انتهاء تحديث كل البيانات
@@ -1824,6 +1919,7 @@ refreshCurrentTab(); // بعدين تحديث التبويب الحالي // <--
 // 
 // Add course
 async function addCourse() {
+    triggerGlobalRefresh();
  try {
  const courseName = document.getElementById('courseName').value.trim();
  const description = document.getElementById('courseDescription').value.trim();
@@ -1865,6 +1961,7 @@ async function addCourse() {
  if (error) throw error;
 
  showStatus('تم إضافة الدورة بنجاح');
+ broadcastDashboardUpdate();
  closeModal('courseModal');
  loadCourses(); // إعادة تحميل قائمة الكورسات
  } catch (error) {
@@ -2039,6 +2136,7 @@ async function loadCourses() {
 }
 // حذف دورة
 async function deleteCourse(courseId) {
+    triggerGlobalRefresh();
  if (!confirm('هل أنت متأكد من حذف هذا الدورة؟ سيتم فحص السجلات المرتبطة أولاً.')) return;
 
  try {
@@ -2056,6 +2154,7 @@ async function deleteCourse(courseId) {
  const proceed = confirm('يوجد سجلات مرتبطة بهذا الدورة (حضور/دروس/اشتراكات/دفعات). اضغط OK لحذف هذه السجلات تلقائياً ثم حذف الدورة، أو Cancel لإلغاء.');
  if (!proceed) {
  showStatus('تم إلغاء حذف الدورة.', 'info');
+ broadcastDashboardUpdate();
         await refreshAllData();
         refreshCurrentTab();
         await refreshTab('dashboard');
@@ -2093,6 +2192,7 @@ async function deleteCourse(courseId) {
  if (error) throw error;
 
  showStatus('تم حذف الدورة وكل السجلات المرتبطة (إن وجدت).');
+ broadcastDashboardUpdate();
  loadCourses();
  } catch (error) {
  console.error('Error deleting course:', error);
@@ -2358,6 +2458,7 @@ async function addModule(courseId) {
  if (error) throw error;
 
  showStatus('تم إضافة الوحدة بنجاح');
+ broadcastDashboardUpdate();
  closeModal('moduleModal');
  // إعادة تحميل الوحدات والدروس
  await loadCourseModulesAndLessons(courseId);
@@ -2427,6 +2528,7 @@ async function updateModule(moduleId) {
  if (error) throw error;
 
  showStatus('تم تحديث الوحدة بنجاح');
+ broadcastDashboardUpdate();
  closeModal('moduleModal');
  // إعادة تحميل الوحدات والدروس
  if (currentCourseId) {
@@ -2456,6 +2558,7 @@ async function deleteModule(moduleId) {
  if (error) throw error;
 
  showStatus('تم حذف الوحدة بنجاح');
+ broadcastDashboardUpdate();
  // إعادة تحميل الوحدات والدروس
  if (currentCourseId) {
  await loadCourseModulesAndLessons(currentCourseId);
@@ -2699,6 +2802,7 @@ console.log("🚀 [إرسال الطلب] بيانات الإدخال:", { modul
  // --- نهاية محاولة الإدخال ---
 
  showStatus('تم إضافة الدرس بنجاح');
+ broadcastDashboardUpdate();
  closeModal('lessonModal');
  // إعادة تحميل الوحدات والدروس
  await loadCourseModulesAndLessons(moduleData.course_id);
@@ -2790,6 +2894,7 @@ async function updateLesson(lessonId) {
  if (error) throw error;
 
  showStatus('تم تحديث الدرس بنجاح');
+ broadcastDashboardUpdate();
  closeModal('lessonModal');
  // إعادة تحميل الوحدات والدروس
  await loadCourseModulesAndLessons(moduleData.course_id);
@@ -2826,6 +2931,7 @@ async function deleteLesson(lessonId) {
  if (error) throw error;
 
  showStatus('تم حذف الدرس بنجاح');
+ broadcastDashboardUpdate();
  // إعادة تحميل الوحدات والدروس
  await loadCourseModulesAndLessons(lessonData.course_id);
 
@@ -3075,6 +3181,7 @@ refreshCurrentTab(); // بعدين تحديث التبويب الحالي // <--
  if (error) throw error
 
  showStatus('تم إضافة الاشتراك بنجاح')
+ broadcastDashboardUpdate();
  closeModal('subscriptionModal')
  loadSubscriptions()
  } catch (error) {
@@ -3106,6 +3213,7 @@ refreshCurrentTab(); // بعدين تحديث التبويب الحالي // <--
  if (error) throw error
 
  showStatus('تم تحديث بيانات الاشتراك بنجاح')
+ broadcastDashboardUpdate();
  closeModal('subscriptionModal')
  loadSubscriptions()
  } catch (error) {
@@ -3131,6 +3239,7 @@ refreshCurrentTab(); // بعدين تحديث التبويب الحالي
  if (error) throw error
 
  showStatus('تم حذف الاشتراك بنجاح')
+ broadcastDashboardUpdate();
  loadSubscriptions()
  } catch (error) {
  console.error('Error deleting subscription:', error)
@@ -3503,6 +3612,7 @@ function printAttendanceReceipt() {
 }
  // دالة لتحديث إجمالي سعر الدورة تلقائيًا عند اختيار الدورة
  async function updateCourseTotalAmount() {
+    triggerGlobalRefresh();
  // الطريقة الجديدة باستخدام dataset
  const courseSelect = document.getElementById('paymentCourse');
  const selectedOption = courseSelect ? courseSelect.options[courseSelect.selectedIndex] : null;
@@ -3633,6 +3743,7 @@ refreshCurrentTab(); // بعدين تحديث التبويب الحالي // <--
  if (error) throw error
 
  showStatus('تم إضافة الدفعة بنجاح')
+ broadcastDashboardUpdate();
  closeModal('paymentModal')
  loadPayments()
  } catch (error) {
@@ -3670,6 +3781,7 @@ refreshCurrentTab(); // بعدين تحديث التبويب الحالي // <--
  if (error) throw error
 
  showStatus('تم تحديث بيانات الدفعة بنجاح')
+ broadcastDashboardUpdate();
  closeModal('paymentModal')
  loadPayments()
  } catch (error) {
@@ -3717,6 +3829,7 @@ refreshCurrentTab(); // بعدين تحديث التبويب الحالي // <--
  if (error) throw error
 
  showStatus('تم حذف الدفعة بنجاح')
+ broadcastDashboardUpdate();
  loadPayments()
  } catch (error) {
  console.error('Error deleting payment:', error)
@@ -3977,6 +4090,7 @@ refreshCurrentTab(); // بعدين تحديث التبويب الحالي // <--
 // دالة لتحديث إجمالي سعر الدورة تلقائياً
 // Update course
 async function updateCourse(courseId) {
+    triggerGlobalRefresh();
  try {
  const courseName = document.getElementById('courseName').value.trim();
  const description = document.getElementById('courseDescription').value.trim();
@@ -4017,6 +4131,7 @@ async function updateCourse(courseId) {
  if (error) throw error;
 
  showStatus('تم تحديث بيانات الدورة بنجاح');
+ broadcastDashboardUpdate();
  closeModal('courseModal');
  loadCourses(); // إعادة تحميل قائمة الكورسات
  } catch (error) {
@@ -4093,6 +4208,7 @@ async function updateCourse(courseId) {
  if (error) throw error
 
  showStatus('تم إضافة الحضور بنجاح')
+ broadcastDashboardUpdate();
  closeModal('attendanceModal')
  loadAttendances()
  } catch (error) {
@@ -4124,6 +4240,7 @@ async function updateCourse(courseId) {
  if (error) throw error
 
  showStatus('تم تحديث بيانات الحضور بنجاح')
+ broadcastDashboardUpdate();
  closeModal('attendanceModal')
  loadAttendances()
  } catch (error) {
@@ -4151,6 +4268,7 @@ refreshCurrentTab(); // بعدين تحديث التبويب الحالي // <--
  if (error) throw error
 
  showStatus('تم حذف الحضور بنجاح')
+ broadcastDashboardUpdate();
  loadAttendances()
  } catch (error) {
  console.error('Error deleting attendance:', error)
@@ -4323,6 +4441,7 @@ function printAttendanceReceipt() {
 
  // Show status message
  function showStatus(message, type = 'success') {
+ broadcastDashboardUpdate();
  const statusEl = document.getElementById('status')
  statusEl.textContent = message
  statusEl.className = ''
@@ -4418,6 +4537,7 @@ async function updateAvatarUrl() {
       .eq('id', user.id);
     if (error) throw error;
     showStatus('تم تحديث صورة البروفايل بنجاح');
+    broadcastDashboardUpdate();
     loadUserAvatar();
   } catch (err) {
     console.error('Error updating avatar:', err);
@@ -4426,25 +4546,80 @@ async function updateAvatarUrl() {
 }
 
 // ===== Load Current User Profile =====
+// ========== Load User Profile Function ==========
 async function loadUserProfile() {
   try {
-    const user = supabaseClient.auth.user();
-    if (!user) return;
-    const { data, error } = await supabaseClient
+    const container = document.getElementById('profileContainer');
+    container.innerHTML = `<div class="loading"><p>جارٍ تحميل بيانات الملف الشخصي...</p></div>`;
+
+    const { data: { user }, error: userError } = await supabaseClient.auth.getUser();
+    if (userError || !user) {
+      container.innerHTML = '<p class="error">لم يتم تسجيل الدخول</p>';
+      return;
+    }
+
+    const { data: userData, error } = await supabaseClient
       .from('users')
-      .select('full_name, email, phone, avatar_url')
+      .select('full_name, email, role, avatar_url, created_at')
       .eq('id', user.id)
       .single();
+
     if (error) throw error;
 
-    document.getElementById('profile-name').textContent = data.full_name || '';
-    document.getElementById('profile-email').textContent = data.email || '';
-    document.getElementById('profile-phone').textContent = data.phone || '';
-    document.getElementById('avatar-url-input').value = data.avatar_url || '';
+    container.innerHTML = `
+      <div style="max-width:450px; margin:auto; text-align:center; background:#fff; padding:30px; border-radius:16px; box-shadow:0 4px 15px rgba(0,0,0,0.08);">
+
+        <div style="position:relative; display:inline-block;">
+          <img src="${userData.avatar_url || 'https://via.placeholder.com/150'}" 
+               alt="الصورة الشخصية" 
+               style="width:140px; height:140px; border-radius:50%; object-fit:cover; border:4px solid #fff; box-shadow:0 4px 12px rgba(0,0,0,0.15);">
+        </div>
+
+        <h2 style="margin-top:15px; font-size:1.4rem; color:#333;">${userData.full_name || '-'}</h2>
+        <p style="color:#888; margin:4px 0 15px;">${userData.role || '-'}</p>
+
+        <div style="text-align:right; font-size:0.95rem; color:#444; margin-bottom:10px;">
+          <strong>📧 البريد الإلكتروني:</strong> ${userData.email || '-'}
+        </div>
+        <div style="text-align:right; font-size:0.95rem; color:#444; margin-bottom:10px;">
+          <strong>📅 تاريخ التسجيل:</strong> ${formatDate(userData.created_at) || '-'}
+        </div>
+
+        <div style="margin-top:20px; text-align:right;">
+          <label for="avatarUrl" style="font-weight:600; display:block; margin-bottom:5px;">رابط الصورة (Avatar URL)</label>
+          <input type="text" id="avatarUrl" value="${userData.avatar_url || ''}" 
+                 style="width:100%; padding:10px; border:1px solid #ddd; border-radius:8px; font-size:0.95rem;">
+        </div>
+
+        <button class="btn btn-primary" style="margin-top:20px; background:#ff6600; border:none; padding:10px 20px; border-radius:8px; font-size:1rem; cursor:pointer;" onclick="updateAvatarUrl('${user.id}')">
+          <i class="fas fa-save"></i> حفظ التغييرات
+        </button>
+      </div>
+    `;
   } catch (err) {
     console.error('Error loading profile:', err);
+    document.getElementById('profileContainer').innerHTML = '<p class="error">خطأ في تحميل البيانات</p>';
   }
 }
+
+async function updateAvatarUrl(userId) {
+  try {
+    const newUrl = document.getElementById('avatarUrl').value.trim();
+    const { error } = await supabaseClient
+      .from('users')
+      .update({ avatar_url: newUrl })
+      .eq('id', userId);
+
+    if (error) throw error;
+
+    showStatus('تم تحديث الصورة بنجاح', 'success');
+    loadUserProfile();
+  } catch (err) {
+    console.error('Error updating avatar:', err);
+    showStatus('خطأ في تحديث الصورة', 'error');
+  }
+}
+
 
 // ===== Secretary Attendance =====
 async function handleSecretaryAttendance() {
@@ -4488,3 +4663,52 @@ async function handleSecretaryAttendance() {
     console.error('Error handling secretary attendance:', err);
   }
 }
+// ========== Filter Students Function ==========
+function filterStudents() {
+  const searchTerm = document.getElementById('studentSearch')?.value.toLowerCase() || '';
+  const table = document.getElementById('studentsContainer')?.getElementsByTagName('table')[0];
+  if (!table) return;
+  const rows = table.getElementsByTagName('tr');
+
+  for (let i = 1; i < rows.length; i++) { // Skip table header
+    const cells = rows[i].getElementsByTagName('td');
+    let found = false;
+    for (let j = 0; j < cells.length - 1; j++) { // exclude last cell (actions)
+      if (cells[j].textContent.toLowerCase().includes(searchTerm)) {
+        found = true;
+        break;
+      }
+    }
+    rows[i].style.display = found ? '' : 'none';
+  }
+}
+
+
+
+// --- Move Sidebar Content to Top Bar in Mobile ---
+function moveSidebarToTopBar() {
+    if (window.innerWidth <= 768) {
+        const tabsBar = document.querySelector(".tabs-bar");
+        const sidebar = document.querySelector(".sidebar");
+        if (sidebar && tabsBar && tabsBar.children.length === 0) {
+            tabsBar.innerHTML = "";
+            [...sidebar.children].forEach(child => {
+                let clone = child.cloneNode(true);
+                tabsBar.appendChild(clone);
+            });
+        }
+    }
+}
+
+document.addEventListener("DOMContentLoaded", function () {
+    if (window.innerWidth <= 768) {
+        const sidebar = document.querySelector(".sidebar");
+        if (sidebar) {
+            const observer = new MutationObserver(() => {
+                moveSidebarToTopBar();
+            });
+            observer.observe(sidebar, { childList: true, subtree: true });
+        }
+        setTimeout(moveSidebarToTopBar, 1000);
+    }
+});
