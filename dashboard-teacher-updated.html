@@ -1,0 +1,173 @@
+
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>لوحة التحكم - المعلم</title>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<style>
+:root {
+    --primary: #f97316;
+    --primary-dark: #ea580c;
+    --success: #059669;
+    --danger: #dc2626;
+    --light: #f9fafb;
+    --gray: #6b7280;
+}
+body { font-family: 'Tajawal', sans-serif; margin:0; background-color: #f0f2f5; display:flex; min-height:100vh; }
+.sidebar { width: 250px; background-color: #1f2937; color:white; padding:20px 0; position:fixed; height:100%; overflow:auto; }
+.sidebar h3 { text-align:center; margin:0; }
+.sidebar-menu { list-style:none; padding:0; }
+.sidebar-menu li a { display:flex; align-items:center; color:#ddd; padding:12px 20px; text-decoration:none; transition:0.3s; }
+.sidebar-menu li a:hover, .sidebar-menu li a.active { background-color:rgba(255,255,255,0.1); border-right:4px solid var(--primary); color:white; }
+.sidebar-menu i { margin-left:10px; }
+.content { flex:1; margin-right:250px; padding:20px; }
+.header { display:flex; justify-content:space-between; align-items:center; background:white; padding:10px 20px; border-radius:8px; margin-bottom:20px; }
+.header-buttons button { padding:8px 15px; border:none; border-radius:5px; cursor:pointer; color:white; }
+.btn-success { background-color:var(--success); }
+.btn-danger { background-color:var(--danger); }
+.status-message { padding:10px; border-radius:5px; margin-bottom:20px; display:none; text-align:center; }
+.status-message.success { background:#d1fae5; color:var(--success); }
+.status-message.error { background:#fee2e2; color:var(--danger); }
+.table-container { overflow-x:auto; background:white; border-radius:8px; padding:10px; }
+table { width:100%; border-collapse:collapse; }
+th, td { padding:8px 10px; border-bottom:1px solid #ddd; }
+th { background:var(--light); }
+.search-box { margin-bottom:10px; }
+@media (max-width:768px) {
+    .sidebar { width:70px; }
+    .sidebar h3, .sidebar-menu span { display:none; }
+    .content { margin-right:70px; }
+    .header { flex-direction:column; gap:10px; }
+}
+</style>
+</head>
+<body>
+<div class="sidebar">
+    <h3>Assiut Academy</h3>
+    <ul class="sidebar-menu">
+        <li><a href="#" class="active" onclick="switchTab('dashboard', this)"><i class="fas fa-tachometer-alt"></i><span>نظرة عامة</span></a></li>
+        <li><a href="#" onclick="switchTab('courses', this)"><i class="fas fa-book"></i><span>كورساتي</span></a></li>
+        <li><a href="#" onclick="switchTab('students', this)"><i class="fas fa-users"></i><span>طلابي</span></a></li>
+        <li><a href="#" onclick="switchTab('attendances', this)"><i class="fas fa-calendar-check"></i><span>حضور الطلاب</span></a></li>
+        <li><a href="#" onclick="switchTab('myattendance', this)"><i class="fas fa-user-check"></i><span>حضوري</span></a></li>
+    </ul>
+</div>
+<div class="content">
+    <div class="header">
+        <div>مرحبًا بك، <span id="userName">المعلم</span></div>
+        <div class="header-buttons">
+            <button id="checkInBtn" class="btn-success" onclick="recordCheckIn()"><i class="fas fa-sign-in-alt"></i> تسجيل حضور</button>
+            <button id="checkOutBtn" class="btn-danger" onclick="recordCheckOut()"><i class="fas fa-sign-out-alt"></i> تسجيل انصراف</button>
+        </div>
+    </div>
+    <div id="statusMessage" class="status-message"></div>
+
+    <div id="dashboardContent" class="tab-content" style="display:block;">
+        <p>هنا نظرة عامة...</p>
+    </div>
+    <div id="coursesContent" class="tab-content" style="display:none;">
+        <p>بيانات الكورسات...</p>
+    </div>
+    <div id="studentsContent" class="tab-content" style="display:none;">
+        <p>بيانات الطلاب...</p>
+    </div>
+    <div id="attendancesContent" class="tab-content" style="display:none;">
+        <p>حضور الطلاب...</p>
+    </div>
+    <div id="myattendanceContent" class="tab-content" style="display:none;">
+        <h3>سجل حضوري</h3>
+        <input type="text" id="searchMyAttendance" class="search-box" placeholder="بحث...">
+        <div class="table-container">
+            <table>
+                <thead>
+                    <tr><th>التاريخ</th><th>وقت الحضور</th><th>وقت الانصراف</th><th>مدة البقاء</th></tr>
+                </thead>
+                <tbody id="myAttendanceTableBody"></tbody>
+            </table>
+        </div>
+    </div>
+</div>
+<script>
+    // تهيئة العميل
+    const supabaseClient = supabase.createClient(
+      "https://zefsmckaihzfiqqbdake.supabase.co",
+      "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InplZnNtY2thaWh6ZmlxcWJkYWtlIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTQyMzUzNTgsImV4cCI6MjA2OTgxMTM1OH0.vktk2VkEPtMclb6jb_pFa1DbrqWX9SOZRsBR577o5mc"
+    );
+let currentUserId = null;
+
+function showStatus(msg, type='success') {
+    const el = document.getElementById('statusMessage');
+    el.textContent = msg;
+    el.className = `status-message ${type}`;
+    el.style.display = 'block';
+    setTimeout(()=> el.style.display='none', 4000);
+}
+function switchTab(tab, el) {
+    document.querySelectorAll('.tab-content').forEach(c=> c.style.display='none');
+    document.getElementById(tab+"Content").style.display='block';
+    document.querySelectorAll('.sidebar-menu a').forEach(a=> a.classList.remove('active'));
+    el.classList.add('active');
+    if(tab==='myattendance') loadMyAttendance();
+}
+async function loadUser() {
+    const { data: { user } } = await supabaseClient.auth.getUser();
+    if(!user) { window.location.href='login.html'; return; }
+    currentUserId = user.id;
+    document.getElementById('userName').textContent = user.email;
+    checkTodayStatus();
+}
+async function checkTodayStatus() {
+    const today = new Date().toISOString().split('T')[0];
+    const { data } = await supabaseClient.from('teacher_attendance').select('*').eq('teacher_id', currentUserId).eq('date', today).single();
+    if(data) {
+        document.getElementById('checkInBtn').disabled = !!data.check_in_time;
+        document.getElementById('checkOutBtn').disabled = !!data.check_out_time;
+    }
+}
+async function recordCheckIn() {
+    const today = new Date().toISOString().split('T')[0];
+    const { data: exists } = await supabaseClient.from('teacher_attendance').select('*').eq('teacher_id', currentUserId).eq('date', today).single();
+    if(exists) { showStatus(`سجلت حضورك بالفعل في ${exists.check_in_time}`, 'error'); return; }
+    const time = new Date().toLocaleTimeString('ar-EG', { hour:'2-digit', minute:'2-digit' });
+    const { error } = await supabaseClient.from('teacher_attendance').insert([{ teacher_id: currentUserId, date: today, check_in_time: time }]);
+    if(!error) { showStatus(`تم تسجيل حضورك ${time}`); document.getElementById('checkInBtn').disabled=true; loadMyAttendance(); }
+}
+async function recordCheckOut() {
+    const today = new Date().toISOString().split('T')[0];
+    const { data: row } = await supabaseClient.from('teacher_attendance').select('*').eq('teacher_id', currentUserId).eq('date', today).single();
+    if(!row) { showStatus('سجل حضورك أولاً', 'error'); return; }
+    if(row.check_out_time) { showStatus(`سجلت انصرافك بالفعل ${row.check_out_time}`, 'error'); return; }
+    const time = new Date().toLocaleTimeString('ar-EG', { hour:'2-digit', minute:'2-digit' });
+    const { error } = await supabaseClient.from('teacher_attendance').update({ check_out_time: time }).eq('id', row.id);
+    if(!error) { showStatus(`تم تسجيل انصرافك ${time}`); document.getElementById('checkOutBtn').disabled=true; loadMyAttendance(); }
+}
+async function loadMyAttendance() {
+    const { data } = await supabaseClient.from('teacher_attendance').select('*').eq('teacher_id', currentUserId).order('date', { ascending:false });
+    const tbody = document.getElementById('myAttendanceTableBody');
+    tbody.innerHTML = '';
+    data.forEach(r=>{
+        const stay = (r.check_in_time && r.check_out_time) ? calcStay(r.check_in_time, r.check_out_time) : '-';
+        tbody.innerHTML += `<tr><td>${r.date}</td><td>${r.check_in_time||'-'}</td><td>${r.check_out_time||'-'}</td><td>${stay}</td></tr>`;
+    });
+}
+function calcStay(start, end) {
+    const [sh, sm] = start.split(':').map(Number);
+    const [eh, em] = end.split(':').map(Number);
+    const mins = (eh*60+em) - (sh*60+sm);
+    const h = Math.floor(mins/60);
+    const m = mins%60;
+    return `${h}س ${m}د`;
+}
+document.getElementById('searchMyAttendance').addEventListener('input', function(){
+    const term = this.value.trim();
+    document.querySelectorAll('#myAttendanceTableBody tr').forEach(row=>{
+        row.style.display = row.innerText.includes(term) ? '' : 'none';
+    });
+});
+document.addEventListener('DOMContentLoaded', loadUser);
+</script>
+</body>
+</html>
