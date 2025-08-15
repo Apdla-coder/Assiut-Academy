@@ -3172,7 +3172,7 @@ refreshCurrentTab(); // بعدين تحديث التبويب الحالي
  if (courses.length === 0) {
  const { data: coursesData, error: coursesError } = await supabaseClient
  .from('courses')
- .select('id, name');
+ .select('id, full_name');
  
  if (coursesError) throw coursesError;
  courses = coursesData || [];
@@ -3403,7 +3403,7 @@ async function showPaymentReceipt(paymentId) {
  students = studentsData || [];
  }
  if (courses.length === 0) {
- const { data: coursesData } = await supabaseClient.from('courses').select('id, name');
+ const { data: coursesData } = await supabaseClient.from('courses').select('id, full_name');
  courses = coursesData || [];
  }
 
@@ -4175,7 +4175,7 @@ async function showAttendanceReceipt(attendanceId) {
  students = studentsData || [];
  }
  if (!courses || courses.length === 0) {
- const { data: coursesData, error: coursesError } = await supabaseClient.from('courses').select('id, name');
+ const { data: coursesData, error: coursesError } = await supabaseClient.from('courses').select('id, full_name');
  if (coursesError) throw coursesError;
  courses = coursesData || [];
  }
