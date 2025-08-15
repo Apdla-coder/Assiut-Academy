@@ -137,157 +137,183 @@
                 margin-right: var(--sidebar-collapsed-width);
             }
             
-            /* Header Styles */
-            .app-header {
-                position: fixed;
-                top: 0;
-                right: 0;
-                left: var(--sidebar-width);
-                height: var(--header-height);
-                background: white;
-                display: flex;
-                align-items: center;
-                justify-content: space-between;
-                padding: 0 15px;
-                box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
-                z-index: 999;
-                transition: left 0.3s ease, right 0.3s ease;
-            }
+.dashboard-header{
+        padding: 25px;
+    color: var(--primary);
+    text-align: center;
+    font-weight: bold;
+    font-size: 20px;
+}
             
-            .content.sidebar-collapsed .app-header {
-                left: var(--sidebar-collapsed-width);
-            }
-            
-            .menu-toggle {
-                background: none;
-                border: none;
-                color: var(--dark);
-                font-size: 1.3rem;
-                cursor: pointer;
-                padding: 5px;
-                margin-left: 10px;
-            }
-            
-            .header-content {
-                display: flex;
-                align-items: center;
-                justify-content: space-between;
-                width: 100%;
-            }
-            
-            .app-title {
-                font-size: 1.2rem;
-                font-weight: bold;
-                color: var(--dark);
-                flex: 1;
-                text-align: center;
-            }
-            
-            .user-info {
-                display: flex;
-                align-items: center;
-                gap: 10px;
-            }
-            
-            .user-name {
-                font-weight: bold;
-                color: var(--dark);
-                font-size: 0.9rem;
-                max-width: 120px;
-                overflow: hidden;
-                text-overflow: ellipsis;
-                white-space: nowrap;
-            }
-            
-            .header-buttons {
-                display: flex;
-                gap: 8px;
-            }
-            
-            .btn {
-                padding: 6px 12px;
-                border: none;
-                border-radius: 5px;
-                cursor: pointer;
-                color: white;
-                font-weight: bold;
-                display: inline-flex;
-                align-items: center;
-                gap: 5px;
-                transition: background-color 0.3s;
-                font-size: 0.8rem;
-            }
-            
-            .btn-success {
-                background-color: var(--success);
-            }
-            
-            .btn-success:hover {
-                background-color: #047857;
-            }
-            
-            .btn-danger {
-                background-color: var(--danger);
-            }
-            
-            .btn-danger:hover {
-                background-color: #b91c1c;
-            }
-            
-            .btn-primary {
-                background-color: var(--primary);
-            }
-            
-            .btn-primary:hover {
-                background-color: var(--primary-dark);
-            }
-            
-            .btn-secondary {
-                background-color: var(--gray);
-            }
-            
-            .btn-secondary:hover {
-                background-color: #555;
-            }
-            
-            .btn-xs {
-                padding: 4px 8px;
-                font-size: 0.75rem;
-            }
-            
-            /* Status Message */
-            .status-message {
-                padding: 10px 15px;
-                border-radius: 5px;
-                margin: 20px 0 0;
-                display: none;
-                text-align: center;
-                font-weight: bold;
-                position: fixed;
-                top: var(--header-height);
-                left: 20px;
-                right: 20px;
-                z-index: 1000;
-            }
-            
-            .status-message.success {
-                background: #d1fae5;
-                color: var(--success);
-                border: 1px solid #10b981;
-            }
-            
-            .status-message.error {
-                background: #fee2e2;
-                color: var(--danger);
-                border: 1px solid #ef4444;
-            }
-            
-            /* Tab Content */
-            .tab-content {
-                display: none;
-                animation: fadeIn 0.5s;
-            }
-            
+/* Header Styles */
+.app-header {
+    position: fixed;
+    top: 0;
+    right: 0;
+    left: var(--sidebar-width);
+    height: var(--header-height);
+    background: white;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0 15px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.06);
+    z-index: 999;
+    transition: left 0.3s ease, right 0.3s ease, background-color 0.3s ease;
+    border-bottom: 2px solid #f5f5f5;
+}
+
+.content.sidebar-collapsed .app-header {
+    left: var(--sidebar-collapsed-width);
+}
+
+.menu-toggle {
+    background: none;
+    border: none;
+    color: var(--primary);
+    font-size: 1.5rem;
+    cursor: pointer;
+    padding: 6px;
+    margin-left: 10px;
+    transition: color 0.3s ease, transform 0.2s ease;
+}
+.menu-toggle:hover {
+    color: var(--primary);
+    transform: rotate(10deg);
+}
+
+.header-content {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    width: 100%;
+}
+
+.app-title {
+    font-size: 1.25rem;
+    font-weight: bold;
+    color: var(--dark);
+    flex: 1;
+    text-align: center;
+    letter-spacing: 0.5px;
+}
+
+.user-info {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.user-name {
+    font-weight: bold;
+    color: var(--dark);
+    font-size: 0.9rem;
+    max-width: 120px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+/* Header Buttons */
+.header-buttons {
+    display: flex;
+    gap: 8px;
+}
+
+.btn {
+    padding: 6px 12px;
+    border: none;
+    border-radius: 8px;
+    cursor: pointer;
+    color: white;
+    font-weight: 600;
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    transition: all 0.3s ease;
+    font-size: 0.8rem;
+}
+
+.btn-success {
+    background-color: var(--success);
+}
+.btn-success:hover {
+    background-color: #047857;
+}
+
+.btn-danger {
+    background-color: var(--danger);
+}
+.btn-danger:hover {
+    background-color: #b91c1c;
+}
+
+.btn-primary {
+    background-color: var(--primary);
+}
+.btn-primary:hover {
+    background-color: var(--primary-dark);
+}
+
+.btn-secondary {
+    background-color: var(--gray);
+}
+.btn-secondary:hover {
+    background-color: #555;
+}
+
+.btn-xs {
+    padding: 4px 8px;
+    font-size: 0.75rem;
+}
+
+/* Status Message */
+.status-message {
+    padding: 10px 15px;
+    border-radius: 6px;
+    margin: 20px 0 0;
+    display: none;
+    text-align: center;
+    font-weight: bold;
+    position: fixed;
+    top: var(--header-height);
+    left: 20px;
+    right: 20px;
+    z-index: 1000;
+}
+
+.status-message.success {
+    background: #d1fae5;
+    color: var(--success);
+    border: 1px solid #10b981;
+}
+
+.status-message.error {
+    background: #fee2e2;
+    color: var(--danger);
+    border: 1px solid #ef4444;
+}
+
+/* 📱 Responsive Header */
+@media (max-width: 768px) {
+    .app-title {
+        font-size: 1rem;
+    }
+    .user-name {
+        display: none;
+    }
+    .header-buttons .btn {
+        padding: 5px 8px;
+        font-size: 1.2rem;
+    }
+}
+
+/* Tab Content */
+.tab-content {
+    display: none;
+    animation: fadeIn 0.5s;
+}
+
             @keyframes fadeIn {
                 from {
                     opacity: 0;
@@ -357,152 +383,172 @@
         background-color: var(--primary-dark);
     }
 
-            /* Dashboard Styles */
-            .stats-container {
-                display: grid;
-                grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
-                gap: 12px;
-                margin-bottom: 20px;
-            }
-            
-            .stat-card {
-                background: white;
-                padding: 15px 10px;
-                border-radius: 8px;
-                text-align: center;
-                box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
-            }
-            
-            .stat-card i {
-                font-size: 1.5rem;
-                margin-bottom: 8px;
-                color: var(--primary);
-            }
-            
-            .stat-card .stat-value {
-                font-size: 1.3rem;
-                font-weight: bold;
-                margin: 5px 0;
-            }
-            
-            .stat-card .stat-label {
-                color: var(--gray);
-                font-size: 0.8rem;
-            }
-            
-            .chart-container {
-                background: white;
-                padding: 15px;
-                border-radius: 8px;
-                box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
-                height: 250px;
-                position: relative;
-                margin-bottom: 20px;
-            }
-            
-            .course-box {
-                background: white;
-                border-radius: 8px;
-                padding: 15px;
-                margin-bottom: 15px;
-                box-shadow: 0 1px 4px rgba(0, 0, 0, 0.08);
-            }
-            
-            .course-title {
-                font-size: 1.1rem;
-                font-weight: bold;
-                color: var(--primary);
-                border-bottom: 2px solid #f0f0f0;
-                padding-bottom: 8px;
-                margin-bottom: 15px;
-                display: flex;
-                justify-content: space-between;
-                align-items: center;
-            }
-            
-            .student-count {
-                font-size: 0.85rem;
-                color: var(--gray);
-            }
-            
-            .student-card {
-                background: #fafafa;
-                border: 1px solid #eee;
-                transition: 0.3s;
-                margin-bottom: 10px;
-                border-radius: 6px;
-            }
-            
-            .student-card:hover {
-                background: #fff;
-                box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
-            }
-            
-            .card-field {
-                padding: 4px 0;
-            }
-            
-            .card-field .field-label {
-                color: var(--dark);
-                font-weight: bold;
-                margin-left: 5px;
-            }
-            
-            .card-field .field-value {
-                color: var(--gray);
-            }
-            
-            /* Card-based List Styles */
-            .card-list {
-                display: flex;
-                flex-direction: column;
-                gap: 12px;
-            }
-            
-            .card {
-                background: white;
-                border-radius: 8px;
-                padding: 15px;
-                box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
-            }
-            
-            .card-header {
-                display: flex;
-                justify-content: space-between;
-                align-items: center;
-                margin-bottom: 10px;
-                padding-bottom: 10px;
-                border-bottom: 1px solid #eee;
-            }
-            
-            .card-title {
-                font-size: 1rem;
-                font-weight: bold;
-                color: var(--dark);
-                flex: 1;
-            }
-            
-            .card-content {
-                display: flex;
-                flex-direction: column;
-                gap: 8px;
-            }
-            
-            .card-field {
-                display: flex;
-                justify-content: space-between;
-            }
-            
-            .field-label {
-                font-weight: bold;
-                color: var(--gray);
-                font-size: 0.85rem;
-            }
-            
-            .field-value {
-                text-align: left;
-                font-size: 0.85rem;
-            }
+/* Dashboard Styles */
+.stats-container {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+    gap: 15px;
+    margin-bottom: 20px;
+}
+
+.stat-card {
+    background: white;
+    padding: 18px 12px;
+    border-radius: 12px;
+    text-align: center;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.06);
+    border-bottom: 3px solid var(--danger);
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+.stat-card:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 8px 20px rgba(0, 0, 0, 0.08);
+}
+
+.stat-card i {
+    font-size: 3.3rem;
+    margin-bottom: 8px;
+    color: var(--primary);
+}
+
+.stat-card .stat-value {
+    font-size: 1.4rem;
+    font-weight: bold;
+    margin: 6px 0;
+    color: var(--dark);
+}
+
+.stat-card .stat-label {
+    color: var(--gray);
+    font-size: 0.85rem;
+}
+
+/* Chart Container */
+.chart-container {
+    background: white;
+    padding: 20px;
+    border-radius: 12px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.06);
+    height: 250px;
+    position: relative;
+    margin-bottom: 20px;
+}
+
+/* Course Box */
+.course-box {
+    background: white;
+    border-radius: 12px;
+    padding: 18px;
+    margin-bottom: 15px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.06);
+}
+
+.course-title {
+    font-size: 1.1rem;
+    font-weight: bold;
+    color: var(--primary);
+    border-bottom: 2px solid #f0f0f0;
+    padding-bottom: 8px;
+    margin-bottom: 15px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+.student-count {
+    font-size: 0.85rem;
+    color: var(--gray);
+}
+
+/* Student Card */
+.student-card {
+    background: #fafafa;
+    border: 1px solid #eee;
+    transition: 0.3s ease;
+    margin-bottom: 10px;
+    border-radius: 8px;
+}
+.student-card:hover {
+    background: #fff;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+}
+
+.card-field {
+    padding: 4px 0;
+}
+.card-field .field-label {
+    color: var(--dark);
+    font-weight: bold;
+    margin-left: 5px;
+}
+.card-field .field-value {
+    color: var(--gray);
+}
+
+/* Card-based List Styles */
+.card-list {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.card {
+    background: white;
+    border-radius: 12px;
+    padding: 18px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.06);
+}
+
+.card-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 12px;
+    padding-bottom: 10px;
+    border-bottom: 1px solid #eee;
+}
+
+.card-title {
+    font-size: 1rem;
+    font-weight: bold;
+    color: var(--dark);
+    flex: 1;
+}
+
+.card-content {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.card-field {
+    display: flex;
+    justify-content: space-between;
+}
+
+.field-label {
+    font-weight: bold;
+    color: var(--gray);
+    font-size: 0.85rem;
+}
+
+.field-value {
+    text-align: left;
+    font-size: 0.85rem;
+}
+
+/* 📱 Responsive */
+@media (max-width: 600px) {
+    .stat-card {
+        padding: 15px 8px;
+    }
+    .stat-card i {
+        font-size: 2.5rem;
+    }
+    .stat-card .stat-value {
+        font-size: 1.2rem;
+    }
+}
             
             /* Search Box */
             .search-box {
@@ -941,11 +987,14 @@
                 .content {
                     margin-right: 0;
                     padding: 15px 10px;
+                    margin-top: 90px;
                 }
                 
                 .app-header {
                     left: 0;
-                    padding: 0 10px;
+        padding: 45px 10px;
+                    right: 0;
+  
                 }
                 
                 .content.sidebar-collapsed .app-header {
@@ -963,11 +1012,11 @@
                 }
                 
                 .stat-card {
-                    padding: 12px 8px;
+                padding: 20px 10px;
                 }
                 
                 .stat-card i {
-                    font-size: 1.3rem;
+        font-size: 3.3rem;
                 }
                 
                 .stat-card .stat-value {
@@ -1119,18 +1168,57 @@
                 flex-wrap: wrap;
             }
             
-            .quick-action-btn {
-                flex: 1;
-                min-width: 120px;
-                background: white;
-                border: 1px solid var(--border);
-                border-radius: 8px;
-                padding: 15px 10px;
-                text-align: center;
-                cursor: pointer;
-                transition: all 0.3s;
-                box-shadow: 0 1px 3px rgba(0,0,0,0.05);
-            }
+.quick-action-btn {
+    flex: 1;
+    min-width: 120px;
+    background: white;
+    border: none;
+    border-radius: 12px;
+    padding: 15px 10px;
+    text-align: center;
+    cursor: pointer;
+    position: relative;
+    z-index: 0;
+    overflow: hidden;
+}
+
+/* التوهج الدائري */
+.quick-action-btn::before {
+    content: "";
+    position: absolute;
+    top: -50%;
+    left: -50%;
+    width: 200%;
+    height: 200%;
+    background: conic-gradient(
+        from 0deg,
+        #ff3c00,
+        #ff9100,
+        #ff3c00
+    );
+    animation: rotateGlow 4s linear infinite;
+    z-index: -5;
+}
+
+/* لعمل حدود داخلية ناعمة */
+.quick-action-btn::after {
+    content: "";
+    position: absolute;
+    inset: 3px;
+    background: white;
+    border-radius: 10px;
+    z-index: -30;
+}
+
+/* حركة الدوران */
+@keyframes rotateGlow {
+    0% {
+        transform: rotate(0deg);
+    }
+    100% {
+        transform: rotate(360deg);
+    }
+}
             
             .quick-action-btn:hover {
                 transform: translateY(-2px);
@@ -1140,15 +1228,15 @@
             
             .quick-action-btn i {
                 display: block;
-                font-size: 1.5rem;
+    font-size: 2.5rem;
                 margin-bottom: 8px;
-                color: var(--primary);
+    color: aliceblue;
             }
             
             .quick-action-btn span {
                 font-size: 0.85rem;
                 font-weight: bold;
-                color: var(--dark);
+                color: var();
             }
             
             /* تحسينات لقائمة الطلاب */
@@ -1216,7 +1304,7 @@
             }
             
             .teacher-table th {
-                background: #4CAF50;
+                background: var(--primary);
                 color: white;
                 font-size: 0.75rem;
             }
@@ -1389,7 +1477,7 @@
             <div id="statusMessage" class="status-message"></div>
             
             <!-- Dashboard Tab -->
-            <div id="dashboardContent" class="tab-content" style="display:block;">
+            <div id="dashboardContent" class="tab-content" style="display:block;  ">
                 <div class="quick-actions">
                     <div class="quick-action-btn" onclick="switchTab('courses')">
                         <i class="fas fa-book"></i>

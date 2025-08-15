@@ -273,70 +273,38 @@ async function loadDashboardData() {
         showStatus('خطأ في تحميل بيانات لوحة التحكم', 'error');
     }
 }
+
+
 async function initCharts() {
+  try {
+    // Safely destroy existing chart instances (robust)
     try {
-        // Destroy existing charts if they exist
-        if (window.revenueChartInstance) {
-            window.revenueChartInstance.destroy();
-        }
-        if (window.studentsChartInstance) {
-            window.studentsChartInstance.destroy();
-        }
+      // destroy stored instances if موجودة
+      if (window.revenueChartInstance && typeof window.revenueChartInstance.destroy === 'function') {
+        window.revenueChartInstance.destroy();
+        window.revenueChartInstance = null;
+      }
+      if (window.studentsChartInstance && typeof window.studentsChartInstance.destroy === 'function') {
+        window.studentsChartInstance.destroy();
+        window.studentsChartInstance = null;
+      }
 
-        // Get revenue data by month
-        const { data: paymentsData, error: paymentsError } = await supabaseClient
-            .from('payments')
-            .select('amount, paid_at');
-        
-        if (paymentsError) throw paymentsError;
+      // also destroy any Chart.js instances attached to the canvas elements
+      const revenueCanvas = document.getElementById('revenueChart');
+      const studentsCanvas = document.getElementById('studentsChart');
+      if (revenueCanvas) {
+        const existing = Chart.getChart(revenueCanvas);
+        if (existing) existing.destroy();
+      }
+      if (studentsCanvas) {
+        const existing2 = Chart.getChart(studentsCanvas);
+        if (existing2) existing2.destroy();
+      }
+    } catch (destroyErr) {
+      console.warn('Error while destroying previous charts (ignored):', destroyErr);
+    }
 
-        // Process revenue data
-        const revenueByMonth = {};
-        paymentsData.forEach(payment => {
-            if (payment.paid_at) {
-                const month = new Date(payment.paid_at).toLocaleDateString('ar-EG', { month: 'long', year: 'numeric' });
-                revenueByMonth[month] = (revenueByMonth[month] || 0) + (payment.amount || 0);
-            }
-        });
-
-        const revenueLabels = Object.keys(revenueByMonth);
-        const revenueData = Object.values(revenueByMonth);
-
-        // Revenue chart
-        const revenueCtx = document.getElementById('revenueChart').getContext('2d');
-        window.revenueChartInstance = new Chart(revenueCtx, {
-            type: 'line',
-            data: {
-                labels: revenueLabels,
-                datasets: [{
-                    label: 'الإيرادات (ج.م)',
-                    data: revenueData,
-                    borderColor: '#f97316',
-                    backgroundColor: 'rgba(249, 115, 22, 0.1)',
-                    tension: 0.4,
-                    fill: true
-                }]
-            },
-            options: {
-                responsive: true,
-                plugins: {
-                    legend: {
-                        display: false
-                    }
-                },
-                scales: {
-                    y: {
-                        beginAtZero: true,
-                        ticks: {
-                            callback: function(value) {
-                                return formatCurrency(value);
-                            }
-                        }
-                    }
-                }
-            }
-        });
-
+    // ... بقية منطق بناء البيانات وإنشاء المخططات كما في ملفك ...
         // Get student distribution by course
         const { data: courseDistributionData, error: courseDistributionError } = await supabaseClient
             .rpc('get_student_course_distribution'); // This assumes you have a PostgreSQL function
@@ -1523,7 +1491,6 @@ function showAddExamModal() {
   document.getElementById('examId').value = '';
   document.getElementById('examTitle').value = '';
   document.getElementById('examMaxScore').value = '';
-  document.getElementById('examDate').value = '';
 
   const courseSelect = document.getElementById('examCourse');
   courseSelect.innerHTML = '<option value="">اختر كورساً</option>';
@@ -1595,16 +1562,15 @@ async function showEditExamModal(examId) {
 
 // =============================================================================
 // حفظ (إضافة أو تعديل) اختبار
-// =============================================================================
+// ============================================================================
 async function saveExam() {
   const examId = document.getElementById('examId').value;
   const title = document.getElementById('examTitle').value.trim();
   const maxScore = parseFloat(document.getElementById('examMaxScore').value);
-  const date = document.getElementById('examDate').value;
   const courseId = document.getElementById('examCourse').value;
   const moduleId = document.getElementById('examModule').value;
 
-  if (!title || !maxScore || !date || !courseId || !moduleId) {
+  if (!title || !maxScore  || !courseId || !moduleId) {
     showStatus('يرجى ملء جميع الحقول المطلوبة.', 'error');
     return;
   }
@@ -1613,7 +1579,6 @@ async function saveExam() {
     const examData = {
       title,
       max_score: maxScore,
-      date,
       course_id: courseId,
       module_id: moduleId
     };
@@ -1630,6 +1595,57 @@ async function saveExam() {
   } catch (err) {
     console.error('خطأ في حفظ الاختبار:', err);
     showStatus('حدث خطأ أثناء حفظ الاختبار.', 'error');
+  }
+}
+
+
+
+// --- Delete student (add near other delete functions) ---
+async function deleteStudent(studentId) {
+  if (!confirm('هل أنت متأكد من حذف هذا الطالب؟ سيتم أيضاً حذف السجلات المرتبطة (حضور، دفعات، اشتراكات) إذا اخترت المتابعة.')) return;
+
+  try {
+    // 1) افحص وجود تبعيات
+    const [{ data: attData }, { data: payData }, { data: subsData }] = await Promise.all([
+      supabaseClient.from('attendances').select('id').eq('student_id', studentId).limit(1),
+      supabaseClient.from('payments').select('id').eq('student_id', studentId).limit(1),
+      supabaseClient.from('subscriptions').select('id').eq('student_id', studentId).limit(1)
+    ]);
+
+    const hasDeps = (attData && attData.length) || (payData && payData.length) || (subsData && subsData.length);
+
+    if (hasDeps) {
+      const proceed = confirm('يوجد سجلات مرتبطة بهذا الطالب (حضور/دفع/اشتراك). هل تريد حذف هذه السجلات أولاً ثم حذف الطالب؟ اختر "موافق" للحذف الكامل أو "إلغاء" لإيقاف العملية.');
+      if (!proceed) {
+        showStatus('تم إلغاء حذف الطالب', 'info');
+        return;
+      }
+
+      // حذف التبعيات بأمان (ترتيب منطقي)
+      const delAttendances = await supabaseClient.from('attendances').delete().eq('student_id', studentId);
+      if (delAttendances.error) throw delAttendances.error;
+
+      const delPayments = await supabaseClient.from('payments').delete().eq('student_id', studentId);
+      if (delPayments.error) throw delPayments.error;
+
+      const delSubscriptions = await supabaseClient.from('subscriptions').delete().eq('student_id', studentId);
+      if (delSubscriptions.error) throw delSubscriptions.error;
+    }
+
+    // أخيراً حذف الطالب
+    const { error } = await supabaseClient.from('students').delete().eq('id', studentId);
+    if (error) throw error;
+
+    showStatus('تم حذف الطالب وجميع السجلات المرتبطة (إن وجدت).');
+    loadStudents();
+  } catch (err) {
+    console.error('Error deleting student:', err);
+    // إن كان خطأ FK نعرض رسالة أو نصيحة
+    if (err.code === '23503') {
+      showStatus('لا يمكن حذف الطالب لأن هناك علاقات مرجعية لم تُحذف. حاول حذف الحضور/المدفوعات/الاشتراكات أولاً أو اطلب من المشرف تغيير قواعد الحذف.', 'error');
+    } else {
+      showStatus(`خطأ في حذف الطالب: ${err.message || err}`, 'error');
+    }
   }
 }
 
@@ -1853,29 +1869,58 @@ async function loadCourses() {
 }
 // حذف كورس
 async function deleteCourse(courseId) {
-    if (!confirm('هل أنت متأكد من حذف هذا الكورس وكل ما يتعلق به من وحدات ودروس؟')) {
+  if (!confirm('هل أنت متأكد من حذف هذا الكورس؟ سيتم فحص السجلات المرتبطة أولاً.')) return;
+
+  try {
+    // 1) فحص التبعيات
+    const [{ data: att }, { data: lessons }, { data: subs }, { data: payments }] = await Promise.all([
+      supabaseClient.from('attendances').select('id').eq('course_id', courseId).limit(1),
+      supabaseClient.from('lessons').select('id').eq('course_id', courseId).limit(1),
+      supabaseClient.from('subscriptions').select('id').eq('course_id', courseId).limit(1),
+      supabaseClient.from('payments').select('id').eq('course_id', courseId).limit(1)
+    ]);
+
+    const hasDeps = (att && att.length) || (lessons && lessons.length) || (subs && subs.length) || (payments && payments.length);
+
+    if (hasDeps) {
+      const proceed = confirm('يوجد سجلات مرتبطة بهذا الكورس (حضور/دروس/اشتراكات/دفعات). اضغط OK لحذف هذه السجلات تلقائياً ثم حذف الكورس، أو Cancel لإلغاء.');
+      if (!proceed) {
+        showStatus('تم إلغاء حذف الكورس.', 'info');
         return;
+      }
+
+      // حذف التبعيات بالترتيب الصحيح
+      const delAttendances = await supabaseClient.from('attendances').delete().eq('course_id', courseId);
+      if (delAttendances.error) throw delAttendances.error;
+
+      const delPayments = await supabaseClient.from('payments').delete().eq('course_id', courseId);
+      if (delPayments.error) throw delPayments.error;
+
+      const delSubscriptions = await supabaseClient.from('subscriptions').delete().eq('course_id', courseId);
+      if (delSubscriptions.error) throw delSubscriptions.error;
+
+      const delLessons = await supabaseClient.from('lessons').delete().eq('course_id', courseId);
+      if (delLessons.error) throw delLessons.error;
+
+      // إن كان لديك وحدات مرتبطة وترغب بحذفها أيضاً:
+      const delModules = await supabaseClient.from('modules').delete().eq('course_id', courseId);
+      if (delModules.error) throw delModules.error;
     }
-    try {
-        // حذف الكورس - سيؤدي ذلك عادةً إلى حذف الوحدات والدروس المرتبطة به بسبب Foreign Key Constraints في قاعدة البيانات (ON DELETE CASCADE)
-        const { error } = await supabaseClient.from('courses').delete().eq('id', courseId);
 
-        if (error) throw error;
+    // الآن حذف الكورس
+    const { error } = await supabaseClient.from('courses').delete().eq('id', courseId);
+    if (error) throw error;
 
-        showStatus('تم حذف الكورس بنجاح');
-        // إعادة تحميل قائمة الكورسات
-        loadCourses();
-        // إذا كانت هناك بيانات أخرى في الواجهة تعتمد على الكورسات، قد تحتاج لتحديثها أيضًا
-
-    } catch (error) {
-        console.error('Error deleting course:', error);
-        // عرض رسالة خطأ أكثر تفصيلاً للمستخدم
-        if (error.message) {
-            showStatus(`خطأ في حذف الكورس: ${error.message}`, 'error');
-        } else {
-            showStatus('خطأ غير متوقع في حذف الكورس', 'error');
-        }
+    showStatus('تم حذف الكورس وكل السجلات المرتبطة (إن وجدت).');
+    loadCourses();
+  } catch (error) {
+    console.error('Error deleting course:', error);
+    if (error.code === '23503') {
+      showStatus('لا يمكن حذف الكورس بسبب قيود المفتاح الأجنبي. تأكد من حذف السجلات المرتبطة أولاً أو ضبط FK على ON DELETE CASCADE في قاعدة البيانات.', 'error');
+    } else {
+      showStatus(`خطأ في حذف الكورس: ${error.message || error}`, 'error');
     }
+  }
 }
 // Filter courses
 function filterCourses() {
