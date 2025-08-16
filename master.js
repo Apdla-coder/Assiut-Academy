@@ -3,7 +3,83 @@
  const supabaseKey = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InplZnNtY2thaWh6ZmlxcWJkYWtlIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTQyMzUzNTgsImV4cCI6MjA2OTgxMTM1OH0.vktk2VkEPtMclb6jb_pFa1DbrqWX9SOZRsBR577o5mc"
  const supabaseClient = supabase.createClient(supabaseUrl, supabaseKey)
 
- // Global variables
+ 
+
+// === Unified Live Update & Realtime Subscriptions (cleaned) ===
+async function updateCurrentTab() {
+  const visibleTab = document.querySelector('.tab-content[style*="display: block"]');
+  if (!visibleTab) return;
+  const currentTabId = visibleTab.id;
+
+  switch (currentTabId) {
+    case 'dashboardContent':
+      if (typeof loadDashboardData === 'function') await loadDashboardData();
+      if (typeof loadRecentActivity === 'function') await loadRecentActivity();
+      break;
+    case 'studentsContent':
+      if (typeof loadStudents === 'function') await loadStudents();
+      break;
+    case 'coursesContent':
+      if (typeof loadCourses === 'function') await loadCourses();
+      break;
+    case 'subscriptionsContent':
+      if (typeof loadSubscriptions === 'function') await loadSubscriptions();
+      break;
+    case 'paymentsContent':
+      if (typeof loadPayments === 'function') await loadPayments();
+      break;
+    case 'attendancesContent':
+      if (typeof loadAttendances === 'function') await loadAttendances();
+      break;
+    case 'teacherExamsContent':
+      if (typeof loadTeacherExamsForSecretary === 'function') await loadTeacherExamsForSecretary();
+      break;
+    case 'parentsContent':
+      if (typeof loadStudentsForParents === 'function') await loadStudentsForParents();
+      break;
+    default:
+      break;
+  }
+}
+
+function initRealtimeSubscriptions() {
+  if (typeof supabase === 'undefined' && typeof supabaseClient === 'undefined') return;
+  const client = typeof supabaseClient !== 'undefined' ? supabaseClient : (typeof supabase !== 'undefined' ? supabase : null);
+  if (!client) return;
+
+  const tables = ["students", "courses", "subscriptions", "payments", "attendances", "exams"];
+  tables.forEach((table) => {
+    try {
+      client
+        .channel(table + "_changes")
+        .on('postgres_changes', { event: '*', schema: 'public', table }, async () => {
+          await updateCurrentTab();
+        })
+        .subscribe();
+    } catch (_) {}
+  });
+}
+
+// Ensure switchTab uses the unified updater
+if (typeof switchTab === 'function') {
+  // Wrap original if needed (skip if already wrapped)
+} else {
+  window.switchTab = function(tabName) {
+    document.querySelectorAll('.tab-content').forEach((c) => (c.style.display = 'none'));
+    document.querySelectorAll('.nav-link').forEach((l) => l.classList.remove('active'));
+    const activeTab = document.getElementById(`${tabName}Content`);
+    if (activeTab) activeTab.style.display = 'block';
+    updateCurrentTab();
+  };
+}
+
+// Hook on DOMContentLoaded to init realtime once
+document.addEventListener('DOMContentLoaded', function() {
+  try { initRealtimeSubscriptions(); } catch (_) {}
+});
+// === end unified block ===
+
+// Global variables
  // متغير لتتبع آخر تحديث لجدول الحضور
 let lastAttendanceUpdate = null;
 // متغير لتخزين مؤشر التحديث الدوري
@@ -101,7 +177,13 @@ document.addEventListener('DOMContentLoaded', async function() {
  }
 
  // دالة بتحدد التبويب اللي ظاهر حاليًا وتشغل دالة التحديث بتاعته
-function refreshCurrentTab() {
+
+// دالة لتحديث لوحة التحكم والتبويب الحالي
+async function updateCurrentView() {
+    await loadDashboardData();
+    updateCurrentTab();
+}
+function updateCurrentTab() {
  const visibleTab = document.querySelector('.tab-content[style*="display: block"]');
  if (!visibleTab) {
  console.warn("لم يتم العثور على تبويب ظاهر لتحديده.");
@@ -109,7 +191,6 @@ function refreshCurrentTab() {
  }
 
  const currentTabId = visibleTab.id;
- console.log("🔄 تحديث التبويب الحالي:", currentTabId);
 
  let updatePromise; // متغير جديد
 
@@ -146,7 +227,7 @@ function refreshCurrentTab() {
  // انتظار انتهاء التحديث وطباعة رسالة
  if (updatePromise) {
  updatePromise.then(() => {
- console.log("✅ تم تحديث التبويب الحالي بنجاح:", currentTabId);
+
  }).catch((err) => {
  console.error("❌ خطأ أثناء تحديث التبويب الحالي:", currentTabId, err);
  });
@@ -219,31 +300,29 @@ function closeModal(modalId) {
 }
 
 // بدء التحديث الدوري لجدول الحضور
- function startAttendanceAutoRefresh() {
- // توقف عن أي تحديث سابق (إن وجد)
- stopAttendanceAutoRefresh();
- 
- // تحديث كل 10 ثوانٍ (يمكن تعديله)
- attendanceRefreshInterval = setInterval(() => {
- // التحقق من أن تبويب الحضور لا يزال مفتوحًا
- const attendancesTab = document.getElementById('attendancesContent');
- if (attendancesTab && attendancesTab.style.display !== 'none') {
- console.log("تحديث تلقائي لجدول الحضور...");
- loadAttendances(); // إعادة تحميل البيانات
- } else {
- // إذا تم إغلاق التبويب، توقف عن التحديث
- console.log("تبويب الحضور مغلق، إيقاف التحديث التلقائي.");
- stopAttendanceAutoRefresh();
- }
- }, 10000); // 10000 ميلي ثانية = 10 ثوانٍ
- }
+function startAttendanceAutoRefresh() {
+  // توقف عن أي تحديث سابق (إن وجد)
+  stopAttendanceAutoRefresh();
+
+  // تحديث كل 10 ثوانٍ (يمكن تعديله)
+  attendanceRefreshInterval = setInterval(() => {
+    // التحقق من أن تبويب الحضور لا يزال مفتوحًا
+    const attendancesTab = document.getElementById('attendancesContent');
+    if (attendancesTab && attendancesTab.style.display !== 'none') {
+      loadAttendances(); // إعادة تحميل البيانات
+    } else {
+      // إذا تم إغلاق التبويب، توقف عن التحديث
+      stopAttendanceAutoRefresh();
+    }
+  }, 10000); // 10000 ميلي ثانية = 10 ثوانٍ
+}
 
  // إيقاف التحديث الدوري لجدول الحضور
  function stopAttendanceAutoRefresh() {
  if (attendanceRefreshInterval) {
  clearInterval(attendanceRefreshInterval);
  attendanceRefreshInterval = null;
- console.log("تم إيقاف التحديث التلقائي لجدول الحضور.");
+
  }
  }
 
@@ -319,18 +398,48 @@ async function loadDashboardData() {
  }
 }
 
-
 async function initCharts(tabName) {
   try {
+    // ⛔ منع التشغيل المتزامن
+    if (window.initChartsRunning) {
+      console.warn("initCharts is already running, skipping...");
+      return;
+    }
+    window.initChartsRunning = true;
+
     // --- Destroy old charts if exist ---
-    if (window.revenueChartInstance?.destroy) {
-      window.revenueChartInstance.destroy();
+    if (window.revenueChartInstance) {
+      try {
+        window.revenueChartInstance.destroy();
+      } catch (e) {
+        console.warn("Error destroying revenueChartInstance:", e);
+      }
       window.revenueChartInstance = null;
     }
-    if (window.studentsChartInstance?.destroy) {
-      window.studentsChartInstance.destroy();
+    if (window.studentsChartInstance) {
+      try {
+        window.studentsChartInstance.destroy();
+      } catch (e) {
+        console.warn("Error destroying studentsChartInstance:", e);
+      }
       window.studentsChartInstance = null;
     }
+
+    // --- Get Canvas Elements ---
+    const studentsCtxElement = document.getElementById('studentsChart');
+    const revenueCtxElement = document.getElementById('revenueChart');
+    if (!studentsCtxElement || !revenueCtxElement) {
+      console.warn("Canvas elements not found. Skipping chart rendering.");
+      window.initChartsRunning = false;
+      return;
+    }
+
+    // --- Clear Canvases before rendering ---
+    const studentsCtx = studentsCtxElement.getContext('2d');
+    studentsCtx.clearRect(0, 0, studentsCtxElement.width, studentsCtxElement.height);
+
+    const revenueCtx = revenueCtxElement.getContext('2d');
+    revenueCtx.clearRect(0, 0, revenueCtxElement.width, revenueCtxElement.height);
 
     // --- Students Distribution Chart ---
     const { data: courseDistributionData, error: courseDistributionError } =
@@ -345,10 +454,8 @@ async function initCharts(tabName) {
       courseData = courseDistributionData.map(item => item.student_count);
     }
 
-    const studentsCtxElement = document.getElementById('studentsChart');
     if (studentsCtxElement) {
-      const ctx = studentsCtxElement.getContext('2d');
-      window.studentsChartInstance = new Chart(ctx, {
+      window.studentsChartInstance = new Chart(studentsCtx, {
         type: 'doughnut',
         data: {
           labels: courseLabels,
@@ -361,7 +468,7 @@ async function initCharts(tabName) {
       });
     }
 
-    // --- Monthly Revenue Chart (Paid vs Remaining) ---
+    // --- Monthly Revenue Chart ---
     const { data: paymentsData, error: paymentsError } = await supabaseClient
       .from('payments')
       .select('amount, paid_at, course_id');
@@ -375,14 +482,12 @@ async function initCharts(tabName) {
     const monthlyPaid = {};
     const monthlyRemaining = {};
 
-    // Process paid amounts
     paymentsData.forEach(p => {
       const date = new Date(p.paid_at);
       const monthKey = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
       monthlyPaid[monthKey] = (monthlyPaid[monthKey] || 0) + parseFloat(p.amount || 0);
     });
 
-    // Process remaining amounts
     subsData.forEach(s => {
       const date = new Date(s.subscribed_at);
       const monthKey = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
@@ -407,10 +512,8 @@ async function initCharts(tabName) {
     const paidData = months.map(m => monthlyPaid[m] || 0);
     const remainingData = months.map(m => monthlyRemaining[m] || 0);
 
-    const revenueCtxElement = document.getElementById('revenueChart');
     if (revenueCtxElement) {
-      const ctx = revenueCtxElement.getContext('2d');
-      window.revenueChartInstance = new Chart(ctx, {
+      window.revenueChartInstance = new Chart(revenueCtx, {
         type: 'bar',
         data: {
           labels: monthLabels,
@@ -444,15 +547,19 @@ async function initCharts(tabName) {
       logContainer.innerHTML = html;
     }
 
+    // ✅ فك القفل بعد الانتهاء
+    window.initChartsRunning = false;
+
   } catch (err) {
+    window.initChartsRunning = false;
     console.error(`❌ خطأ أثناء تحديث تبويب ${tabName || ''}:`, err);
     showStatus(`خطأ في تحديث ${tabName || 'البيانات'}`, 'error');
   }
 }
 
 // دالة لتحديث كل البيانات في الصفحة
-async function refreshAllData() {
- console.log("🔄 تحديث كامل للبيانات...");
+async function updateCurrentTab() {
+
  try {
  // تحديث لوحة التحكم والأنشطة الأخيرة
  await loadDashboardData();
@@ -468,7 +575,6 @@ async function refreshAllData() {
  await loadTeacherExamsForSecretary().catch(err => console.error("خطأ في تحديث الامتحانات:", err));
  await loadStudentsForParents().catch(err => console.error("خطأ في تحديث بيانات أولياء الأمور:", err));
 
- console.log("✅ تم التحديث الكامل للبيانات.");
  } catch (error) {
  console.error("❌ خطأ أثناء التحديث الكامل:", error);
  showStatus('حدث خطأ أثناء التحديث الكامل للبيانات', 'error');
@@ -712,8 +818,8 @@ async function refreshAllData() {
  e.preventDefault()
  await addStudent()
  }
- await refreshAllData(); // انتظار انتهاء تحديث كل البيانات
-refreshCurrentTab(); // بعدين تحديث التبويب الحالي // تحديث كل البيانات في الخلفية
+ await updateCurrentTab(); // انتظار انتهاء تحديث كل البيانات
+updateCurrentTab(); // بعدين تحديث التبويب الحالي // تحديث كل البيانات في الخلفية
  }
 
  // Show edit student modal
@@ -761,6 +867,8 @@ refreshCurrentTab(); // بعدين تحديث التبويب الحالي // ت�
 
  showStatus('تم إضافة الطالب بنجاح')
  closeModal('studentModal')
+    loadStudents();
+    loadDashboardData();
  loadStudents()
  } catch (error) {
  console.error('Error adding student:', error)
@@ -791,13 +899,14 @@ refreshCurrentTab(); // بعدين تحديث التبويب الحالي // ت�
 
  showStatus('تم تحديث بيانات الطالب بنجاح')
  closeModal('studentModal')
+    loadStudents();
  loadStudents()
  } catch (error) {
  console.error('Error updating student:', error)
  showStatus('خطأ في تحديث بيانات الطالب', 'error')
  }
- await refreshAllData(); // انتظار انتهاء تحديث كل البيانات
-refreshCurrentTab(); // بعدين تحديث التبويب الحالي
+ await updateCurrentTab(); // انتظار انتهاء تحديث كل البيانات
+updateCurrentTab(); // بعدين تحديث التبويب الحالي
  }
 
  // دالة لعرض التفاصيل الكاملة للطالب (تعديل لعرض parent_phone)
@@ -872,31 +981,87 @@ async function loadStudentsForParents() {
  } catch (error) {
  console.error('Error loading students for parents:', error);
  showStatus('حدث خطأ أثناء تحميل بيانات الطلبة.', 'error');
-        await refreshAllData();
-        refreshCurrentTab();
-        await refreshAllData();
-        refreshCurrentTab();
-        await refreshTab('dashboard');
-        await refreshTab('students');
-        await refreshTab('parents');
-        await refreshTab('courses');
-        await refreshTab('teacherExams');
-        await refreshTab('subscriptions');
-        await refreshTab('payments');
-        await refreshTab('attendances');
-        await refreshTab('dashboard');
-        await refreshTab('students');
-        await refreshTab('parents');
-        await refreshTab('courses');
-        await refreshTab('teacherExams');
-        await refreshTab('subscriptions');
-        await refreshTab('payments');
-        await refreshTab('attendances');
-        await refreshTab('students');
-        await refreshTab('students');
+        await updateCurrentView();
+        await updateCurrentView()
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
  container.innerHTML = '<p class="no-data">فشل تحميل البيانات.</p>';
  }
 }
+
+// ...existing code...
+async function loadStudentsForParents() {
+  const container = document.getElementById('parentsStudentsContainer');
+  if (!container) {
+    console.error("عنصر 'parentsStudentsContainer' غير موجود في DOM.");
+    return;
+  }
+  container.innerHTML = `
+    <div class="loading">
+      <div class="loading-spinner"></div>
+      <p>جاري تحميل بيانات الطلاب...</p>
+    </div>
+  `;
+  try {
+    // جلب بيانات الطلاب من Supabase
+    const { data, error } = await supabaseClient
+      .from('students')
+      .select('*')
+      .order('full_name', { ascending: true });
+    if (error) throw error;
+
+    if (!data || data.length === 0) {
+      container.innerHTML = `<p class="no-data">لا يوجد طلاب مسجلين.</p>`;
+      return;
+    }
+
+    // بناء جدول الطلاب مع زر إرسال التقرير
+    let html = `<table>
+      <thead>
+        <tr>
+          <th>الاسم</th>
+          <th>رقم ولي الأمر</th>
+          <th>إرسال تقرير واتساب</th>
+        </tr>
+      </thead>
+      <tbody>
+    `;
+    for (const student of data) {
+      html += `
+        <tr>
+          <td>${escapeHtml(student.full_name || '')}</td>
+          <td>${escapeHtml(student.parent_phone || '')}</td>
+          <td>
+            <button class="btn btn-primary" onclick="generateAndSendReport('${student.id}')">
+              إرسال التقرير
+            </button>
+          </td>
+        </tr>
+      `;
+    }
+    html += `</tbody></table>`;
+    container.innerHTML = html;
+  } catch (err) {
+    container.innerHTML = `<p class="no-data">حدث خطأ أثناء تحميل بيانات الطلاب.</p>`;
+    console.error("خطأ في تحميل بيانات أولياء الأمور:", err);
+  }
+}
+// ...existing code...
 
 // Function to filter students in the Parents tab
 function filterParents() {
@@ -1476,7 +1641,7 @@ async function loadModules() {
  if (error) throw error;
 
  modules = data || [];
- console.log('✅ تم تحميل الوحدات:', modules);
+
  } catch (err) {
  console.error('❌ خطأ في تحميل الوحدات:', err);
  showStatus('فشل في تحميل الوحدات', 'error');
@@ -1602,47 +1767,76 @@ function searchHandler() {
 // عرض نموذج إضافة اختبار
 // =============================================================================
 async function showAddExamModal() {
- const modal = document.getElementById('examModal');
- if (!modal) return;
+    try {
+        // تحميل أحدث الكورسات والوحدات
+        await loadCourses();
+        await loadModules();
 
- document.getElementById('examModalTitle').textContent = 'إضافة اختبار جديد';
- document.getElementById('examId').value = '';
- document.getElementById('examTitle').value = '';
- document.getElementById('examMaxScore').value = '';
+        // تحديث قائمة الكورسات
+        const courseSelect = document.getElementById('examCourse');
+        if (!courseSelect) {
+            console.error("عنصر examCourse غير موجود في DOM");
+            showStatus('تعذر العثور على قائمة الكورسات', 'error');
+            return;
+        }
 
- const courseSelect = document.getElementById('examCourse');
- courseSelect.innerHTML = '<option value="">اختر كورساً</option>';
+        courseSelect.innerHTML = '<option value="">اختر كورساً</option>';
+        courses.forEach(course => {
+            const option = document.createElement('option');
+            option.value = course.id;
+            option.textContent = course.name;
+            courseSelect.appendChild(option);
+        });
 
- if (courses && courses.length > 0) {
- courses.forEach(course => {
- const option = document.createElement('option');
- option.value = course.id;
- option.textContent = course.name;
- courseSelect.appendChild(option);
- });
- } else {
- console.warn('قائمة الكورسات فارغة أو غير محملة');
- }
+        // تحديث قائمة الوحدات بناءً على أول كورس (إن وجد)
+        const moduleSelect = document.getElementById('examModule');
+        if (!moduleSelect) {
+            console.error("عنصر examModule غير موجود في DOM");
+            return;
+        }
 
- // تحديث الوحدات عند تغيير الدورة
- courseSelect.onchange = function () {
- const moduleSelect = document.getElementById('examModule');
- moduleSelect.innerHTML = '<option value="">اختر وحدة</option>';
- const selectedCourseId = this.value;
- if (!selectedCourseId) return;
+        if (courseSelect.value) {
+            updateModuleSelect(courseSelect.value);
+        } else {
+            moduleSelect.innerHTML = '<option value="">اختر وحدة</option>';
+        }
 
- const filteredModules = modules.filter(m => m.course_id == selectedCourseId);
- filteredModules.forEach(mod => {
- const option = document.createElement('option');
- option.value = mod.id;
- option.textContent = mod.title;
- moduleSelect.appendChild(option);
- });
- };
+        // ربط حدث تغيير الكورس لتحديث الوحدات
+        courseSelect.onchange = function () {
+            updateModuleSelect(this.value);
+        };
 
- modal.style.display = 'block';
- await refreshAllData(); // انتظار انتهاء تحديث كل البيانات
-refreshCurrentTab(); // بعدين تحديث التبويب الحالي
+        // فتح المودال يدويًا
+        const modal = document.getElementById('examModal');
+        if (modal) {
+            modal.style.display = 'flex';
+        } else {
+            console.error("عنصر examModal غير موجود في DOM");
+        }
+
+    } catch (error) {
+        console.error("خطأ أثناء فتح مودال إضافة الاختبار:", error);
+        showStatus('حدث خطأ أثناء تحميل البيانات', 'error');
+    }
+}
+
+function updateModuleSelect(courseId) {
+    const moduleSelect = document.getElementById('examModule');
+    moduleSelect.innerHTML = '<option value="">اختر وحدة</option>';
+
+    // فلترة الوحدات الخاصة بالكورس المحدد
+    const filteredModules = modules.filter(m => m.course_id == courseId);
+
+    if (filteredModules.length > 0) {
+        filteredModules.forEach(module => {
+            const option = document.createElement('option');
+            option.value = module.id;
+            option.textContent = module.title; // استخدام العمود الصحيح
+            moduleSelect.appendChild(option);
+        });
+    } else {
+        moduleSelect.innerHTML = '<option value="">لا توجد وحدات</option>';
+    }
 }
 
 // =============================================================================
@@ -1678,8 +1872,8 @@ async function showEditExamModal(examId) {
  });
 
  document.getElementById('examModal').style.display = 'block';
- await refreshAllData(); // انتظار انتهاء تحديث كل البيانات
-refreshCurrentTab(); // بعدين تحديث التبويب الحالي
+ await updateCurrentTab(); // انتظار انتهاء تحديث كل البيانات
+updateCurrentTab(); // بعدين تحديث التبويب الحالي
 }
 
 // =============================================================================
@@ -1694,17 +1888,15 @@ async function saveExam() {
 
  if (!title || !maxScore || !courseId || !moduleId) {
  showStatus('يرجى ملء جميع الحقول المطلوبة.', 'error');
-        await refreshAllData();
-        refreshCurrentTab();
-        await refreshTab('dashboard');
-        await refreshTab('students');
-        await refreshTab('parents');
-        await refreshTab('courses');
-        await refreshTab('teacherExams');
-        await refreshTab('subscriptions');
-        await refreshTab('payments');
-        await refreshTab('attendances');
-        await refreshTab('teacherExams');
+        await updateCurrentView()
+        
+        
+        
+        
+        
+        
+        
+        
  return;
  }
 
@@ -1749,17 +1941,15 @@ async function deleteStudent(studentId) {
  const proceed = confirm('يوجد سجلات مرتبطة بهذا الطالب (حضور/دفع/اشتراك). هل تريد حذف هذه السجلات أولاً ثم حذف الطالب؟ اختر "موافق" للحذف الكامل أو "إلغاء" لإيقاف العملية.');
  if (!proceed) {
  showStatus('تم إلغاء حذف الطالب', 'info');
-        await refreshAllData();
-        refreshCurrentTab();
-        await refreshTab('dashboard');
-        await refreshTab('students');
-        await refreshTab('parents');
-        await refreshTab('courses');
-        await refreshTab('teacherExams');
-        await refreshTab('subscriptions');
-        await refreshTab('payments');
-        await refreshTab('attendances');
-        await refreshTab('students');
+        await updateCurrentView()
+        
+        
+        
+        
+        
+        
+        
+        
  return;
  }
 
@@ -1789,8 +1979,8 @@ async function deleteStudent(studentId) {
  showStatus(`خطأ في حذف الطالب: ${err.message || err}`, 'error');
  }
  }
- await refreshAllData(); // انتظار انتهاء تحديث كل البيانات
-refreshCurrentTab(); // بعدين تحديث التبويب الحالي // <-- تحديث كامل بعد الحذف
+ await updateCurrentTab(); // انتظار انتهاء تحديث كل البيانات
+updateCurrentTab(); // بعدين تحديث التبويب الحالي // <-- تحديث كامل بعد الحذف
 }
 
 // =============================================================================
@@ -1802,23 +1992,21 @@ async function deleteExam(examId) {
  const { error } = await supabaseClient.from('exams').delete().eq('id', examId);
  if (error) {
  showStatus('خطأ في الحذف', 'error');
-        await refreshAllData();
-        refreshCurrentTab();
-        await refreshTab('dashboard');
-        await refreshTab('students');
-        await refreshTab('parents');
-        await refreshTab('courses');
-        await refreshTab('teacherExams');
-        await refreshTab('subscriptions');
-        await refreshTab('payments');
-        await refreshTab('attendances');
-        await refreshTab('teacherExams');
+        await updateCurrentView()
+        
+        
+        
+        
+        
+        
+        
+        
  } else {
  showStatus('تم حذف الاختبار بنجاح');
  loadTeacherExamsForSecretary();
  }
- await refreshAllData(); // انتظار انتهاء تحديث كل البيانات
-refreshCurrentTab(); // بعدين تحديث التبويب الحالي // <-- تحديث كامل بعد حذف الاختبار
+ await updateCurrentTab(); // انتظار انتهاء تحديث كل البيانات
+updateCurrentTab(); // بعدين تحديث التبويب الحالي // <-- تحديث كامل بعد حذف الاختبار
 }
 
 // 
@@ -1835,17 +2023,15 @@ async function addCourse() {
  // التحقق البسيط من البيانات (يمكنك تحسينه)
  if (!courseName) {
  showStatus('يرجى إدخال اسم الدورة', 'error');
-        await refreshAllData();
-        refreshCurrentTab();
-        await refreshTab('dashboard');
-        await refreshTab('students');
-        await refreshTab('parents');
-        await refreshTab('courses');
-        await refreshTab('teacherExams');
-        await refreshTab('subscriptions');
-        await refreshTab('payments');
-        await refreshTab('attendances');
-        await refreshTab('courses');
+        await updateCurrentView()
+        
+        
+        
+        
+        
+        
+        
+        
  return;
  }
 
@@ -1872,8 +2058,8 @@ async function addCourse() {
  // عرض رسالة خطأ أكثر تفصيلاً
  showStatus(`خطأ في إضافة الدورة: ${error.message || 'حدث خطأ غير معروف'}`, 'error');
  }
- await refreshAllData(); // انتظار انتهاء تحديث كل البيانات
-refreshCurrentTab(); // بعدين تحديث التبويب الحالي
+ await updateCurrentTab(); // انتظار انتهاء تحديث كل البيانات
+updateCurrentTab(); // بعدين تحديث التبويب الحالي
 }
 
  // Show add course modal
@@ -2056,17 +2242,15 @@ async function deleteCourse(courseId) {
  const proceed = confirm('يوجد سجلات مرتبطة بهذا الدورة (حضور/دروس/اشتراكات/دفعات). اضغط OK لحذف هذه السجلات تلقائياً ثم حذف الدورة، أو Cancel لإلغاء.');
  if (!proceed) {
  showStatus('تم إلغاء حذف الدورة.', 'info');
-        await refreshAllData();
-        refreshCurrentTab();
-        await refreshTab('dashboard');
-        await refreshTab('students');
-        await refreshTab('parents');
-        await refreshTab('courses');
-        await refreshTab('teacherExams');
-        await refreshTab('subscriptions');
-        await refreshTab('payments');
-        await refreshTab('attendances');
-        await refreshTab('courses');
+        await updateCurrentView()
+        
+        
+        
+        
+        
+        
+        
+        
  return;
  }
 
@@ -2102,8 +2286,8 @@ async function deleteCourse(courseId) {
  showStatus(`خطأ في حذف الدورة: ${error.message || error}`, 'error');
  }
  }
- await refreshAllData(); // انتظار انتهاء تحديث كل البيانات
-refreshCurrentTab(); // بعدين تحديث التبويب الحالي // <-- تحديث كامل بعد الحذف
+ await updateCurrentTab(); // انتظار انتهاء تحديث كل البيانات
+updateCurrentTab(); // بعدين تحديث التبويب الحالي // <-- تحديث كامل بعد الحذف
 }
 // Filter courses
 function filterCourses() {
@@ -2327,8 +2511,8 @@ async function openAddModuleModal() {
  addModule(currentCourseId);
  };
  document.getElementById('moduleModal').style.display = 'block';
- await refreshAllData(); // انتظار انتهاء تحديث كل البيانات
-refreshCurrentTab(); // بعدين تحديث التبويب الحالي
+ await updateCurrentTab(); // انتظار انتهاء تحديث كل البيانات
+updateCurrentTab(); // بعدين تحديث التبويب الحالي
 }
 
 // إضافة وحدة جديدة
@@ -2437,8 +2621,8 @@ async function updateModule(moduleId) {
  console.error('Error updating module:', error);
  showStatus(`خطأ في تحديث الوحدة: ${error.message}`, 'error');
  }
- await refreshAllData(); // انتظار انتهاء تحديث كل البيانات
-refreshCurrentTab(); // بعدين تحديث التبويب الحالي // <-- تحديث كامل بعد التحديث
+ await updateCurrentTab(); // انتظار انتهاء تحديث كل البيانات
+updateCurrentTab(); // بعدين تحديث التبويب الحالي // <-- تحديث كامل بعد التحديث
 }
 
 // حذف وحدة
@@ -2465,8 +2649,8 @@ async function deleteModule(moduleId) {
  console.error('Error deleting module:', error);
  showStatus(`خطأ في حذف الوحدة: ${error.message}`, 'error');
  }
- await refreshAllData(); // انتظار انتهاء تحديث كل البيانات
-refreshCurrentTab(); // بعدين تحديث التبويب الحالي // <-- تحديث كامل بعد الحذف
+ await updateCurrentTab(); // انتظار انتهاء تحديث كل البيانات
+updateCurrentTab(); // بعدين تحديث التبويب الحالي // <-- تحديث كامل بعد الحذف
 }
 
 // --- دوال إدارة الدروس ---
@@ -2485,8 +2669,8 @@ async function openAddLessonModal(moduleId) {
  addLesson();
  };
  document.getElementById('lessonModal').style.display = 'block';
- await refreshAllData(); // انتظار انتهاء تحديث كل البيانات
-refreshCurrentTab(); // بعدين تحديث التبويب الحالي
+ await updateCurrentTab(); // انتظار انتهاء تحديث كل البيانات
+updateCurrentTab(); // بعدين تحديث التبويب الحالي
 }
 
 // إضافة درس جديد
@@ -2494,9 +2678,8 @@ refreshCurrentTab(); // بعدين تحديث التبويب الحالي
 async function addLesson() {
  try {
  // --- التحقق من المستخدم والدور ---
- console.log("🔍 [1/5] بدء التحقق من المستخدم والدور...");
+
  const { data: { user }, error: authError } = await supabaseClient.auth.getUser();
- console.log("🔍 معلومات المستخدم من Supabase Auth:", user);
 
  if (authError) {
  console.error("❌ خطأ في الحصول على بيانات المستخدم من Auth:", authError);
@@ -2509,8 +2692,6 @@ async function addLesson() {
  showStatus('يجب تسجيل الدخول لإضافة دروس.', 'error');
  return;
  }
-
- console.log("🔍 ID المستخدم من Auth:", user.id);
 
  const { data: userData, error: userError } = await supabaseClient
  .from('users')
@@ -2535,14 +2716,10 @@ async function addLesson() {
  return;
  }
 
- console.log("🔍 بيانات المستخدم من جدول users:", userData);
- console.log("🔍 دور المستخدم من جدول users:", `'${userData.role}'`);
- console.log("🔍 هل الدور 'secretary'؟", userData.role === 'secretary');
-
  // تحقق يدويًا من الأحرف
- console.log("🔍 طول النص role:", userData.role.length);
+
  for (let i = 0; i < userData.role.length; i++) {
- console.log(`🔍 حرف ${i}:`, userData.role.charCodeAt(i));
+
  }
 
  // إذا لم يكن الدور secretary، أوقف العملية
@@ -2550,11 +2727,11 @@ async function addLesson() {
  showStatus('ليس لديك الصلاحية لإضافة دروس. يجب أن تكون سكرتير.', 'error');
  return;
  }
- console.log("✅ [1/5] التحقق من المستخدم والدور: نجح");
+
  // --- نهاية التحقق من المستخدم والدور ---
 
  // --- جمع وتحقق من بيانات النموذج ---
- console.log("🔍 [2/5] جمع وتحقق من بيانات النموذج...");
+
  const moduleId = document.getElementById('lessonModuleId').value;
  const title = document.getElementById('lessonTitle').value.trim();
  const description = document.getElementById('lessonDescription').value.trim();
@@ -2570,12 +2747,10 @@ async function addLesson() {
  console.error('❌ لم يتم توفير moduleId');
  return;
  }
- console.log("✅ [2/5] جمع وتحقق من بيانات النموذج: نجح");
+
  // --- نهاية جمع وتحقق من بيانات النموذج ---
 
  // --- التحقق من صحة module_id و course_id ---
- console.log("🔍 [3/5] التحقق من صحة module_id و course_id:");
- console.log("🔍 module_id:", moduleId);
 
  // جلب course_id من الوحدة - بدون .single() للتعامل بشكل أفضل مع النتائج الفارغة
  const { data: moduleDataArray, error: moduleError } = await supabaseClient
@@ -2599,7 +2774,6 @@ async function addLesson() {
  }
 
  const moduleData = moduleDataArray[0]; // أخذ أول عنصر من المصفوفة
- console.log("🔍 بيانات الوحدة المسترجعة:", moduleData);
 
  // التحقق من وجود course_id
  if (!moduleData.course_id) {
@@ -2617,8 +2791,6 @@ async function addLesson() {
  return;
  }
 
- console.log("🔍 course_id من الوحدة:", moduleData.course_id);
-
  // التحقق الإضافي: التأكد من أن module_id موجود فعلاً
  const { data: moduleCheck, error: moduleCheckError } = await supabaseClient
  .from('modules')
@@ -2631,29 +2803,28 @@ async function addLesson() {
  showStatus('الوحدة المرتبطة غير صالحة.', 'error');
  return;
  }
- console.log("✅ [3/5] التحقق من صحة module_id: نجح");
+
  // --- نهاية التحقق من صحة module_id و course_id ---
 
  // --- التحقق النهائي من حالة المستخدم قبل الإدخال ---
- console.log("🔍 [4/5] قبل محاولة الإدخال - التحقق النهائي من حالة المستخدم:");
+
  const { data: { user: finalUserCheck }, error: finalAuthError } = await supabaseClient.auth.getUser();
- console.log("🔍 ID المستخدم النهائي من Auth:", finalUserCheck?.id);
 
  if (!finalUserCheck?.id) {
  console.error("❌ خطأ حرج: فقدان حالة تسجيل الدخول قبل الإدخال!");
  showStatus('خطأ: تم فقدان حالة تسجيل الدخول. يرجى إعادة تسجيل الدخول.', 'error');
  return;
  }
- console.log("✅ [4/5] التحقق النهائي من حالة المستخدم: نجح");
+
  // --- نهاية التحقق النهائي ---
 
 // --- التحقق النهائي والطباعة في لحظة الإرسال ---
-console.log("🔍 [إرسال الطلب] التحقق النهائي من المستخدم والدور:");
+
 const { data: { user: userAtInsertTime }, error: authErrorAtInsert } = await supabaseClient.auth.getUser();
 if (authErrorAtInsert) {
  console.error("❌ [إرسال الطلب] خطأ في الحصول على المستخدم:", authErrorAtInsert);
 } else {
- console.log("🔍 [إرسال الطلب] auth.uid() في لحظة الإرسال:", userAtInsertTime?.id);
+
  if (userAtInsertTime?.id) {
  const { data: userDataAtInsert, error: userDbErrorAtInsert } = await supabaseClient
  .from('users')
@@ -2663,12 +2834,11 @@ if (authErrorAtInsert) {
  if (userDbErrorAtInsert) {
  console.error("❌ [إرسال الطلب] خطأ في جلب دور المستخدم:", userDbErrorAtInsert);
  } else {
- console.log("🔍 [إرسال الطلب] دور المستخدم:", userDataAtInsert?.role);
- console.log("🔍 [إرسال الطلب] هل هو سكرتير؟", userDataAtInsert?.role === 'secretary');
+
  }
  }
 }
-console.log("🚀 [إرسال الطلب] بيانات الإدخال:", { moduleId, course_id: moduleData.course_id, title, description, date });
+
 // --- نهاية التحقق النهائي ---
  const { data, error } = await supabaseClient
  .from('lessons')
@@ -2695,7 +2865,7 @@ console.log("🚀 [إرسال الطلب] بيانات الإدخال:", { modul
  }
  return; // إنهاء الدالة في حالة الخطأ
  }
- console.log("✅ [5/5] تم إدخال الدرس بنجاح:", data);
+
  // --- نهاية محاولة الإدخال ---
 
  showStatus('تم إضافة الدرس بنجاح');
@@ -2714,8 +2884,8 @@ console.log("🚀 [إرسال الطلب] بيانات الإدخال:", { modul
  }
  }
 
-await refreshAllData(); // انتظار انتهاء تحديث كل البيانات
-refreshCurrentTab(); // بعدين تحديث التبويب الحالي
+await updateCurrentTab(); // انتظار انتهاء تحديث كل البيانات
+updateCurrentTab(); // بعدين تحديث التبويب الحالي
 }
 
 // فتح Modal تعديل درس
@@ -2798,8 +2968,8 @@ async function updateLesson(lessonId) {
  console.error('Error updating lesson:', error);
  showStatus(`خطأ في تحديث الدرس: ${error.message}`, 'error');
  }
- await refreshAllData(); // انتظار انتهاء تحديث كل البيانات
-refreshCurrentTab(); // بعدين تحديث التبويب الحالي
+ await updateCurrentTab(); // انتظار انتهاء تحديث كل البيانات
+updateCurrentTab(); // بعدين تحديث التبويب الحالي
 }
 
 // حذف درس
@@ -2833,8 +3003,8 @@ async function deleteLesson(lessonId) {
  console.error('Error deleting lesson:', error);
  showStatus(`خطأ في حذف الدرس: ${error.message}`, 'error');
  }
- await refreshAllData(); // انتظار انتهاء تحديث كل البيانات
-refreshCurrentTab(); // بعدين تحديث التبويب الحالي // <-- تحديث كامل بعد حذف الدرس
+ await updateCurrentTab(); // انتظار انتهاء تحديث كل البيانات
+updateCurrentTab(); // بعدين تحديث التبويب الحالي // <-- تحديث كامل بعد حذف الدرس
 }
 
 // دالة مساعدة للحصول على currentCourseId من Modal التفاصيل (إذا احتجت)
@@ -3003,8 +3173,8 @@ async function showAddSubscriptionModal() {
  }
  const today = new Date().toISOString().split('T')[0]
  document.getElementById('subscriptionDate').value = today
- await refreshAllData(); // انتظار انتهاء تحديث كل البيانات
-refreshCurrentTab(); // بعدين تحديث التبويب الحالي // <-- تحديث كامل بعد إضافة اشتراك جديد
+ await updateCurrentTab(); // انتظار انتهاء تحديث كل البيانات
+updateCurrentTab(); // بعدين تحديث التبويب الحالي // <-- تحديث كامل بعد إضافة اشتراك جديد
  }
 
  // Show edit subscription modal
@@ -3112,8 +3282,8 @@ refreshCurrentTab(); // بعدين تحديث التبويب الحالي // <--
  console.error('Error updating subscription:', error)
  showStatus('خطأ في تحديث بيانات الاشتراك', 'error')
  }
- await refreshAllData(); // انتظار انتهاء تحديث كل البيانات
-refreshCurrentTab(); // بعدين تحديث التبويب الحالي
+ await updateCurrentTab(); // انتظار انتهاء تحديث كل البيانات
+updateCurrentTab(); // بعدين تحديث التبويب الحالي
  }
 
  // Delete subscription
@@ -3136,8 +3306,8 @@ refreshCurrentTab(); // بعدين تحديث التبويب الحالي
  console.error('Error deleting subscription:', error)
  showStatus('خطأ في حذف الاشتراك', 'error')
  }
- await refreshAllData(); // انتظار انتهاء تحديث كل البيانات
-refreshCurrentTab(); // بعدين تحديث التبويب الحالي
+ await updateCurrentTab(); // انتظار انتهاء تحديث كل البيانات
+updateCurrentTab(); // بعدين تحديث التبويب الحالي
  }
 
  // Load payments
@@ -3519,8 +3689,8 @@ function printAttendanceReceipt() {
  totalAmountInput.value = '';
  // console.log("تم مسح حقل إجمالي الدورة");
  }
- await refreshAllData(); // انتظار انتهاء تحديث كل البيانات
-refreshCurrentTab(); // بعدين تحديث التبويب الحالي // <-- تحديث كامل بعد تغيير الدورة
+ await updateCurrentTab(); // انتظار انتهاء تحديث كل البيانات
+updateCurrentTab(); // بعدين تحديث التبويب الحالي // <-- تحديث كامل بعد تغيير الدورة
  }
 
  // Show add payment modal
@@ -3600,8 +3770,8 @@ refreshCurrentTab(); // بعدين تحديث التبويب الحالي // <--
  amountInput.oninput = updateRemainingAmount;
  }
 
- await refreshAllData(); // انتظار انتهاء تحديث كل البيانات
-refreshCurrentTab(); // بعدين تحديث التبويب الحالي // <-- تحديث كامل بعد إضافة دفعة جديدة
+ await updateCurrentTab(); // انتظار انتهاء تحديث كل البيانات
+updateCurrentTab(); // بعدين تحديث التبويب الحالي // <-- تحديث كامل بعد إضافة دفعة جديدة
 
  }
 
@@ -3699,8 +3869,8 @@ async function updateRemainingAmount() {
  // إذا لم يتم إدخال قيم، اجعل المتبقي 0 أو فارغًا
  remainingAmountDisplay.value = '';
  }
- await refreshAllData(); // انتظار انتهاء تحديث كل البيانات
-refreshCurrentTab(); // بعدين تحديث التبويب الحالي // <-- تحديث كامل بعد تغيير المبلغ
+ await updateCurrentTab(); // انتظار انتهاء تحديث كل البيانات
+updateCurrentTab(); // بعدين تحديث التبويب الحالي // <-- تحديث كامل بعد تغيير المبلغ
 }
  // Delete payment
  async function deletePayment(paymentId) {
@@ -3722,8 +3892,8 @@ refreshCurrentTab(); // بعدين تحديث التبويب الحالي // <--
  console.error('Error deleting payment:', error)
  showStatus('خطأ في حذف الدفعة', 'error')
  }
- await refreshAllData(); // انتظار انتهاء تحديث كل البيانات
-refreshCurrentTab(); // بعدين تحديث التبويب الحالي
+ await updateCurrentTab(); // انتظار انتهاء تحديث كل البيانات
+updateCurrentTab(); // بعدين تحديث التبويب الحالي
  } 
  
  
@@ -3970,8 +4140,8 @@ function printStudentAttendance(studentId) {
  const today = new Date().toISOString().split('T')[0]
  document.getElementById('attendanceDate').value = today
 
- await refreshAllData(); // انتظار انتهاء تحديث كل البيانات
-refreshCurrentTab(); // بعدين تحديث التبويب الحالي // <-- تحديث كامل بعد إضافة حضور جديد
+ await updateCurrentTab(); // انتظار انتهاء تحديث كل البيانات
+updateCurrentTab(); // بعدين تحديث التبويب الحالي // <-- تحديث كامل بعد إضافة حضور جديد
 
  }
 // دالة لتحديث إجمالي سعر الدورة تلقائياً
@@ -3988,17 +4158,15 @@ async function updateCourse(courseId) {
  // التحقق البسيط من البيانات (يمكنك تحسينه)
  if (!courseName) {
  showStatus('يرجى إدخال اسم الدورة', 'error');
-        await refreshAllData();
-        refreshCurrentTab();
-        await refreshTab('dashboard');
-        await refreshTab('students');
-        await refreshTab('parents');
-        await refreshTab('courses');
-        await refreshTab('teacherExams');
-        await refreshTab('subscriptions');
-        await refreshTab('payments');
-        await refreshTab('attendances');
-        await refreshTab('courses');
+        await updateCurrentView()
+        
+        
+        
+        
+        
+        
+        
+        
  return;
  }
 
@@ -4131,8 +4299,8 @@ async function updateCourse(courseId) {
  showStatus('خطأ في تحديث بيانات الحضور', 'error')
  }
 
- await refreshAllData(); // انتظار انتهاء تحديث كل البيانات
-refreshCurrentTab(); // بعدين تحديث التبويب الحالي // <-- تحديث كامل بعد تغيير الحضور
+ await updateCurrentTab(); // انتظار انتهاء تحديث كل البيانات
+updateCurrentTab(); // بعدين تحديث التبويب الحالي // <-- تحديث كامل بعد تغيير الحضور
 
  }
 
@@ -4156,8 +4324,8 @@ refreshCurrentTab(); // بعدين تحديث التبويب الحالي // <--
  console.error('Error deleting attendance:', error)
  showStatus('خطأ في حذف الحضور', 'error')
  }
- await refreshAllData(); // انتظار انتهاء تحديث كل البيانات
-refreshCurrentTab(); // بعدين تحديث التبويب الحالي // <-- تحديث كامل بعد حذف الحضور
+ await updateCurrentTab(); // انتظار انتهاء تحديث كل البيانات
+updateCurrentTab(); // بعدين تحديث التبويب الحالي // <-- تحديث كامل بعد حذف الحضور
  }
 // دالة لعرض إيصال الحضور
 // دالة لعرض إيصال الحضور مع السجل الكامل
@@ -4374,9 +4542,6 @@ document.getElementById('menuToggle').addEventListener('click', function() {
  sidebar.classList.toggle('active');
 });
 
-
-
-
 // ===== Hide Sidebar on Mobile When Clicking a Tab =====
 document.querySelectorAll('.tab-link').forEach(link => {
   link.addEventListener('click', () => {
@@ -4488,3 +4653,4 @@ async function handleSecretaryAttendance() {
     console.error('Error handling secretary attendance:', err);
   }
 }
+
