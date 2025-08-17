@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>تأكيد العملية</title>
+  <style>
+    body {
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      padding: 20px;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      margin: 0;
+      direction: rtl;
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .container {
+      max-width: 400px;
+      width: 100%;
+      background: white;
+      padding: 40px;
+      border-radius: 20px;
+      box-shadow: 0 15px 35px rgba(0,0,0,0.1);
+      text-align: center;
+    }
+    .success { 
+      background: linear-gradient(135deg, #56ab2f 0%, #a8e6cf 100%); 
+      color: white; 
+      padding: 15px;
+      border-radius: 10px;
+      margin: 20px 0;
+    }
+    .error { 
+      background: linear-gradient(135deg, #ff416c 0%, #ff4b2b 100%); 
+      color: white; 
+      padding: 15px;
+      border-radius: 10px;
+      margin: 20px 0;
+    }
+    a {
+      display: inline-block;
+      margin-top: 20px;
+      padding: 10px 20px;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: white;
+      text-decoration: none;
+      border-radius: 10px;
+      font-weight: bold;
+    }
+    a:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 5px 15px rgba(102, 126, 234, 0.3);
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h2>تأكيد العملية</h2>
+    <div id="messageContainer"></div>
+    <a href="index.html">العودة لتسجيل الدخول</a>
+  </div>
+
+  <script>
+    window.addEventListener('load', function() {
+      const container = document.getElementById('messageContainer');
+      
+      // استخراج الرسالة من الـ hash
+      const hash = window.location.hash.substring(1);
+      const params = new URLSearchParams(hash);
+      const message = params.get('message');
+      
+      if (message) {
+        container.innerHTML = `
+          <div class="success">
+            ✅ ${decodeURIComponent(message)}
+          </div>
+        `;
+      } else {
+        container.innerHTML = `
+          <div class="error">
+            ❌ لا توجد رسالة للعرض
+          </div>
+        `;
+      }
+      
+      // إزالة الـ hash من الـ URL بعد عرض الرسالة
+      if (window.location.hash) {
+        history.replaceState(null, null, ' ');
+      }
+    });
+  </script>
+</body>
+</html>
