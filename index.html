@@ -442,89 +442,101 @@
       }
     });
 
-    // معالج التسجيل الجديد
-    document.getElementById('registerForm').addEventListener('submit', async function(e) {
-      e.preventDefault();
+// معالج التسجيل الجديد
+document.getElementById('registerForm').addEventListener('submit', async function(e) {
+  e.preventDefault();
 
-      const status = document.getElementById('regStatus');
-      status.textContent = '';
-      status.className = '';
+  const status = document.getElementById('regStatus');
+  status.textContent = '';
+  status.className = '';
 
-      const fullName = document.getElementById('regFullName').value;
-      const email = document.getElementById('regEmail').value;
-      const password = document.getElementById('regPassword').value;
-      const role = document.getElementById('regRole').value;
+  const fullName = document.getElementById('regFullName').value;
+  const email = document.getElementById('regEmail').value;
+  const password = document.getElementById('regPassword').value;
+  const role = document.getElementById('regRole').value;
 
-      status.className = 'info';
-      status.innerHTML = '<span class="loader"></span> جاري إنشاء الحساب...';
+  status.className = 'info';
+  status.innerHTML = '<span class="loader"></span> جاري إنشاء الحساب...';
 
-      try {
-        // First check if user already exists
-        const { data: existingUser, error: checkError } = await supabaseClient
-          .from('users')
-          .select('email')
-          .eq('email', email)
-          .maybeSingle();
+  try {
+    // ✅ تحقق من الحد الأقصى للمستخدمين (6)
+    const { count, error: countError } = await supabaseClient
+      .from('users')
+      .select('id', { count: 'exact', head: true });
 
-        if (checkError) {
-          status.textContent = 'خطأ في التحقق من البريد الإلكتروني: ' + checkError.message;
-          status.className = 'error';
-          return;
+    if (countError) {
+      status.textContent = '❌ خطأ أثناء التحقق من عدد المستخدمين: ' + countError.message;
+      status.className = 'error';
+      return;
+    }
+
+    if (count >= 6) {
+      status.textContent = '🚫 تم الوصول إلى الحد الأقصى (6 مستخدمين). برجاء التواصل مع المشرف لإضافة مستخدم جديد.';
+      status.className = 'error';
+      return;
+    }
+
+    // ✅ تحقق من البريد لو موجود قبل كده
+    const { data: existingUser, error: checkError } = await supabaseClient
+      .from('users')
+      .select('email')
+      .eq('email', email)
+      .maybeSingle();
+
+    if (checkError) {
+      status.textContent = 'خطأ في التحقق من البريد الإلكتروني: ' + checkError.message;
+      status.className = 'error';
+      return;
+    }
+
+    if (existingUser) {
+      status.textContent = '❌ هذا البريد الإلكتروني مسجل مسبقاً.';
+      status.className = 'error';
+      return;
+    }
+
+    // إنشاء الحساب
+    const { data, error } = await supabaseClient.auth.signUp({
+      email,
+      password,
+      options: {
+        data: {
+          full_name: fullName,
+          role: role
         }
-
-        if (existingUser) {
-          status.textContent = 'هذا البريد الإلكتروني مسجل مسبقاً';
-          status.className = 'error';
-          return;
-        }
-
-        const { data, error } = await supabaseClient.auth.signUp({
-          email,
-          password,
-          options: {
-            data: {
-              full_name: fullName,
-              role: role
-            }
-          }
-        });
-
-        if (error) {
-          console.error("خطأ في التسجيل:", error.message);
-          status.className = 'error';
-          status.textContent = 'خطأ في التسجيل: ' + error.message;
-          return;
-        }
-
-        console.log("تم إنشاء المستخدم:", data.user);
-
-        const { data: freshUserData, error: userFetchError } = await supabaseClient.auth.getUser();
-        if (userFetchError) {
-          console.error("خطأ في جلب بيانات المستخدم:", userFetchError.message);
-        } else {
-          console.log("بيانات المستخدم الكاملة:", freshUserData?.user);
-          console.log("user_metadata:", freshUserData?.user?.user_metadata);
-        }
-
-        if (data && data.user) {
-          status.textContent = '✅ تم إنشاء الحساب بنجاح! يرجى تفعيل حسابك من خلال الرابط المرسل إلى بريدك الإلكتروني.';
-          status.className = 'success';
-          setTimeout(() => {
-            showLoginForm();
-          }, 3000);
-        } else {
-          status.textContent = 'تم إرسال رابط التفعيل إلى بريدك.';
-          status.className = 'success';
-          setTimeout(() => {
-            showLoginForm();
-          }, 2000);
-        }
-      } catch (err) {
-        status.textContent = 'خطأ غير متوقع: ' + err.message;
-        status.className = 'error';
-        console.error("Unexpected error:", err);
       }
     });
+
+    if (error) {
+      console.error("خطأ في التسجيل:", error.message);
+      status.className = 'error';
+      status.textContent = 'خطأ في التسجيل: ' + error.message;
+      return;
+    }
+
+    console.log("تم إنشاء المستخدم:", data.user);
+
+    if (data && data.user) {
+      status.textContent = '✅ تم إنشاء الحساب بنجاح! يرجى تفعيل حسابك من خلال الرابط المرسل إلى بريدك الإلكتروني.';
+      status.className = 'success';
+      setTimeout(() => {
+        showLoginForm();
+      }, 3000);
+    } else {
+      status.textContent = '📬 تم إرسال رابط التفعيل إلى بريدك.';
+      status.className = 'success';
+      setTimeout(() => {
+        showLoginForm();
+      }, 2000);
+    }
+
+  } catch (err) {
+    status.textContent = '❌ خطأ غير متوقع: ' + err.message;
+    status.className = 'error';
+    console.error("Unexpected error:", err);
+  }
+});
+
 
     // معالج إعادة تعيين كلمة المرور
     document.getElementById('resetPasswordForm').addEventListener('submit', async function(e) {

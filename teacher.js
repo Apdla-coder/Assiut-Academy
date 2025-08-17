@@ -158,86 +158,90 @@
                 }
             }
             
-            // دالة لتحميل بيانات المستخدم الحالي
-            async function loadUserData() {
-                try {
-                    const { data: { user }, error: authError } = await supabaseClient.auth.getUser();
-                    if (authError) throw authError;
-                    if (!user) {
-                        window.location.href = 'login.html';
-                        return;
-                    }
-                    currentUserId = user.id;
-                    const { data: userData, error: userError } = await supabaseClient
+// 🟢 دالة لتحميل بيانات المستخدم الحالي
+async function loadUserData() {
+    try {
+        const { data: { user }, error: authError } = await supabaseClient.auth.getUser();
+        if (authError) throw authError;
+
+        // لو مفيش مستخدم -> وديه على تسجيل الدخول
+        if (!user) {
+            window.location.href = 'index.html';
+            return;
+        }
+
+        currentUserId = user.id;
+
+        // جلب بيانات المستخدم من جدول users
+        const { data: userData, error: userError } = await supabaseClient
+            .from('users')
+            .select('id, full_name, role, specialty, avatar_url')
+            .eq('id', currentUserId)
+            .maybeSingle(); // ✅ خليها maybeSingle بدل single عشان ما يوقفش لو مفيش بيانات
+
+        if (userError && userError.code !== 'PGRST116') {
+            throw userError;
+        }
+
+        if (userData) {
+            currentUserData = userData;
+
+            // الاسم اللي هيظهر
+            let displayName = userData.full_name || 'المعلم';
+
+            // تحقق من الدور
+            const params = new URLSearchParams(window.location.search);
+            const teacherParam = params.get('teacher_id') || params.get('teacherId');
+
+            if (userData.role !== 'teacher') {
+                if (teacherParam) {
+                    // لو المستخدم Admin أو غيره، وجايب teacher_id من الرابط
+                    const { data: teacherUser, error: teacherErr } = await supabaseClient
                         .from('users')
-        .select('id, full_name, role, specialty, avatar_url') // إضافة avatar_url
-                        .eq('id', currentUserId)
-                        .single();
-                    if (userError && userError.code !== 'PGRST116') {
-                        throw userError;
-                    }
-                    if (userData) {
-                        currentUserData = userData;
+                        .select('id, full_name, role')
+                        .eq('id', teacherParam)
+                        .maybeSingle();
 
-                        // By default show the authenticated user's name
-                        let displayName = userData.full_name || 'المعلم';
-
-                        // If the current user is not a teacher (e.g., an admin), allow passing
-                        // ?teacher_id=... or ?teacherId=... in the URL to view a specific teacher's dashboard.
-                        const params = new URLSearchParams(window.location.search);
-                        const teacherParam = params.get('teacher_id') || params.get('teacherId');
-
-                        if (userData.role !== 'teacher') {
-                            if (teacherParam) {
-                                // try to fetch this teacher's name from users
-                                try {
-                                    const { data: teacherUser, error: teacherErr } = await supabaseClient
-                                        .from('users')
-                                        .select('id, full_name, role')
-                                        .eq('id', teacherParam)
-                                        .maybeSingle();
-                                    if (!teacherErr && teacherUser && teacherUser.role === 'teacher') {
-                                        displayName = teacherUser.full_name || displayName;
-                                        // set currentViewedTeacherId so other functions can use it if needed
-                                        window.currentViewedTeacherId = teacherUser.id;
-                                    } else {
-                                        console.warn('لم يُعثر على مستخدم معرّف كـ teacher لِـ teacher_id الممرر');
-                                    }
-                                } catch (err) {
-                                    console.error('خطأ في جلب بيانات المعلم عبر teacher_id:', err);
-                                }
-                            } else {
-                                // no teacher specified and user not teacher -> deny access
-                                showStatus('ليس لديك الصلاحية للوصول إلى هذه الصفحة. يجب أن تكون معلمًا أو تمرر teacher_id في الرابط.', 'error');
-                                document.querySelector('.content').innerHTML = '<p class="no-data error">ليس لديك الصلاحية للوصول إلى هذه الصفحة.</p>';
-                                return;
-                            }
-                        }
-
-                        // تحديث اسم المستخدم (أو اسم المعلم المحدد) في الهيدر
-                        const userNameHeaderElement = document.getElementById('userNameHeader');
-                        if (userNameHeaderElement) {
-                            // show a simple greeting with the teacher's name
-                            userNameHeaderElement.textContent = `أهلاً بك، ${displayName}`;
-                        } else {
-                            console.error('العنصر بـ id="userNameHeader" غير موجود في الـ HTML.');
-                        }
-
-                        // also update the profile name element if present
-                        const profileNameEl = document.getElementById('profileName');
-                        if (profileNameEl) {
-                            profileNameEl.textContent = displayName || (currentUserData && currentUserData.full_name) || 'غير محدد';
-                        }
-
-                        await loadDashboardData();
+                    if (!teacherErr && teacherUser && teacherUser.role === 'teacher') {
+                        displayName = teacherUser.full_name || displayName;
+                        window.currentViewedTeacherId = teacherUser.id;
                     } else {
-                        showStatus('خطأ في تحميل بيانات المستخدم', 'error');
+                        console.warn('⚠️ لم يُعثر على مستخدم teacher بهذا المعرف.');
+                        return; // ما نعرضش رسالة خطأ في الواجهة عشان ما تلخبطش أول تحميل
                     }
-                } catch (error) {
-                    console.error('Error loading user data:', error);
-                    showStatus('خطأ في تحميل بيانات المستخدم', 'error');
+                } else {
+                    // فعلاً مفيش teacher_id والمستخدم مش Teacher
+                    showStatus('ليس لديك الصلاحية للوصول إلى هذه الصفحة.', 'error');
+                    document.querySelector('.content').innerHTML =
+                      '<p class="no-data error">ليس لديك الصلاحية للوصول إلى هذه الصفحة.</p>';
+                    return;
                 }
             }
+
+            // تحديث الهيدر
+            const userNameHeaderElement = document.getElementById('userNameHeader');
+            if (userNameHeaderElement) {
+                userNameHeaderElement.textContent = `أهلاً بك، ${displayName}`;
+            }
+
+            // تحديث البروفايل
+            const profileNameEl = document.getElementById('profileName');
+            if (profileNameEl) {
+                profileNameEl.textContent =
+                    displayName || (currentUserData && currentUserData.full_name) || 'غير محدد';
+            }
+
+            // تحميل بيانات الداشبورد
+            await loadDashboardData();
+        } else {
+            console.warn('⚠️ لم يتم العثور على بيانات للمستخدم الحالي.');
+            // ممكن هنا تعرض loader بدل ما ترمي خطأ
+        }
+    } catch (error) {
+        console.error('❌ Error loading user data:', error);
+        showStatus('خطأ في تحميل بيانات المستخدم', 'error');
+    }
+}
             
             // دالة لتحميل بيانات لوحة التحكم (الإحصائيات)
             async function loadDashboardData() {

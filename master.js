@@ -39,6 +39,10 @@ async function updateCurrentTab() {
       break;
     default:
       break;
+      case 'dataManagementContent':
+  loadDataManagement();
+  break;
+
   }
 }
 
@@ -254,7 +258,6 @@ function switchTab(tabName) {
  if (activeTab) {
  activeTab.style.display = 'block';
  }
-
  // تحميل البيانات حسب التبويب
  switch (tabName) {
  case 'dashboard':
@@ -282,6 +285,11 @@ function switchTab(tabName) {
  break;
  case 'parents': // <-- إضافة حالة جديدة
  loadStudentsForParents();
+case 'dataManagement':
+    loadDataManagement();
+    break;
+
+
  break;
  default:
  console.warn('تبويب غير معروف:', tabName);
@@ -673,9 +681,13 @@ async function initCharts(tabName) {
 
  container.innerHTML = `
  <div class="table-container">
- <button class="btn btn-primary" onclick="showAddStudentModal()" style="margin-bottom: 20px;">
- <i class="fas fa-plus"></i> إضافة طالب جديد
- </button>
+<button class="btn btn-primary" onclick="showAddStudentModal()" style="margin-bottom: 20px; margin-left:10px;">
+  <i class="fas fa-plus"></i> إضافة طالب جديد
+</button>
+
+<button class="btn btn-success" onclick="exportStudentsExcel()" style="margin-bottom: 20px;">
+  <i class="fas fa-file-excel"></i> تحميل بيانات الطلاب Excel
+</button>
  <table>
  <thead>
  <tr>
@@ -773,6 +785,88 @@ async function initCharts(tabName) {
  `
  }
 
+async function exportStudentsExcel() {
+  try {
+    const { data, error } = await supabaseClient
+      .from('students')
+      .select(`
+        full_name,
+        phone,
+        email,
+        created_at,
+        notes,
+        exam_scores(
+          score,
+          exam_date,
+          exams(title, max_score, date)
+        )
+      `)
+      .order('created_at', { ascending: false });
+
+    if (error) throw error;
+
+    const workbook = new ExcelJS.Workbook();
+
+    // 📄 الشيت الأول: الطلاب
+    const wsStudents = workbook.addWorksheet("الطلاب");
+    wsStudents.columns = [
+      { header: "اسم الطالب", key: "name", width: 25 },
+      { header: "الهاتف", key: "phone", width: 18 },
+      { header: "البريد الإلكتروني", key: "email", width: 25 },
+      { header: "تاريخ التسجيل", key: "created", width: 20 },
+      { header: "ملاحظات", key: "notes", width: 25 }
+    ];
+    styleHeader(wsStudents.getRow(1));
+
+    data.forEach(st => {
+      const row = wsStudents.addRow({
+        name: st.full_name,
+        phone: st.phone || "-",
+        email: st.email || "-",
+        created: st.created_at ? new Date(st.created_at).toLocaleDateString("ar-EG") : "-",
+        notes: st.notes || "-"
+      });
+      styleRow(row);
+    });
+
+    // 📄 الشيت الثاني: نتائج الاختبارات
+    const wsExams = workbook.addWorksheet("نتائج الاختبارات");
+    wsExams.columns = [
+      { header: "اسم الطالب", key: "student", width: 25 },
+      { header: "اسم الامتحان", key: "exam", width: 30 },
+      { header: "الدرجة", key: "score", width: 12 },
+      { header: "الدرجة الكلية", key: "max", width: 15 },
+      { header: "تاريخ الامتحان", key: "date", width: 20 }
+    ];
+    styleHeader(wsExams.getRow(1));
+
+    data.forEach(st => {
+      if (st.exam_scores && st.exam_scores.length > 0) {
+        st.exam_scores.forEach(es => {
+          wsExams.addRow({
+            student: st.full_name,
+            exam: es.exams?.title || "امتحان",
+            score: es.score || 0,
+            max: es.exams?.max_score || 0,
+            date: es.exam_date
+              ? new Date(es.exam_date).toLocaleDateString("ar-EG")
+              : (es.exams?.date ? new Date(es.exams.date).toLocaleDateString("ar-EG") : "-")
+          });
+        });
+      }
+    });
+
+    // 📌 استخراج الملف
+    const buffer = await workbook.xlsx.writeBuffer();
+    saveAs(new Blob([buffer]), `students_${new Date().toISOString().split('T')[0]}.xlsx`);
+    showStatus("✅ تم استخراج بيانات الطلاب + نتائج الاختبارات", "success");
+
+  } catch (err) {
+    console.error(err);
+    showStatus("❌ خطأ في استخراج بيانات الطلاب + الاختبارات", "error");
+  }
+}
+ 
  // Show add student modal
  async function showAddStudentModal() {
  const modal = document.getElementById('studentModal')
@@ -2746,6 +2840,55 @@ async function deleteModule(moduleId) {
 updateCurrentTab(); // بعدين تحديث التبويب الحالي // <-- تحديث كامل بعد الحذف
 }
 
+function styleHeader(row) {
+  row.eachCell(cell => {
+    cell.font = { bold: true, color: { argb: "FFFFFFFF" } }; // أبيض Bold
+    cell.alignment = { horizontal: "center", vertical: "middle" };
+    cell.fill = {
+      type: "pattern",
+      pattern: "solid",
+      fgColor: { argb: "FF1F4E78" } // أزرق غامق
+    };
+    cell.border = {
+      top: { style: "thin" },
+      left: { style: "thin" },
+      bottom: { style: "thin" },
+      right: { style: "thin" }
+    };
+  });
+}
+
+function styleRow(row) {
+  row.eachCell(cell => {
+    cell.alignment = { horizontal: "center", vertical: "middle" };
+    cell.border = {
+      top: { style: "thin" },
+      left: { style: "thin" },
+      bottom: { style: "thin" },
+      right: { style: "thin" }
+    };
+  });
+}
+
+function styleTotalRow(row) {
+  row.eachCell(cell => {
+    cell.font = { bold: true, color: { argb: "FF000000" } }; // أسود Bold
+    cell.fill = {
+      type: "pattern",
+      pattern: "solid",
+      fgColor: { argb: "FFF7DC6F" } // أصفر ذهبي
+    };
+    cell.alignment = { horizontal: "center", vertical: "middle" };
+    cell.border = {
+      top: { style: "thin" },
+      left: { style: "thin" },
+      bottom: { style: "thin" },
+      right: { style: "thin" }
+    };
+  });
+}
+
+
 // --- دوال إدارة الدروس ---
 
 // فتح Modal إضافة درس (مرتبطة بوحدة معينة)
@@ -3162,6 +3305,10 @@ async function loadSubscriptions(extraData = null, searchQuery = '') {
  <button class="btn btn-primary" onclick="showAddSubscriptionModal()" style="margin-bottom: 20px;">
  <i class="fas fa-plus"></i> إضافة اشتراك جديد
  </button>
+ <button class="btn btn-success" onclick="exportSubscriptionsExcel()" style="margin-bottom: 20px; margin-right:10px;">
+  <i class="fas fa-file-excel"></i> تحميل بيانات الاشتراكات
+</button>
+
  <div class="courses-subscriptions-list">
  `;
 
@@ -3230,6 +3377,55 @@ function filterSubscriptions() {
  );
  loadSubscriptions(filteredSubscriptions);
 }
+
+async function exportSubscriptionsExcel() {
+  try {
+    const { data, error } = await supabaseClient
+      .from('subscriptions')
+      .select(`
+        status,
+        notes,
+        subscribed_at,
+        students(full_name),
+        courses(name)
+      `)
+      .order('subscribed_at', { ascending: false });
+
+    if (error) throw error;
+
+    const workbook = new ExcelJS.Workbook();
+    const ws = workbook.addWorksheet("الاشتراكات");
+
+    ws.columns = [
+      { header: "اسم الطالب", key: "student", width: 25 },
+      { header: "اسم الدورة", key: "course", width: 25 },
+      { header: "الحالة", key: "status", width: 15 },
+      { header: "تاريخ الاشتراك", key: "date", width: 20 },
+      { header: "ملاحظات", key: "notes", width: 30 }
+    ];
+
+    styleHeader(ws.getRow(1));
+
+    data.forEach(sub => {
+      const row = ws.addRow({
+        student: sub.students?.full_name || "-",
+        course: sub.courses?.name || "-",
+        status: sub.status === "active" ? "نشط" : sub.status === "cancelled" ? "ملغي" : sub.status || "-",
+        date: sub.subscribed_at ? new Date(sub.subscribed_at).toLocaleDateString("ar-EG") : "-",
+        notes: sub.notes || "-"
+      });
+      styleRow(row);
+    });
+
+    const buffer = await workbook.xlsx.writeBuffer();
+    saveAs(new Blob([buffer]), `subscriptions_${new Date().toISOString().split('T')[0]}.xlsx`);
+    showStatus("✅ تم استخراج بيانات الاشتراكات", "success");
+  } catch (err) {
+    console.error(err);
+    showStatus("❌ خطأ في استخراج بيانات الاشتراكات", "error");
+  }
+}
+
 
 // Show add subscription modal
 async function showAddSubscriptionModal() {
@@ -3457,6 +3653,10 @@ async function loadPayments() {
         <button class="btn btn-primary" onclick="showAddPaymentModal()" style="margin-bottom: 20px;">
           <i class="fas fa-plus"></i> إضافة دفعة جديدة
         </button>
+        <button class="btn btn-success" onclick="exportPaymentsExcel()" style="margin-bottom: 20px; margin-right:10px;">
+  <i class="fas fa-file-excel"></i> تحميل بيانات المدفوعات
+</button>
+
         <div class="students-payments-list">
     `;
 
@@ -3585,6 +3785,104 @@ async function loadPayments() {
  </div>
  `
  }
+
+
+
+function translatePaymentStatus(status) {
+  switch (status) {
+    case 'paid': return 'مدفوع';
+    case 'pending': return 'معلق';
+    case 'failed': return 'فشل';
+    default: return status || '-';
+  }
+}
+
+function translatePaymentMethod(method) {
+  switch (method) {
+    case 'cash': return 'نقدًا';
+    case 'transfer': return 'تحويل بنكي';
+    case 'card': return 'بطاقة';
+    default: return method || '-';
+  }
+}
+
+async function exportPaymentsExcel() {
+  try {
+    const { data, error } = await supabaseClient
+      .from('payments')
+      .select(`
+        amount,
+        total_amount,
+        status,
+        method,
+        notes,
+        paid_at,
+        students(full_name),
+        courses(name)
+      `)
+      .order('paid_at', { ascending: false });
+
+    if (error) throw error;
+
+    const workbook = new ExcelJS.Workbook();
+    const ws = workbook.addWorksheet("المدفوعات");
+
+    ws.columns = [
+      { header: "اسم الطالب", key: "student", width: 25 },
+      { header: "اسم الدورة", key: "course", width: 25 },
+      { header: "المبلغ المدفوع", key: "paid", width: 18 },
+      { header: "إجمالي المبلغ", key: "total", width: 18 },
+      { header: "المبلغ المتبقي", key: "remaining", width: 18 },
+      { header: "الحالة", key: "status", width: 15 },
+      { header: "طريقة الدفع", key: "method", width: 18 },
+      { header: "تاريخ الدفع", key: "date", width: 20 },
+      { header: "ملاحظات", key: "notes", width: 30 }
+    ];
+
+    styleHeader(ws.getRow(1));
+
+    let totalPaid = 0;
+    let totalAmount = 0;
+
+    data.forEach(pay => {
+      const remaining = (pay.total_amount || 0) - (pay.amount || 0);
+      totalPaid += pay.amount || 0;
+      totalAmount += pay.total_amount || 0;
+
+      const row = ws.addRow({
+        student: pay.students?.full_name || "-",
+        course: pay.courses?.name || "-",
+        paid: pay.amount || 0,
+        total: pay.total_amount || 0,
+        remaining: remaining >= 0 ? remaining : 0,
+        status: translatePaymentStatus(pay.status),
+        method: translatePaymentMethod(pay.method),
+        date: pay.paid_at ? new Date(pay.paid_at).toLocaleDateString("ar-EG") : "-",
+        notes: pay.notes || "-"
+      });
+
+      styleRow(row);
+    });
+
+    const totalRemaining = totalAmount - totalPaid;
+    const totalRow = ws.addRow({
+      student: "الإجماليات:",
+      paid: totalPaid,
+      total: totalAmount,
+      remaining: totalRemaining
+    });
+
+    styleTotalRow(totalRow);
+
+    const buffer = await workbook.xlsx.writeBuffer();
+    saveAs(new Blob([buffer]), `payments_${new Date().toISOString().split('T')[0]}.xlsx`);
+    showStatus("✅ تم استخراج بيانات المدفوعات بنجاح", "success");
+  } catch (err) {
+    console.error(err);
+    showStatus("❌ خطأ في استخراج بيانات المدفوعات", "error");
+  }
+}
+
  // Show edit payment modal
 function showEditPaymentModal(paymentId) {
  const payment = payments.find(p => p.id === paymentId);
@@ -4027,6 +4325,8 @@ async function loadAttendances() {
  if (att.status === 'متأخر') statsByCourse[courseId].late++;
  });
 
+
+
  // بناء الجدول
  let html = `
  <div class="table-container">
@@ -4106,6 +4406,66 @@ function viewStudentAttendance(studentId) {
  modal.document.write(content);
  modal.document.close();
 }
+async function exportAttendancesExcel() {
+  try {
+const { data, error } = await supabaseClient
+  .from('attendances')
+  .select(`
+    date,
+    status,
+    students(full_name),
+    courses(name)
+  `)
+  .order('date', { ascending: false });
+
+
+    if (error) throw error;
+
+    const workbook = new ExcelJS.Workbook();
+    const ws = workbook.addWorksheet("الحضور");
+
+    ws.columns = [
+      { header: "اسم الطالب", key: "student", width: 25 },
+      { header: "اسم الدورة", key: "course", width: 25 },
+      { header: "الحالة", key: "status", width: 15 },
+      { header: "تاريخ الحضور", key: "date", width: 20 }
+    ];
+
+    styleHeader(ws.getRow(1));
+
+    let totalPresent = 0;
+    let totalAbsent = 0;
+
+    data.forEach(rec => {
+      if (rec.status === "present") totalPresent++;
+      if (rec.status === "absent") totalAbsent++;
+
+      const row = ws.addRow({
+        student: rec.students?.full_name || "-",
+        course: rec.courses?.name || "-",
+        status: rec.status === "present" ? "حاضر" : rec.status === "absent" ? "غائب" : rec.status || "-",
+date: rec.date ? new Date(rec.date).toLocaleDateString("ar-EG") : "-"
+      });
+      styleRow(row);
+    });
+
+    // صف إجمالي الحضور
+    const totalRow = ws.addRow({
+      student: "الإجماليات:",
+      course: "-",
+      status: `حاضر: ${totalPresent} / غائب: ${totalAbsent}`
+    });
+    styleTotalRow(totalRow);
+
+    const buffer = await workbook.xlsx.writeBuffer();
+    saveAs(new Blob([buffer]), `attendance_${new Date().toISOString().split('T')[0]}.xlsx`);
+    showStatus("✅ تم استخراج بيانات الحضور", "success");
+  } catch (err) {
+    console.error(err);
+    showStatus("❌ خطأ في استخراج بيانات الحضور", "error");
+  }
+}
+
 
 // دالة طباعة سجل الحضور للطالب
 function printStudentAttendance(studentId) {
