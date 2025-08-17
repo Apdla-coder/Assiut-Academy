@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html lang="ar">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Auth Callback</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      height: 100vh;
+      background: #f5f5f5;
+      text-align: center;
+    }
+    .box {
+      background: #fff;
+      padding: 20px 30px;
+      border-radius: 12px;
+      box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+    }
+    h2 {
+      margin: 0;
+      color: #333;
+    }
+  </style>
+</head>
+<body>
+  <div class="box">
+    <h2>⏳ جاري التحقق...</h2>
+  </div>
+
+  <script>
+    function getHashParams() {
+      const hash = window.location.hash.substring(1);
+      const result = {};
+      hash.split("&").forEach(param => {
+        let [key, value] = param.split("=");
+        result[key] = decodeURIComponent(value);
+      });
+      return result;
+    }
+
+    window.addEventListener("load", () => {
+      const params = getHashParams();
+
+      if (params.access_token) {
+        // حفظ التوكنات
+        localStorage.setItem("access_token", params.access_token);
+        localStorage.setItem("refresh_token", params.refresh_token);
+        localStorage.setItem("expires_at", params.expires_at);
+
+        document.querySelector(".box").innerHTML = "<h2>✅ تم تسجيل الدخول بنجاح</h2>";
+
+        // إعادة التوجيه بعد 1.5 ثانية
+        setTimeout(() => {
+          window.location.href = "index.html";
+        }, 1500);
+
+      } else {
+        document.querySelector(".box").innerHTML = "<h2>❌ فشل التحقق</h2>";
+      }
+    });
+  </script>
+</body>
+</html>
