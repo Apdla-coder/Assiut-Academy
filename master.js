@@ -166,15 +166,7 @@ document.addEventListener('DOMContentLoaded', async function() {
  }
 });
 
-// Set active link
- function setActiveLink(element) {
- // Remove active class from all links
- document.querySelectorAll('.nav-link').forEach(link => {
- link.classList.remove('active')
- })
- // Add active class to clicked link
- element.classList.add('active')
- }
+// setActiveLink: canonical implementation appears later in this file; duplicate removed.
 
  // دالة بتحدد التبويب اللي ظاهر حاليًا وتشغل دالة التحديث بتاعته
 
@@ -183,56 +175,68 @@ async function updateCurrentView() {
     await loadDashboardData();
     updateCurrentTab();
 }
+// === Tab management (consolidated) ===
+// updateCurrentView above calls the tab updater below. Keep one canonical updateCurrentTab
 function updateCurrentTab() {
- const visibleTab = document.querySelector('.tab-content[style*="display: block"]');
- if (!visibleTab) {
- console.warn("لم يتم العثور على تبويب ظاهر لتحديده.");
- return;
- }
+  const visibleTab = document.querySelector('.tab-content[style*="display: block"]');
+  // If no visible tab, perform a full refresh of all data
+  if (!visibleTab) {
+    // Full refresh: run dashboard + recent activity and refresh lists in background
+    (async () => {
+      try {
+        await loadDashboardData();
+        await loadRecentActivity();
+        await Promise.allSettled([
+          loadStudents(),
+          loadCourses(),
+          loadSubscriptions(),
+          loadPayments(),
+          loadAttendances(),
+          loadTeacherExamsForSecretary(),
+          loadStudentsForParents()
+        ]);
+      } catch (e) {
+        console.error('Error during full refresh:', e);
+      }
+    })();
+    return;
+  }
 
- const currentTabId = visibleTab.id;
-
- let updatePromise; // متغير جديد
-
- switch (currentTabId) {
- case 'dashboardContent':
- updatePromise = Promise.all([loadDashboardData(), loadRecentActivity()]);
- break;
- case 'studentsContent':
- updatePromise = loadStudents();
- break;
- case 'coursesContent':
- updatePromise = loadCourses();
- break;
- case 'subscriptionsContent':
- updatePromise = loadSubscriptions();
- break;
- case 'paymentsContent':
- updatePromise = loadPayments();
- break;
- case 'attendancesContent':
- updatePromise = loadAttendances();
- break;
- case 'teacherExamsContent':
- updatePromise = loadTeacherExamsForSecretary();
- break;
- case 'parentsContent':
- updatePromise = loadStudentsForParents();
- break;
- default:
- console.warn('تبويب غير معروف أو غير مدعوم للتحديث المباشر:', currentTabId);
- return; // خروج لو التبويب ليس مدعوم
- }
-
- // انتظار انتهاء التحديث وطباعة رسالة
- if (updatePromise) {
- updatePromise.then(() => {
-
- }).catch((err) => {
- console.error("❌ خطأ أثناء تحديث التبويب الحالي:", currentTabId, err);
- });
- }
-}
+  const currentTabId = visibleTab.id;
+  try {
+    switch (currentTabId) {
+      case 'dashboardContent':
+        loadDashboardData();
+        loadRecentActivity();
+        break;
+      case 'studentsContent':
+        loadStudents();
+        break;
+      case 'coursesContent':
+        loadCourses();
+        break;
+      case 'subscriptionsContent':
+        loadSubscriptions();
+        break;
+      case 'paymentsContent':
+        loadPayments();
+        break;
+      case 'attendancesContent':
+        loadAttendances();
+        break;
+      case 'teacherExamsContent':
+        loadTeacherExamsForSecretary();
+        break;
+      case 'parentsContent':
+        loadStudentsForParents();
+        break;
+      default:
+        console.warn('تبويب غير معروف للتحديث:', currentTabId);
+    }
+  } catch (err) {
+    console.error('Error updating current tab:', err);
+  }
+  }
 
 function switchTab(tabName) {
  // إخفاء جميع التبويبات
@@ -342,60 +346,65 @@ function startAttendanceAutoRefresh() {
  }
  });
 // Load dashboard data
+// Load dashboard data
 async function loadDashboardData() {
- try {
- // Load students count
- const { data: studentsData, error: studentsError } = await supabaseClient
- .from('students')
- .select('id');
- if (studentsError) throw studentsError;
- document.getElementById('totalStudents').textContent = studentsData.length;
+  try {
+    // Load students count
+    const { data: studentsData, error: studentsError } = await supabaseClient
+      .from('students')
+      .select('id');
+    if (studentsError) throw studentsError;
+    if (document.getElementById('totalStudents')) {
+      document.getElementById('totalStudents').textContent = studentsData.length;
+    }
 
- // Load courses count
- const { data: coursesData, error: coursesError } = await supabaseClient
- .from('courses')
- .select('id');
- if (coursesError) throw coursesError;
- document.getElementById('totalCourses').textContent = coursesData.length;
+    // Load courses count
+    const { data: coursesData, error: coursesError } = await supabaseClient
+      .from('courses')
+      .select('id');
+    if (coursesError) throw coursesError;
+    if (document.getElementById('totalCourses')) {
+      document.getElementById('totalCourses').textContent = coursesData.length;
+    }
 
- // Load subscriptions count
- const { data: subscriptionsData, error: subscriptionsError } = await supabaseClient
- .from('subscriptions')
- .select('id');
- if (subscriptionsError) throw subscriptionsError;
- document.getElementById('totalSubscriptions').textContent = subscriptionsData.length;
+    // Load subscriptions count
+    const { data: subscriptionsData, error: subscriptionsError } = await supabaseClient
+      .from('subscriptions')
+      .select('id');
+    if (subscriptionsError) throw subscriptionsError;
+    if (document.getElementById('totalSubscriptions')) {
+      document.getElementById('totalSubscriptions').textContent = subscriptionsData.length;
+    }
 
- // بدل إجمالي الإيرادات بعدد الطلبة الحاضرين اليوم
- try {
- // جلب كل الحضور اللي حالته 'present'
- const { data: allPresentAttendances, error: attendancesError } = await supabaseClient
- .from('attendances')
- .select('date'); // جلب التاريخ فقط لكي نحسب
+    // بدل إجمالي الإيرادات بعدد الطلبة الحاضرين اليوم
+    try {
+      const { data: allPresentAttendances, error: attendancesError } = await supabaseClient
+        .from('attendances')
+        .select('date');
 
- if (attendancesError) throw attendancesError;
+      if (attendancesError) throw attendancesError;
 
- // حساب تاريخ اليوم المحلي (بدون توقيت)
- const today = new Date();
- const todayString = today.toISOString().split('T')[0]; // YYYY-MM-DD
+      const today = new Date();
+      const todayString = today.toISOString().split('T')[0];
 
- // عد السجلات اللي تاريخها بيساوي تاريخ اليوم حاليًا
- const todayPresentCount = allPresentAttendances.filter(att => att.date === todayString).length;
+      const todayPresentCount = allPresentAttendances.filter(att => att.date === todayString).length;
 
- document.getElementById('totalRevenue').textContent = todayPresentCount;
- } catch (err) {
- console.error("Error calculating today's attendance:", err);
- // في حالة حصل خطأ، نسيب العداد صفر لكي ما يوقفش البرنامج
- document.getElementById('totalRevenue').textContent = 0;
- // اختياري: نعرض رسالة خطأ
- // showStatus('خطأ في حساب عدد الحاضرين اليوم', 'error');
- }
+      if (document.getElementById('totalRevenue')) {
+        document.getElementById('totalRevenue').textContent = todayPresentCount;
+      }
+    } catch (err) {
+      console.error("Error calculating today's attendance:", err);
+      if (document.getElementById('totalRevenue')) {
+        document.getElementById('totalRevenue').textContent = 0;
+      }
+    }
 
- // Initialize charts
- initCharts();
- } catch (error) {
- console.error('Error loading dashboard data:', error);
- showStatus('خطأ في تحميل بيانات لوحة التحكم', 'error');
- }
+    // Initialize charts
+    initCharts();
+  } catch (error) {
+    console.error('Error loading dashboard data:', error);
+    showStatus('خطأ في تحميل بيانات لوحة التحكم', 'error');
+  }
 }
 
 async function initCharts(tabName) {
@@ -449,58 +458,40 @@ async function initCharts(tabName) {
     let courseData = [];
     const backgroundColors = ['#f97316', '#059669', '#f59e0b', '#3b82f6', '#8b5cf6'];
 
-    if (!courseDistributionError) {
+    if (!courseDistributionError && courseDistributionData) {
       courseLabels = courseDistributionData.map(item => item.course_name);
       courseData = courseDistributionData.map(item => item.student_count);
     }
 
-    if (studentsCtxElement) {
-      window.studentsChartInstance = new Chart(studentsCtx, {
-        type: 'doughnut',
-        data: {
-          labels: courseLabels,
-          datasets: [{
-            data: courseData,
-            backgroundColor: backgroundColors.slice(0, courseData.length)
-          }]
-        },
-        options: { responsive: true, plugins: { legend: { position: 'bottom' } } }
-      });
-    }
+    window.studentsChartInstance = new Chart(studentsCtx, {
+      type: 'doughnut',
+      data: {
+        labels: courseLabels,
+        datasets: [{
+          data: courseData,
+          backgroundColor: backgroundColors.slice(0, courseData.length)
+        }]
+      },
+      options: { responsive: true, plugins: { legend: { position: 'bottom' } } }
+    });
 
     // --- Monthly Revenue Chart ---
+    // جلب بيانات المدفوعات فقط
     const { data: paymentsData, error: paymentsError } = await supabaseClient
       .from('payments')
-      .select('amount, paid_at, course_id');
+      .select('amount, paid_at, total_amount');
     if (paymentsError) throw paymentsError;
 
-    const { data: subsData, error: subsError } = await supabaseClient
-      .from('subscriptions')
-      .select('course_id, subscribed_at, courses(price)');
-    if (subsError) throw subsError;
-
+    // حساب المدفوع والمتبقي لكل شهر من جدول المدفوعات مباشرة
     const monthlyPaid = {};
     const monthlyRemaining = {};
 
     paymentsData.forEach(p => {
       const date = new Date(p.paid_at);
+      if (isNaN(date)) return; // تجاهل السجلات غير الصالحة
       const monthKey = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
       monthlyPaid[monthKey] = (monthlyPaid[monthKey] || 0) + parseFloat(p.amount || 0);
-    });
-
-    subsData.forEach(s => {
-      const date = new Date(s.subscribed_at);
-      const monthKey = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
-      const coursePrice = s.courses?.price || 0;
-      const paidForCourse = paymentsData
-        .filter(p =>
-          p.course_id === s.course_id &&
-          new Date(p.paid_at).getMonth() === date.getMonth() &&
-          new Date(p.paid_at).getFullYear() === date.getFullYear()
-        )
-        .reduce((sum, p) => sum + parseFloat(p.amount || 0), 0);
-      const remaining = coursePrice - paidForCourse;
-      monthlyRemaining[monthKey] = (monthlyRemaining[monthKey] || 0) + (remaining > 0 ? remaining : 0);
+      monthlyRemaining[monthKey] = (monthlyRemaining[monthKey] || 0) + Math.max(0, parseFloat(p.total_amount || 0) - parseFloat(p.amount || 0));
     });
 
     const months = Array.from(new Set([...Object.keys(monthlyPaid), ...Object.keys(monthlyRemaining)])).sort();
@@ -512,23 +503,21 @@ async function initCharts(tabName) {
     const paidData = months.map(m => monthlyPaid[m] || 0);
     const remainingData = months.map(m => monthlyRemaining[m] || 0);
 
-    if (revenueCtxElement) {
-      window.revenueChartInstance = new Chart(revenueCtx, {
-        type: 'bar',
-        data: {
-          labels: monthLabels,
-          datasets: [
-            { label: 'مدفوع', data: paidData, backgroundColor: '#3b82f6' },
-            { label: 'متبقي', data: remainingData, backgroundColor: '#f97316' }
-          ]
-        },
-        options: {
-          responsive: true,
-          plugins: { legend: { position: 'bottom' } },
-          scales: { y: { beginAtZero: true } }
-        }
-      });
-    }
+    window.revenueChartInstance = new Chart(revenueCtx, {
+      type: 'bar',
+      data: {
+        labels: monthLabels,
+        datasets: [
+          { label: 'مدفوع', data: paidData, backgroundColor: '#3b82f6' },
+          { label: 'متبقي', data: remainingData, backgroundColor: '#f97316' }
+        ]
+      },
+      options: {
+        responsive: true,
+        plugins: { legend: { position: 'bottom' } },
+        scales: { y: { beginAtZero: true } }
+      }
+    });
 
     // --- Revenue Log Table ---
     const logContainer = document.getElementById('revenueLog');
@@ -556,30 +545,9 @@ async function initCharts(tabName) {
     showStatus(`خطأ في تحديث ${tabName || 'البيانات'}`, 'error');
   }
 }
-
-// دالة لتحديث كل البيانات في الصفحة
-async function updateCurrentTab() {
-
- try {
- // تحديث لوحة التحكم والأنشطة الأخيرة
- await loadDashboardData();
- await loadRecentActivity();
-
- // تحديث باقي الجداول
- // استخدام await لكي نتأكد إن كل حاجة اتحدثت
- await loadStudents().catch(err => console.error("خطأ في تحديث الطلبة:", err));
- await loadCourses().catch(err => console.error("خطأ في تحديث الكورسات:", err));
- await loadSubscriptions().catch(err => console.error("خطأ في تحديث الاشتراكات:", err));
- await loadPayments().catch(err => console.error("خطأ في تحديث المدفوعات:", err));
- await loadAttendances().catch(err => console.error("خطأ في تحديث الحضور:", err));
- await loadTeacherExamsForSecretary().catch(err => console.error("خطأ في تحديث الامتحانات:", err));
- await loadStudentsForParents().catch(err => console.error("خطأ في تحديث بيانات أولياء الأمور:", err));
-
- } catch (error) {
- console.error("❌ خطأ أثناء التحديث الكامل:", error);
- showStatus('حدث خطأ أثناء التحديث الكامل للبيانات', 'error');
- }
-}
+// Note: updateCurrentTab is implemented once near the top of the file (consolidated
+// realtime-aware updater). This duplicate implementation was removed to avoid
+// conflicting behavior and keep a single source of truth.
 
  // Load recent activity
  async function loadRecentActivity() {
@@ -909,39 +877,7 @@ updateCurrentTab(); // بعدين تحديث التبويب الحالي // تح
 updateCurrentTab(); // بعدين تحديث التبويب الحالي
  }
 
- // دالة لعرض التفاصيل الكاملة للطالب (تعديل لعرض parent_phone)
- async function showStudentFullDetails(_studentId) {
- // ... (الكود السابق للحصول على studentData, subscriptions, payments, attendances) ...
-
- // داخل كود إنشاء محتوى النافذة (innerHTML) للـ modal
- // ابحث عن قسم "معلومات أساسية" وقم بتعديله كما يلي:
-
- // مثال على الجزء المعدل:
- content.innerHTML = `
- <div class="modal-header">
- <h2>تفاصيل الطالب: ${studentData.full_name}</h2>
- <button class="close" onclick="closeModal('studentDetailModal')">&times;</button>
- </div>
- <div class="modal-body">
- <div class="detail-section">
- <h4>معلومات أساسية</h4>
- <p><strong>البريد الإلكتروني:</strong> ${studentData.email || '-'}</p>
- <p><strong>رقم هاتف الطالب:</strong> ${studentData.phone || '-'}</p>
- <p><strong>رقم هاتف ولي الأمر:</strong> ${studentData.parent_phone || '-'}</p> <!-- جديد -->
- <p><strong>تاريخ التسجيل:</strong> ${studentData.created_at ? formatDate(studentData.created_at) : '-'}</p>
- </div>
- <!-- ... بقية أقسام التفاصيل ... -->
- </div>
- <div class="modal-footer">
- <button class="btn btn-secondary" onclick="printStudentDetails('${studentData.full_name}')">طباعة</button>
- <button class="btn btn-secondary" onclick="closeModal('studentDetailModal')">إغلاق</button>
- </div>
- `;
-
- // ... (باقي الكود) ...
- }
-
-// --- New Functions for Parents Tab ---
+// --- Students details (canonical showStudentFullDetails implementation exists later) ---
 
 // Function to load students specifically for the Parents tab (with send report button)
 async function loadStudentsForParents() {
@@ -1294,336 +1230,371 @@ function escapeHtml(text) {
 // --- End of New Functions ---
 
 async function showStudentFullDetails(studentId) {
- try {
- const modal = document.getElementById('studentDetailModal');
- modal.style.display = 'flex';
- const content = document.getElementById('studentDetailContent');
- content.innerHTML = '<div class="loading"><div class="loading-spinner"></div><p>جارٍ تحميل كل بيانات الطالب...</p></div>';
+  try {
+    const modal = document.getElementById('studentDetailModal');
+    modal.style.display = 'flex';
+    const content = document.getElementById('studentDetailContent');
+    content.innerHTML = '<div class="loading"><div class="loading-spinner"></div><p>جارٍ تحميل كل بيانات الطالب...</p></div>';
 
- const tables = [
- { name: 'students', filter: { id: studentId } },
- { name: 'subscriptions', filter: { student_id: studentId }, join: 'courses(name)' },
- { name: 'payments', filter: { student_id: studentId }, join: 'courses(name)' },
- { name: 'attendances', filter: { student_id: studentId }, join: 'courses(name), lessons(title)' }
- ];
+    const tables = [
+      { name: 'students', filter: { id: studentId } },
+      { name: 'subscriptions', filter: { student_id: studentId }, join: 'courses(name)' },
+      { name: 'payments', filter: { student_id: studentId }, join: 'courses(name)' },
+      { name: 'attendances', filter: { student_id: studentId }, join: 'courses(name), lessons(title)' }
+    ];
 
- let allData = {};
+    let allData = {};
 
- // جلب البيانات الأساسية
- for (const tbl of tables) {
- let query = supabaseClient.from(tbl.name).select(tbl.join ? `*, ${tbl.join}` : '*');
- Object.keys(tbl.filter).forEach(key => {
- query = query.eq(key, tbl.filter[key]);
- });
- const { data, error } = await query;
- if (error) console.warn(`خطأ في جلب بيانات ${tbl.name}:`, error);
- allData[tbl.name] = data || [];
- }
+    // جلب البيانات الأساسية
+    for (const tbl of tables) {
+      let query = supabaseClient.from(tbl.name).select(tbl.join ? `*, ${tbl.join}` : '*');
+      Object.keys(tbl.filter).forEach(key => {
+        query = query.eq(key, tbl.filter[key]);
+      });
+      const { data, error } = await query;
+      if (error) console.warn(`خطأ في جلب بيانات ${tbl.name}:`, error);
+      allData[tbl.name] = data || [];
+    }
 
- // جلب بيانات الاختبارات مع أسماء الكورسات
- const { data: examScoresData, error: examError } = await supabaseClient
- .from('exam_scores')
- .select(`
- id,
- score,
- exam_id,
- student_id,
- exams(
- id,
- title,
- max_score,
- module_id,
- course_id,
- courses(
- id,
- name
- )
- )
- `)
- .eq('student_id', studentId);
+    // جلب بيانات الاختبارات مع أسماء الكورسات
+    const { data: examScoresData, error: examError } = await supabaseClient
+      .from('exam_scores')
+      .select(`
+        id,
+        score,
+        exam_id,
+        student_id,
+        exams(
+          id,
+          title,
+          max_score,
+          module_id,
+          course_id,
+          courses(
+            id,
+            name
+          )
+        )
+      `)
+      .eq('student_id', studentId);
 
- if (examError) {
- console.error('خطأ في جلب بيانات exam_scores:', examError);
- allData['exam_scores'] = [];
- } else {
- // جلب أسماء الوحدات بشكل منفصل (باستخدام title بدلاً من name)
- const moduleIds = [...new Set(examScoresData
- .map(e => e.exams?.module_id)
- .filter(Boolean))];
- 
- let modulesMap = {};
- if (moduleIds.length) {
- const { data: modulesData, error: modulesError } = await supabaseClient
- .from('modules')
- .select('id, title') // استخدام title بدلاً من name
- .in('id', moduleIds);
- 
- if (!modulesError && modulesData) {
- modulesMap = Object.fromEntries(
- modulesData.map(m => [m.id, m.title || '---']) // استخدام title بدلاً من name
- );
- } else {
- console.error('خطأ في جلب أسماء الوحدات:', modulesError);
- }
- }
+    if (examError) {
+      console.error('خطأ في جلب بيانات exam_scores:', examError);
+      allData['exam_scores'] = [];
+    } else {
+      // جلب أسماء الوحدات بشكل منفصل (باستخدام title بدلاً من name)
+      const moduleIds = [...new Set(examScoresData
+        .map(e => e.exams?.module_id)
+        .filter(Boolean))];
 
- // معالجة بيانات الاختبارات
- allData['exam_scores'] = examScoresData.map(e => ({
- exam_title: e.exams?.title || '---',
- course_name: e.exams?.courses?.name || '---',
- unit_name: e.exams?.module_id ? (modulesMap[e.exams.module_id] || '---') : '---',
- grade: e.score ?? '-',
- full_mark: e.exams?.max_score ?? '-'
- }));
- }
+      let modulesMap = {};
+      if (moduleIds.length) {
+        const { data: modulesData, error: modulesError } = await supabaseClient
+          .from('modules')
+          .select('id, title')
+          .in('id', moduleIds);
 
- const student = allData['students'][0] || {};
+        if (!modulesError && modulesData) {
+          modulesMap = Object.fromEntries(
+            modulesData.map(m => [m.id, m.title || '---'])
+          );
+        } else {
+          console.error('خطأ في جلب أسماء الوحدات:', modulesError);
+        }
+      }
 
- content.innerHTML = `
- <div class="student-detail">
- <div class="header-section" style="text-align: center; margin-bottom: 20px;">
- <div class="logo-section" style="margin-bottom: 15px;">
- <img src="logo.png" alt="شعار المؤسسة" style="max-width: 150px; height: auto;" onerror="this.style.display='none'">
- </div>
- <h3>${student.full_name || '---'}</h3>
- </div>
- <div class="detail-section">
- <h4>معلومات أساسية</h4>
- <p><strong>البريد الإلكتروني:</strong> ${student.email || '-'}</p>
- <p><strong>رقم الهاتف:</strong> ${student.phone || '-'}</p>
- <p><strong>تاريخ التسجيل:</strong> ${student.created_at ? formatDate(student.created_at) : '-'}</p>
- </div>
- ${generateSection('سجل الحضور', allData['attendances'], generateAttendanceTable)}
- ${generateSection('الاشتراكات', allData['subscriptions'], generateSubscriptionsList)}
- ${generateSection('المدفوعات', allData['payments'], generatePaymentsList)}
- ${generateSection('الاختبارات', allData['exam_scores'], generateExamsTable)}
+      // معالجة بيانات الاختبارات
+      allData['exam_scores'] = examScoresData.map(e => ({
+        exam_title: e.exams?.title || '---',
+        course_name: e.exams?.courses?.name || '---',
+        unit_name: e.exams?.module_id ? (modulesMap[e.exams.module_id] || '---') : '---',
+        grade: e.score ?? '-',
+        full_mark: e.exams?.max_score ?? '-'
+      }));
+    }
 
- <div style="text-align:center; margin-top:20px;">
- <button class="btn btn-primary" onclick="printStudentDetails('${(student.full_name || '').replace(/'/g, "\\'")}')">طباعة جميع البيانات</button>
- </div>
- </div>`;
- 
- } catch (err) {
- console.error('حدث خطأ أثناء جلب بيانات الطالب:', err);
- const content = document.getElementById('studentDetailContent');
- content.innerHTML = '<div class="error">حدث خطأ أثناء تحميل بيانات الطالب</div>';
- }
+    const student = allData['students'][0] || {};
+
+    content.innerHTML = `
+      <div class="student-detail">
+        <div class="header-section" style="text-align: center; margin-bottom: 20px;">
+          <div class="logo-section" style="margin-bottom: 15px;">
+            <img src="logo.png" alt="شعار المؤسسة" style="max-width: 150px; height: auto;" onerror="this.style.display='none'">
+          </div>
+          <h3>${student.full_name || '---'}</h3>
+        </div>
+        <div class="detail-section">
+          <h4>معلومات أساسية</h4>
+          <p><strong>البريد الإلكتروني:</strong> ${student.email || '-'}</p>
+          <p><strong>رقم الهاتف:</strong> ${student.phone || '-'}</p>
+          <p><strong>تاريخ التسجيل:</strong> ${student.created_at ? formatDate(student.created_at) : '-'}</p>
+        </div>
+        ${generateSection('سجل الحضور', allData['attendances'], generateAttendanceTable)}
+        ${generateSection('الاشتراكات', allData['subscriptions'], generateSubscriptionsList)}
+        ${generateSection('المدفوعات', allData['payments'], generatePaymentsList)}
+        ${generateSection('الاختبارات', allData['exam_scores'], generateExamsTable)}
+
+        <div style="text-align:center; margin-top:20px;">
+          <button class="btn btn-primary" onclick="printStudentDetails('${(student.full_name || '').replace(/'/g, "\\'")}')">طباعة جميع البيانات</button>
+        </div>
+      </div>`;
+  } catch (err) {
+    console.error('حدث خطأ أثناء جلب بيانات الطالب:', err);
+    const content = document.getElementById('studentDetailContent');
+    content.innerHTML = '<div class="error">حدث خطأ أثناء تحميل بيانات الطالب</div>';
+  }
 }
 
 function generateSection(title, data, renderer) {
- if (!data || !data.length) return '';
- return `<div class="detail-section">
- <h4>${title} (${data.length})</h4>
- ${renderer(data)}
- </div>`;
+  if (!data || !data.length) return '';
+  return `<div class="detail-section">
+    <h4>${title} (${data.length})</h4>
+    ${renderer(data)}
+  </div>`;
 }
 
 function generateAttendanceTable(data) {
- return `<table border="1" style="width:100%; border-collapse:collapse;">
- <thead><tr><th>الدورة/الدرس</th><th>التاريخ</th><th>الحالة</th><th>ملاحظات</th></tr></thead>
- <tbody>
- ${data.map(att => `<tr><td>${att.lesson_id && att.lessons?.title ? att.lessons.title : att.courses?.name || '---'}</td><td>${formatDate(att.date)}</td><td>${att.status}</td><td>${att.notes || '-'}</td></tr>`).join('')}
- </tbody>
- </table>`;
+  return `<table border="1" style="width:100%; border-collapse:collapse;">
+    <thead><tr><th>الدورة/الدرس</th><th>التاريخ</th><th>الحالة</th><th>ملاحظات</th></tr></thead>
+    <tbody>
+      ${data.map(att => `<tr><td>${att.lesson_id && att.lessons?.title ? att.lessons.title : att.courses?.name || '---'}</td><td>${formatDate(att.date)}</td><td>${att.status}</td><td>${att.notes || '-'}</td></tr>`).join('')}
+    </tbody>
+  </table>`;
 }
 
 function generateSubscriptionsList(data) {
- return `<ul>${data.map(sub => `<li>${sub.courses?.name || '---'} - ${formatDate(sub.subscribed_at)} - (${sub.status})</li>`).join('')}</ul>`;
-}
-
-function generatePaymentsList(data) {
- return `<ul>${data.map(pay => `<li>${pay.courses?.name || '---'} - ${formatCurrency(pay.amount)} - ${formatDate(pay.paid_at)}</li>`).join('')}</ul>`;
+  return `<ul>${data.map(sub => `<li>${sub.courses?.name || '---'} - ${formatDate(sub.subscribed_at)} - (${sub.status})</li>`).join('')}</ul>`;
 }
 
 function generateExamsTable(data) {
- return `<table border="1" style="width:100%; border-collapse:collapse; text-align:center;">
- <thead>
- <tr>
- <th>الاختبار</th>
- <th>الوحدة</th>
- <th>الدورة</th>
- <th>درجة الطالب / الدرجة النهائية</th>
- </tr>
- </thead>
- <tbody>
- ${data.map(ex => `
- <tr>
- <td>${ex.exam_title || '---'}</td>
- <td>${ex.unit_name || '---'}</td>
- <td>${ex.course_name || '---'}</td>
- <td>${ex.grade || '-'} / ${ex.full_mark || '-'}</td>
- </tr>`).join('')}
- </tbody>
- </table>`;
+  if (!data || data.length === 0) return '<p>لا توجد اختبارات.</p>';
+  return `<table style="width:100%; border-collapse:collapse;">
+    <thead>
+      <tr>
+        <th>عنوان الاختبار</th>
+        <th>الدورة</th>
+        <th>الوحدة</th>
+        <th>الدرجة</th>
+        <th>الدرجة الكاملة</th>
+      </tr>
+    </thead>
+    <tbody>
+      ${data.map(exam => `
+        <tr>
+          <td>${exam.exam_title || '-'}</td>
+          <td>${exam.course_name || '-'}</td>
+          <td>${exam.unit_name || '-'}</td>
+          <td>${exam.grade}</td>
+          <td>${exam.full_mark}</td>
+        </tr>
+      `).join('')}
+    </tbody>
+  </table>`;
 }
 
+function generatePaymentsList(data) {
+  if (!data || data.length === 0) return '<p>لا توجد مدفوعات.</p>';
+  return `<table style="width:100%; border-collapse:collapse;">
+    <thead>
+      <tr>
+        <th>الدورة</th>
+        <th>المبلغ المدفوع</th>
+        <th>إجمالي الدورة</th>
+        <th>المتبقي</th>
+        <th>طريقة الدفع</th>
+        <th>التاريخ</th>
+      </tr>
+    </thead>
+    <tbody>
+      ${data.map(pay => {
+        const remaining = (pay.total_amount || 0) - (pay.amount || 0);
+        return `<tr>
+          <td>${pay.courses?.name || '-'}</td>
+          <td>${formatCurrency(pay.amount).replace('SAR', 'ج.م').replace('EGP', 'ج.م')}</td>
+          <td>${formatCurrency(pay.total_amount).replace('SAR', 'ج.م').replace('EGP', 'ج.م')}</td>
+          <td>${formatCurrency(remaining).replace('SAR', 'ج.م').replace('EGP', 'ج.م')}</td>
+          <td>${pay.method === 'cash' ? 'نقداً' : pay.method === 'card' ? 'بطاقة' : 'تحويل'}</td>
+          <td>${formatDate(pay.paid_at)}</td>
+        </tr>`;
+      }).join('')}
+    </tbody>
+  </table>`;
+}
+
+
 function printStudentDetails(studentName) {
- const printWindow = window.open('', '_blank');
- const logoElement = document.getElementById('institutionLogo');
- const logoSrc = logoElement ? logoElement.src : './logo2.jpg'; // استخدم نفس الشعار من sidebar
- 
- printWindow.document.write(`
- <!DOCTYPE html>
- <html lang="ar" dir="rtl">
- <head>
- <meta charset="UTF-8">
- <meta name="viewport" content="width=device-width, initial-scale=1.0">
- <title>تقرير الطالب - ${studentName}</title>
- <style>
- body { 
- font-family: 'Tajawal', 'Arial', sans-serif; 
- margin: 0;
- padding: 20px;
- background: #fff;
- color: #333;
- }
- .print-header {
- text-align: center;
- margin-bottom: 20px;
- padding-bottom: 15px;
- border-bottom: 2px solid #f97316;
- }
- .logo-section {
- margin-bottom: 15px;
- }
- .logo-section img {
- max-width: 120px;
- height: auto;
- display: block;
- margin: 0 auto;
- }
- .student-name {
- color: #1f2937;
- margin: 10px 0;
- font-size: 1.5rem;
- }
- .divider {
- width: 60px;
- height: 3px;
- background: #f97316;
- margin: 15px auto;
- border-radius: 3px;
- }
- .detail-section {
- margin: 25px 0;
- page-break-inside: avoid;
- }
- .detail-section h4 {
- color: #f97316;
- border-bottom: 1px solid #e5e7eb;
- padding-bottom: 8px;
- margin-bottom: 15px;
- font-size: 1.2rem;
- }
- table {
- width: 100%;
- border-collapse: collapse;
- margin: 15px 0;
- font-size: 0.9rem;
- }
- th, td {
- border: 1px solid #d1d5db;
- padding: 10px 8px;
- text-align: center;
- }
- th {
- background-color: #f9fafb;
- font-weight: 600;
- }
- tr:nth-child(even) {
- background-color: #f9fafb;
- }
- ul {
- padding-right: 20px;
- }
- li {
- margin-bottom: 8px;
- }
- p {
- line-height: 1.6;
- }
- strong {
- color: #1f2937;
- }
- @media print {
- body {
- padding: 10px;
- font-size: 12px;
- }
- .logo-section img {
- max-width: 100px !important;
- display: block !important;
- }
- table {
- font-size: 11px;
- }
- th, td {
- padding: 6px 4px;
- }
- .no-print {
- display: none !important;
- }
- @page {
- margin: 0.5cm;
- }
- }
- @media (max-width: 768px) {
- body {
- padding: 10px;
- }
- table {
- font-size: 0.8rem;
- }
- th, td {
- padding: 8px 4px;
- }
- }
- @media (max-width: 480px) {
- body {
- padding: 5px;
- }
- .print-header {
- margin-bottom: 10px;
- }
- .student-name {
- font-size: 1.2rem;
- }
- table {
- font-size: 0.7rem;
- }
- th, td {
- padding: 6px 3px;
- }
- }
- </style>
- </head>
- <body>
- `);
- 
- printWindow.document.write(document.getElementById('studentDetailContent').innerHTML);
- printWindow.document.write(`
- </body>
- </html>
- `);
- printWindow.document.close();
- 
- // تأخير الطباعة قليلاً لضمان تحميل المحتوى
- setTimeout(() => {
- printWindow.focus();
- printWindow.print();
- }, 500);
+  const printWindow = window.open('', '_blank');
+  const logoElement = document.getElementById('institutionLogo');
+  const logoSrc = logoElement ? logoElement.src : './logo2.jpg';
+
+  printWindow.document.write(`
+    <!DOCTYPE html>
+    <html lang="ar" dir="rtl">
+    <head>
+      <meta charset="UTF-8">
+      <meta name="viewport" content="width=device-width, initial-scale=1.0">
+      <title>تقرير الطالب - ${studentName}</title>
+      <style>
+        body { 
+          font-family: 'Tajawal', 'Arial', sans-serif; 
+          margin: 0;
+          padding: 20px;
+          background: #fff;
+          color: #333;
+        }
+        .print-header {
+          text-align: center;
+          margin-bottom: 20px;
+          padding-bottom: 15px;
+          border-bottom: 2px solid #f97316;
+        }
+        .logo-section {
+          margin-bottom: 15px;
+        }
+        .logo-section img {
+          max-width: 120px;
+          height: auto;
+          display: block;
+          margin: 0 auto;
+        }
+        .student-name {
+          color: #1f2937;
+          margin: 10px 0;
+          font-size: 1.5rem;
+        }
+        .divider {
+          width: 60px;
+          height: 3px;
+          background: #f97316;
+          margin: 15px auto;
+          border-radius: 3px;
+        }
+        .detail-section {
+          margin: 25px 0;
+          page-break-inside: avoid;
+        }
+        .detail-section h4 {
+          color: #f97316;
+          border-bottom: 1px solid #e5e7eb;
+          padding-bottom: 8px;
+          margin-bottom: 15px;
+          font-size: 1.2rem;
+        }
+        table {
+          width: 100%;
+          border-collapse: collapse;
+          margin: 15px 0;
+          font-size: 0.9rem;
+        }
+        th, td {
+          border: 1px solid #d1d5db;
+          padding: 10px 8px;
+          text-align: center;
+        }
+        th {
+          background-color: #f9fafb;
+          font-weight: 600;
+        }
+        tr:nth-child(even) {
+          background-color: #f9fafb;
+        }
+        ul {
+          padding-right: 20px;
+        }
+        li {
+          margin-bottom: 8px;
+        }
+        p {
+          line-height: 1.6;
+        }
+        strong {
+          color: #1f2937;
+        }
+        @media print {
+          body {
+            padding: 10px;
+            font-size: 12px;
+          }
+          .logo-section img {
+            max-width: 100px !important;
+            display: block !important;
+          }
+          table {
+            font-size: 11px;
+          }
+          th, td {
+            padding: 6px 4px;
+          }
+          .no-print {
+            display: none !important;
+          }
+          @page {
+            margin: 0.5cm;
+          }
+        }
+        @media (max-width: 768px) {
+          body {
+            padding: 10px;
+          }
+          table {
+            font-size: 0.8rem;
+          }
+          th, td {
+            padding: 8px 4px;
+          }
+        }
+        @media (max-width: 480px) {
+          body {
+            padding: 5px;
+          }
+          .print-header {
+            margin-bottom: 10px;
+          }
+          .student-name {
+            font-size: 1.2rem;
+          }
+          table {
+            font-size: 0.7rem;
+          }
+          th, td {
+            padding: 6px 3px;
+          }
+        }
+      </style>
+    </head>
+    <body>
+  `);
+
+  printWindow.document.write(document.getElementById('studentDetailContent').innerHTML);
+  printWindow.document.write(`
+    </body>
+    </html>
+  `);
+  printWindow.document.close();
+
+  setTimeout(() => {
+    printWindow.focus();
+    printWindow.print();
+  }, 500);
 }
 
 // دوال مساعدة
-function formatDate(dateString) {
- if (!dateString) return '-';
- const date = new Date(dateString);
- return date.toLocaleDateString('ar-SA');
+// formatCurrency: return amounts in Egyptian Pounds (EGP) with Arabic formatting and 'ج.م' suffix
+function formatCurrency(amount) {
+  // Treat null/undefined as 0
+  if (amount === null || typeof amount === 'undefined') amount = 0;
+  const num = Number(amount) || 0;
+  // Format with Arabic (Egypt) thousands separator and two decimals
+  const formatted = num.toLocaleString('ar-EG', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  return `${formatted} ج.م`;
 }
 
-function formatCurrency(amount) {
- if (!amount) return '0 ريال';
- return new Intl.NumberFormat('ar-SA', { style: 'currency', currency: 'SAR' }).format(amount);
+// Canonical date formatter used across the app (Egypt Arabic format)
+function formatDate(dateString) {
+  if (!dateString) return '-';
+  const date = new Date(dateString);
+  if (isNaN(date)) return '-';
+  return date.toLocaleDateString('ar-EG', { day: '2-digit', month: '2-digit', year: 'numeric' });
 }
 
 // 
@@ -1648,25 +1619,12 @@ async function loadModules() {
  }
 }
 
-// =============================================================================
-// دالة تنسيق التاريخ
-// =============================================================================
-function formatDate(dateString) {
- if (!dateString) return '-';
- const date = new Date(dateString);
- return new Intl.DateTimeFormat('ar-SA', {
- year: 'numeric',
- month: 'short',
- day: 'numeric'
- }).format(date);
-}
+// (canonical formatDate is defined later to use ar-EG numeric format)
 
 // =============================================================================
 // معالج البحث
 // =============================================================================
-function searchHandler() {
- loadTeacherExamsForSecretary(this.value);
-}
+// searchHandler already defined above; duplicate removed.
 
 // =============================================================================
 // تحميل وعرض قائمة الاختبارات
@@ -3311,134 +3269,130 @@ updateCurrentTab(); // بعدين تحديث التبويب الحالي
  }
 
  // Load payments
- // Load payments
- async function loadPayments() {
- try {
- const container = document.getElementById('paymentsContainer');
- if (!container) {
- console.error("عنصر 'paymentsContainer' غير موجود في DOM");
- return;
- }
- container.innerHTML = `<div class="loading"><div class="loading-spinner"></div><p>جارٍ تحميل بيانات المدفوعات...</p></div>`;
+// ...existing code...
+async function loadPayments() {
+  try {
+    const container = document.getElementById('paymentsContainer');
+    if (!container) {
+      console.error("عنصر 'paymentsContainer' غير موجود في DOM");
+      return;
+    }
+    container.innerHTML = `<div class="loading"><div class="loading-spinner"></div><p>جارٍ تحميل بيانات المدفوعات...</p></div>`;
 
- const { data, error } = await supabaseClient
- .from('payments')
- .select(`*, students (full_name), courses (name)`)
- .order('paid_at', { ascending: false });
+    const { data, error } = await supabaseClient
+      .from('payments')
+      .select(`*, students (full_name), courses (name)`)
+      .order('paid_at', { ascending: false });
+    if (error) throw error;
+    payments = data;
 
- if (error) throw error;
- payments = data;
+    // Get students and courses for dropdowns (if needed elsewhere or for filtering)
+    if (students.length === 0) {
+      const { data: studentsData, error: studentsError } = await supabaseClient
+        .from('students')
+        .select('id, full_name');
+      if (studentsError) throw studentsError;
+      students = studentsData || [];
+    }
 
- // Get students and courses for dropdowns (if needed elsewhere or for filtering)
- if (students.length === 0) {
- const { data: studentsData, error: studentsError } = await supabaseClient
- .from('students')
- .select('id, full_name');
- 
- if (studentsError) throw studentsError;
- students = studentsData || [];
- }
+    if (courses.length === 0) {
+      const { data: coursesData, error: coursesError } = await supabaseClient
+        .from('courses')
+        .select('id, name'); // <-- fix here: use 'name' not 'full_name'
+      if (coursesError) throw coursesError;
+      courses = coursesData || [];
+    }
 
- if (courses.length === 0) {
- const { data: coursesData, error: coursesError } = await supabaseClient
- .from('courses')
- .select('id, full_name');
- 
- if (coursesError) throw coursesError;
- courses = coursesData || [];
- }
+    // تنظيم البيانات حسب الطالب
+    const paymentsByStudent = {};
+    data.forEach(payment => {
+      const studentId = payment.student_id;
+      if (!paymentsByStudent[studentId]) {
+        paymentsByStudent[studentId] = {
+          studentName: payment.students?.full_name || 'طالب غير معروف',
+          payments: []
+        };
+      }
+      paymentsByStudent[studentId].payments.push(payment);
+    });
 
- // تنظيم البيانات حسب الطالب
- const paymentsByStudent = {};
- data.forEach(payment => {
- const studentId = payment.student_id;
- if (!paymentsByStudent[studentId]) {
- paymentsByStudent[studentId] = {
- studentName: payment.students?.full_name || 'طالب غير معروف',
- payments: []
- };
- }
- paymentsByStudent[studentId].payments.push(payment);
- });
+    // إنشاء HTML لكل طالب
+    let innerHTMLContent = `
+      <div class="table-container">
+        <button class="btn btn-primary" onclick="showAddPaymentModal()" style="margin-bottom: 20px;">
+          <i class="fas fa-plus"></i> إضافة دفعة جديدة
+        </button>
+        <div class="students-payments-list">
+    `;
 
- // إنشاء HTML لكل طالب
- let innerHTMLContent = `
- <div class="table-container">
- <button class="btn btn-primary" onclick="showAddPaymentModal()" style="margin-bottom: 20px;">
- <i class="fas fa-plus"></i> إضافة دفعة جديدة
- </button>
- <div class="students-payments-list">
- `;
+    Object.values(paymentsByStudent).forEach(studentData => {
+      innerHTMLContent += `
+        <div class="student-payments-section">
+          <h3>مدفوعات الطالب: ${studentData.studentName}</h3>
+          <table>
+            <thead>
+              <tr>
+                <th>الدورة</th>
+                <th>المبلغ المدفوع</th>
+                <th>إجمالي الدورة</th>
+                <th>المتبقي</th>
+                <th>طريقة الدفع</th>
+                <th>التاريخ</th>
+                <th>الحالة</th>
+                <th>الإجراءات</th>
+              </tr>
+            </thead>
+            <tbody>
+      `;
+      studentData.payments.forEach(payment => {
+        const remaining = (payment.total_amount || 0) - (payment.amount || 0);
+        innerHTMLContent += `
+          <tr>
+            <td>${payment.courses?.name || '-'}</td>
+            <td>${formatCurrency(payment.amount).replace('SAR', 'ج.م').replace('EGP', 'ج.م')}</td>
+            <td>${formatCurrency(payment.total_amount).replace('SAR', 'ج.م').replace('EGP', 'ج.م')}</td>
+            <td>${formatCurrency(remaining).replace('SAR', 'ج.م').replace('EGP', 'ج.م')}</td>
+            <td><span class="payment-method ${payment.method}">${payment.method === 'cash' ? 'نقداً' : payment.method === 'card' ? 'بطاقة' : 'تحويل'}</span></td>
+            <td>${formatDate(payment.paid_at)}</td>
+            <td>${payment.status === 'paid' ? 'مدفوع' : payment.status === 'pending' ? 'معلق' : 'ملغى'}</td>
+            <td class="action-buttons">
+              <button class="action-btn edit-btn" onclick="showEditPaymentModal('${payment.id}')">
+                <i class="fas fa-edit"></i>
+              </button>
+              <button class="action-btn view-btn" onclick="showPaymentReceipt('${payment.id}')">
+                <i class="fas fa-print"></i>
+              </button>
+              <button class="action-btn delete-btn" onclick="deletePayment('${payment.id}')">
+                <i class="fas fa-trash"></i>
+              </button>
+            </td>
+          </tr>
+        `;
+      });
+      innerHTMLContent += `
+            </tbody>
+          </table>
+        </div>
+        <hr style="margin: 20px 0;">
+      `;
+    });
 
- Object.values(paymentsByStudent).forEach(studentData => {
- innerHTMLContent += `
- <div class="student-payments-section">
- <h3>مدفوعات الطالب: ${studentData.studentName}</h3>
- <table>
- <thead>
- <tr>
- <th>الدورة</th>
- <th>المبلغ المدفوع</th>
- <th>إجمالي الدورة</th>
- <th>المتبقي</th>
- <th>طريقة الدفع</th>
- <th>التاريخ</th>
- <th>الحالة</th>
- <th>الإجراءات</th>
- </tr>
- </thead>
- <tbody>
- `;
- studentData.payments.forEach(payment => {
- const remaining = (payment.total_amount || 0) - (payment.amount || 0);
- innerHTMLContent += `
- <tr>
- <td>${payment.courses?.name || '-'}</td>
- <td>${formatCurrency(payment.amount).replace('SAR', 'ج.م').replace('EGP', 'ج.م')}</td>
- <td>${formatCurrency(payment.total_amount).replace('SAR', 'ج.م').replace('EGP', 'ج.م')}</td>
- <td>${formatCurrency(remaining).replace('SAR', 'ج.م').replace('EGP', 'ج.م')}</td>
- <td><span class="payment-method ${payment.method}">${payment.method === 'cash' ? 'نقداً' : payment.method === 'card' ? 'بطاقة' : 'تحويل'}</span></td>
- <td>${formatDate(payment.paid_at)}</td>
- <td>${payment.status === 'paid' ? 'مدفوع' : payment.status === 'pending' ? 'معلق' : 'ملغى'}</td>
- <td class="action-buttons">
- <button class="action-btn edit-btn" onclick="showEditPaymentModal('${payment.id}')">
- <i class="fas fa-edit"></i>
- </button>
- <button class="action-btn view-btn" onclick="showPaymentReceipt('${payment.id}')">
- <i class="fas fa-print"></i>
- </button>
- <button class="action-btn delete-btn" onclick="deletePayment('${payment.id}')">
- <i class="fas fa-trash"></i>
- </button>
- </td>
- </tr>
- `;
- });
- innerHTMLContent += `
- </tbody>
- </table>
- </div>
- <hr style="margin: 20px 0;">
- `;
- });
+    innerHTMLContent += `
+        </div> <!-- .students-payments-list -->
+      </div> <!-- .table-container -->
+    `;
 
- innerHTMLContent += `
- </div> <!-- .students-payments-list -->
- </div> <!-- .table-container -->
- `;
+    container.innerHTML = innerHTMLContent;
 
- container.innerHTML = innerHTMLContent;
-
- } catch (error) {
- console.error('Error loading payments:', error);
- const container = document.getElementById('paymentsContainer');
- if (container) {
- container.innerHTML = `<div class="loading"><p>خطأ في تحميل بيانات المدفوعات: ${error.message}</p></div>`;
- }
- showStatus('خطأ في تحميل بيانات المدفوعات', 'error');
- }
- }
- 
+  } catch (error) {
+    console.error('Error loading payments:', error);
+    const container = document.getElementById('paymentsContainer');
+    if (container) {
+      container.innerHTML = `<div class="loading"><p>خطأ في تحميل بيانات المدفوعات: ${error.message}</p></div>`;
+    }
+    showStatus('خطأ في تحميل بيانات المدفوعات', 'error');
+  }
+} 
  // Filter payments
  function filterPayments() {
  const searchTerm = document.getElementById('paymentSearch').value.toLowerCase()
@@ -3984,7 +3938,7 @@ async function loadAttendances() {
 
 // دالة عرض سجل الحضور للطالب
 function viewStudentAttendance(studentId) {
- const studentRecords = window.attendances.filter(att => att.student_id === studentId);
+ const studentRecords = window.addAttendance.filter(att => att.student_id === studentId);
  let content = `<h3>سجل حضور الطالب</h3>`;
  if (studentRecords.length > 0) {
  content += `<p><strong>الاسم:</strong> ${studentRecords[0].students?.full_name || '-'}</p>`;
@@ -4020,7 +3974,7 @@ function viewStudentAttendance(studentId) {
 
 // دالة طباعة سجل الحضور للطالب
 function printStudentAttendance(studentId) {
- const studentRecords = window.attendances.filter(att => att.student_id === studentId);
+ const studentRecords = window.addAttendance.filter(att => att.student_id === studentId);
  let printContent = `<h2>سجل حضور الطالب</h2>`;
  if (studentRecords.length > 0) {
  printContent += `<p><strong>الاسم:</strong> ${studentRecords[0].students?.full_name || '-'}</p>`;
@@ -4054,6 +4008,111 @@ function printStudentAttendance(studentId) {
  printWindow.document.close();
  printWindow.print();
 }
+
+
+// ✅ جلب المستخدم الحالي وتخزينه
+async function loadCurrentUser() {
+  const { data, error } = await supabaseClient.auth.getUser();
+  if (error) {
+    console.error("خطأ في جلب بيانات المستخدم:", error);
+    return;
+  }
+  if (data?.user) {
+    window.userId = data.user.id;
+    console.log("✅ Current user loaded:", window.userId);
+    // بعد ما نعرف السكرتير، نجيب حالته
+    loadSecretaryStatus();
+  }
+}
+
+// ✅ تحميل حالة السكرتير الحالية
+async function loadSecretaryStatus() {
+  const today = new Date().toISOString().split('T')[0];
+
+  const { data, error } = await supabaseClient
+    .from('secretary_attendance')
+    .select('*')
+    .eq('date', today)
+    .eq('secretary_id', window.userId)
+    .maybeSingle();
+
+  if (error) {
+    console.error("خطأ في تحميل حالة السكرتير:", error);
+    return;
+  }
+
+  // Guard: ensure we have a user id
+  if (!window.userId) {
+    console.warn('loadSecretaryStatus: window.userId is not set');
+    return;
+  }
+
+  const statusEl = document.getElementById('secretaryStatus');
+  const checkInBtn = document.getElementById('checkInBtn');
+  const checkOutBtn = document.getElementById('checkOutBtn');
+
+  // Helper to safely set disabled state
+  const safeSetDisabled = (el, value) => { if (el) el.disabled = !!value; };
+  const safeSetText = (el, text) => { if (el) el.textContent = text; };
+
+  if (!data) {
+    safeSetText(statusEl, "⏳ لم يتم تسجيل الحضور بعد");
+    safeSetDisabled(checkInBtn, false);
+    safeSetDisabled(checkOutBtn, true);
+  } else if (data && !data.check_out) {
+    safeSetText(statusEl, "✅ تم تسجيل الحضور (في انتظار الانصراف)");
+    safeSetDisabled(checkInBtn, true);
+    safeSetDisabled(checkOutBtn, false);
+  } else {
+    safeSetText(statusEl, "👋 تم تسجيل الحضور والانصراف");
+    safeSetDisabled(checkInBtn, true);
+    safeSetDisabled(checkOutBtn, true);
+  }
+}
+
+// ✅ تسجيل الحضور
+async function checkInSecretary() {
+  const today = new Date().toISOString().split('T')[0];
+
+  const { error } = await supabaseClient
+    .from('secretary_attendance')
+    .insert([{
+      date: today,
+      check_in: new Date().toISOString(),
+      secretary_id: window.userId
+    }]);
+
+  if (error) {
+    console.error("❌ خطأ في تسجيل الحضور:", error);
+    showStatus('خطأ في تسجيل الحضور', 'error');
+  } else {
+    showStatus('✅ تم تسجيل الحضور', 'success');
+    loadSecretaryStatus();
+  }
+}
+
+// ✅ تسجيل الانصراف
+async function checkOutSecretary() {
+  const today = new Date().toISOString().split('T')[0];
+
+  const { error } = await supabaseClient
+    .from('secretary_attendance')
+    .update({ check_out: new Date().toISOString() })
+    .eq('date', today)
+    .eq('secretary_id', window.userId);
+
+  if (error) {
+    console.error("❌ خطأ في تسجيل الانصراف:", error);
+    showStatus('خطأ في تسجيل الانصراف', 'error');
+  } else {
+    showStatus('👋 تم تسجيل الانصراف', 'success');
+    loadSecretaryStatus();
+  }
+}
+
+// ✅ تحميل المستخدم أول ما الصفحة تفتح
+loadCurrentUser();
+
 
 // Filter attendances
  function filterAttendances() {
@@ -4509,26 +4568,7 @@ function printAttendanceReceipt() {
  }
  }
 
-// دالة تنسيق التاريخ الميلادي بالأرقام العربية
-function formatDate(dateString) {
- if (!dateString) return ''
- const date = new Date(dateString)
-
- // تنسيق: يوم/شهر/سنة بالأرقام العربية
- return date.toLocaleDateString('ar-EG', {
- day: '2-digit',
- month: '2-digit',
- year: 'numeric'
- })
-}
-
-// Format currency in Egyptian Pounds
-function formatCurrency(amount) {
- return new Intl.NumberFormat('ar-EG', {
- style: 'currency',
- currency: 'EGP'
- }).format(amount);
-}
+// (Canonical formatDate and formatCurrency are defined above.)
 
  // Close modals when clicking outside
  window.onclick = function(event) {

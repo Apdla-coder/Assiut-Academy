@@ -4,9 +4,17 @@
         <meta charset="UTF-8">
         <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
         <title>لوحة التحكم - المعلم</title>
-        <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-        <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-        <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Arabic friendly webfont used in styles -->
+    <link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@300;400;700&display=swap" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <!-- PWA manifest and theme color -->
+    <link rel="manifest" href="./manifest.json">
+    <meta name="theme-color" content="#f97316">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <link rel="apple-touch-icon" href="./logo2.jpg">
         <style>
             :root {
                 --primary: #f97316;
@@ -188,20 +196,48 @@
     justify-content: space-between;
     width: 100%;
 }
-
 .app-title {
-    font-size: 1.25rem;
-    font-weight: bold;
+    font-size: 1.2rem;
+    font-weight: 700;
     color: var(--dark);
     flex: 1;
-    text-align: center;
-    letter-spacing: 0.5px;
+    text-align: left;
+    letter-spacing: 0.2px;
+}
+
+.greeting {
+    font-weight: 700;
+    color: var(--dark);
+    font-size: 1rem;
+}
+.subtitle {
+    font-size: 0.75rem;
+    color: var(--gray);
+}
+
+.header-greeting {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-weight: 800;
+    color: var(--dark);
+    font-size: 1rem;
+    margin-right: 12px;
+}
+
+.header-greeting .avatar {
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    object-fit: cover;
+    border: 2px solid rgba(15,23,42,0.06);
+    box-shadow: 0 4px 10px rgba(2,6,23,0.06);
 }
 
 .user-info {
     display: flex;
     align-items: center;
-    gap: 10px;
+    gap: 8px;
 }
 
 .user-name {
@@ -221,17 +257,18 @@
 }
 
 .btn {
-    padding: 6px 12px;
+    padding: 8px 14px;
     border: none;
-    border-radius: 8px;
+    border-radius: 999px; /* pill */
     cursor: pointer;
     color: white;
-    font-weight: 600;
+    font-weight: 700;
     display: inline-flex;
     align-items: center;
-    gap: 5px;
-    transition: all 0.3s ease;
-    font-size: 0.8rem;
+    gap: 8px;
+    transition: transform 0.12s ease, box-shadow 0.12s ease, opacity 0.12s ease;
+    font-size: 0.9rem;
+    box-shadow: 0 6px 18px rgba(15,23,42,0.06);
 }
 
 .btn-success {
@@ -253,6 +290,27 @@
 }
 .btn-primary:hover {
     background-color: var(--primary-dark);
+}
+
+.btn:active { transform: translateY(1px); }
+.btn:focus { outline: none; box-shadow: 0 8px 24px rgba(249,115,22,0.12); }
+
+/* small icon-only header buttons */
+.header-icon-btn {
+    width: 40px;
+    height: 40px;
+    display: inline-grid;
+    place-items: center;
+    border-radius: 10px;
+    padding: 0;
+    background: rgba(15,23,42,0.04);
+    color: var(--dark);
+}
+.header-icon-btn:hover { background: rgba(15,23,42,0.08); }
+
+/* ensure header looks elevated and rounded on larger screens */
+.app-header {
+    border-radius: 0 0 14px 14px;
 }
 
 .btn-secondary {
@@ -1432,6 +1490,116 @@
                 cursor: pointer;
                 font-size: 0.85rem;
             }
+            
+            /* === تحسينات تصميمية عامة (Overrides) === */
+            :root {
+                --accent: var(--primary);
+                --card-bg: linear-gradient(180deg, #ffffff, #fffaf5);
+                --soft-shadow: 0 6px 18px rgba(15, 23, 42, 0.06);
+            }
+
+            /* Page background and base text */
+            body {
+                background: linear-gradient(180deg, #fbfbfc 0%, #f0f4f8 100%);
+                color: var(--dark);
+                -webkit-font-smoothing: antialiased;
+                -moz-osx-font-smoothing: grayscale;
+            }
+
+            /* Header and sidebar polish */
+            .app-header {
+                background: #fff;
+                border-bottom: 1px solid rgba(15, 23, 42, 0.04);
+                backdrop-filter: blur(6px);
+            }
+
+            .sidebar {
+                background: linear-gradient(180deg, var(--primary) 0%, var(--primary-dark) 100%);
+                padding-top: calc(var(--header-height) + 10px);
+            }
+
+            .sidebar h3 {
+                color: rgba(255,255,255,0.95);
+                font-weight: 700;
+            }
+
+            /* Buttons: larger touch targets + nicer hover/focus */
+            .btn {
+                padding: 10px 14px;
+                border-radius: 10px;
+                box-shadow: var(--soft-shadow);
+                transition: transform 0.12s ease, box-shadow 0.12s ease, background-color 0.12s ease;
+                -webkit-tap-highlight-color: transparent;
+            }
+
+            .btn:active { transform: translateY(1px); }
+            .btn:focus { outline: 3px solid rgba(249,115,22,0.12); outline-offset: 2px; }
+
+            /* Primary, success, danger colors keep existing variables but improve contrast */
+            .btn-primary { background: var(--accent); }
+            .btn-success { background: var(--success); }
+            .btn-danger  { background: var(--danger); }
+
+            .header-buttons .btn i { margin-left: 8px; }
+
+            /* Card styles */
+            .card, .course-box, .stat-card, .profile-form {
+                background: var(--card-bg);
+                border-radius: 14px;
+                box-shadow: 0 10px 30px rgba(15, 23, 42, 0.06);
+                border: 1px solid rgba(15,23,42,0.03);
+            }
+
+            .stat-card i { color: var(--accent); }
+
+            /* Quick action buttons: colorful gradient + readable text */
+            .quick-action-btn {
+                background: linear-gradient(90deg, rgba(249,115,22,0.95), rgba(234,88,12,0.95));
+                color: #fff;
+                padding: 16px 12px;
+                border-radius: 12px;
+                min-height: 84px;
+                display:flex;
+                flex-direction:column;
+                align-items:center;
+                justify-content:center;
+                gap:6px;
+                box-shadow: 0 8px 24px rgba(15,23,42,0.08);
+            }
+
+            .quick-action-btn i { font-size: 1.5rem; color: #fff; }
+            .quick-action-btn span { font-weight:700; color: #fff; }
+
+            /* Chart container tweak */
+            .chart-container { padding: 18px; }
+
+            /* Modal sizing and scroll improvements */
+            .modal-content { max-width: 900px; width: calc(100% - 24px); border-radius: 12px; }
+
+            /* Table header accent */
+            th { background: linear-gradient(90deg, rgba(249,115,22,0.95), rgba(234,88,12,0.95)); color: white; }
+
+            /* Improve focus state for inputs */
+            input:focus, select:focus, textarea:focus {
+                border-color: rgba(249,115,22,0.6);
+                box-shadow: 0 6px 18px rgba(249,115,22,0.08);
+                outline: none;
+            }
+
+            /* Accessibility: larger touch targets on mobile */
+            @media (max-width: 768px) {
+                .btn { padding: 12px 16px; font-size: 1rem; }
+                .quick-action-btn { min-height: 88px; padding: 18px 12px; }
+                .sidebar { transform: translateX(100%); }
+                .sidebar.active { transform: translateX(0); }
+            }
+
+            /* Small-screen fine tuning */
+            @media (max-width: 480px) {
+                .app-title { font-size: 1rem; }
+                .stat-card i { font-size: 2.4rem; }
+                .profile-picture { width: 96px; height: 96px; }
+            }
         </style>
     </head>
     <body>
@@ -1462,12 +1630,13 @@
                     <i class="fas fa-bars"></i>
                 </button>
                 <div class="header-content">
-                    <div class="app-title">لوحة تحكم المعلم</div>
+                    <div class="header-greeting">  <span id="userNameHeader"></span></div>
                     <div class="user-info">
-                        <span class="user-name">مرحبًا بك، <span id="userNameHeader">المعلم</span></span>
                         <div class="header-buttons">
                             <button id="checkInBtn" class="btn btn-success" onclick="recordCheckIn()"><i class="fas fa-sign-in-alt"></i> حضور</button>
                             <button id="checkOutBtn" class="btn btn-danger" onclick="recordCheckOut()"><i class="fas fa-sign-out-alt"></i> انصراف</button>
+                            <!-- Install PWA button (hidden by default, shown when available) -->
+                            <button id="installBtn" class="btn btn-primary" style="display:none;"><i class="fas fa-download"></i> تثبيت</button>
                         </div>
                     </div>
                 </div>
@@ -1782,6 +1951,56 @@
         </div>
         
 <script src="teacher.js"></script>
+<script>
+// Register service worker and handle PWA install prompt
+(function(){
+    // SW registration
+    if ('serviceWorker' in navigator) {
+        window.addEventListener('load', function() {
+            navigator.serviceWorker.register('./sw.js').then(reg => {
+                console.log('SW registered:', reg.scope);
+            }).catch(err => console.warn('SW failed:', err));
+        });
+    }
 
+    // beforeinstallprompt handling
+    let deferredPrompt = null;
+    const installBtn = document.getElementById('installBtn');
+
+    window.addEventListener('beforeinstallprompt', (e) => {
+        e.preventDefault();
+        deferredPrompt = e;
+        // show the install button
+        installBtn.style.display = 'inline-flex';
+    });
+
+    installBtn.addEventListener('click', async () => {
+        installBtn.style.display = 'none';
+        if (!deferredPrompt) return;
+        deferredPrompt.prompt();
+        const choice = await deferredPrompt.userChoice;
+        if (choice.outcome === 'accepted') {
+            console.log('User accepted the install prompt');
+        } else {
+            console.log('User dismissed the install prompt');
+        }
+        deferredPrompt = null;
+    });
+
+    // Connection status messaging
+    const statusEl = document.getElementById('statusMessage');
+    function showStatus(msg, type='success', timeout=3500){
+        if(!statusEl) return;
+        statusEl.textContent = msg;
+        statusEl.className = 'status-message ' + (type === 'error' ? 'error' : 'success');
+        statusEl.style.display = 'block';
+        setTimeout(()=> statusEl.style.display = 'none', timeout);
+    }
+
+    window.addEventListener('offline', () => showStatus('أنت الآن دون اتصال. سيتم استخدام المحتوى المحفوظ.', 'error', 5000));
+    window.addEventListener('online', () => showStatus('تم استعادة الاتصال بالإنترنت.', 'success', 3000));
+
+})();
+</script>
     </body>
     </html>

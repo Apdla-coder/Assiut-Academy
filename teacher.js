@@ -163,19 +163,57 @@
                     }
                     if (userData) {
                         currentUserData = userData;
-                        const displayName = userData.full_name || 'المعلم';
-                        // تحديث اسم المستخدم في الهيدر
+
+                        // By default show the authenticated user's name
+                        let displayName = userData.full_name || 'المعلم';
+
+                        // If the current user is not a teacher (e.g., an admin), allow passing
+                        // ?teacher_id=... or ?teacherId=... in the URL to view a specific teacher's dashboard.
+                        const params = new URLSearchParams(window.location.search);
+                        const teacherParam = params.get('teacher_id') || params.get('teacherId');
+
+                        if (userData.role !== 'teacher') {
+                            if (teacherParam) {
+                                // try to fetch this teacher's name from users
+                                try {
+                                    const { data: teacherUser, error: teacherErr } = await supabaseClient
+                                        .from('users')
+                                        .select('id, full_name, role')
+                                        .eq('id', teacherParam)
+                                        .maybeSingle();
+                                    if (!teacherErr && teacherUser && teacherUser.role === 'teacher') {
+                                        displayName = teacherUser.full_name || displayName;
+                                        // set currentViewedTeacherId so other functions can use it if needed
+                                        window.currentViewedTeacherId = teacherUser.id;
+                                    } else {
+                                        console.warn('لم يُعثر على مستخدم معرّف كـ teacher لِـ teacher_id الممرر');
+                                    }
+                                } catch (err) {
+                                    console.error('خطأ في جلب بيانات المعلم عبر teacher_id:', err);
+                                }
+                            } else {
+                                // no teacher specified and user not teacher -> deny access
+                                showStatus('ليس لديك الصلاحية للوصول إلى هذه الصفحة. يجب أن تكون معلمًا أو تمرر teacher_id في الرابط.', 'error');
+                                document.querySelector('.content').innerHTML = '<p class="no-data error">ليس لديك الصلاحية للوصول إلى هذه الصفحة.</p>';
+                                return;
+                            }
+                        }
+
+                        // تحديث اسم المستخدم (أو اسم المعلم المحدد) في الهيدر
                         const userNameHeaderElement = document.getElementById('userNameHeader');
                         if (userNameHeaderElement) {
-                            userNameHeaderElement.textContent = displayName;
+                            // show a simple greeting with the teacher's name
+                            userNameHeaderElement.textContent = `أهلاً بك، ${displayName}`;
                         } else {
                             console.error('العنصر بـ id="userNameHeader" غير موجود في الـ HTML.');
                         }
-                        if (userData.role !== 'teacher') {
-                            showStatus('ليس لديك الصلاحية للوصول إلى هذه الصفحة. يجب أن تكون معلمًا.', 'error');
-                            document.querySelector('.content').innerHTML = '<p class="no-data error">ليس لديك الصلاحية للوصول إلى هذه الصفحة.</p>';
-                            return;
+
+                        // also update the profile name element if present
+                        const profileNameEl = document.getElementById('profileName');
+                        if (profileNameEl) {
+                            profileNameEl.textContent = displayName || (currentUserData && currentUserData.full_name) || 'غير محدد';
                         }
+
                         await loadDashboardData();
                     } else {
                         showStatus('خطأ في تحميل بيانات المستخدم', 'error');
@@ -1192,7 +1230,8 @@ async function loadStudentsForCourse(courseId) {
                     const attendanceRecords = [];
                     document.querySelectorAll('.student-checkbox:checked').forEach(checkbox => {
                         const studentId = checkbox.dataset.studentId;
-                        const statusSelect = document.querySelector(`.student-status[data-student-id="${studentId}"]`);
+                        // selector must match the select used in the modal (class="student-status-select")
+                        const statusSelect = document.querySelector(`.student-status-select[data-student-id="${studentId}"]`);
                         const status = statusSelect ? statusSelect.value : 'absent';
                         attendanceRecords.push({
                             lesson_id: lessonId,
@@ -2029,35 +2068,7 @@ async function loadProfileData() {
         console.log("loadProfileData: انتهى التنفيذ.");
     }
 }
-    // تحديث دالة تحميل بيانات المستخدم
-    async function loadUserData() {
-        try {
-            const { data: { user }, error: authError } = await supabaseClient.auth.getUser();
-            if (authError) throw authError;
-            if (!user) {
-                window.location.href = 'login.html';
-                return;
-            }
-            currentUserId = user.id;
-            const { data: userData, error: userError } = await supabaseClient
-                .from('users')
-                .select('id, full_name, role, specialty, avatar_url') // إضافة avatar_url
-                .eq('id', currentUserId)
-                .single();
-            if (userError && userError.code !== 'PGRST116') {
-                throw userError;
-            }
-            if (userData) {
-                currentUserData = userData;
-                // ... (باقي الكود كما هو) ...
-            } else {
-                showStatus('خطأ في تحميل بيانات المستخدم', 'error');
-            }
-        } catch (error) {
-            console.error('Error loading user data:', error);
-            showStatus('خطأ في تحميل بيانات المستخدم', 'error');
-        }
-    }
+    // (duplicate loadUserData removed - use the earlier full implementation)
 
             // ربط نموذج الملف الشخصي بحدث الإرسال
             document.getElementById('profileForm').addEventListener('submit', saveProfileChanges);
