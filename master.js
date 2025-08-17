@@ -1025,10 +1025,10 @@ function filterParents() {
 // Function to generate a comprehensive report for a student and send via WhatsApp
 async function generateAndSendReport(studentId) {
  try {
- // Fetch student details (include parent_phone)
+ // Fetch student details (include parent_phone and other fields)
  const { data: student, error: studentError } = await supabaseClient
  .from('students')
- .select('full_name, phone, parent_phone')
+ .select('*')
  .eq('id', studentId)
  .single();
 
@@ -1044,11 +1044,11 @@ async function generateAndSendReport(studentId) {
  // تحديد رقم الهاتف لإرسال التقرير إليه (ولي الأمر أولاً)
  let rawPhoneNumber = student.parent_phone || student.phone;
 
- // التحقق من وجود رقم الهاتف
+ // التحقق من وجود رقم الهاتف: نستخدم رقم ولي الأمر أولاً ثم رقم الطالب، وإلا نوقف الإرسال
  if (!rawPhoneNumber) {
- showStatus('بيانات الطالب (رقم الهاتف أو رقم ولي الأمر) غير متوفرة لإرسال التقرير.', 'error');
- console.warn('No phone number found for student ID:', studentId);
- return;
+   showStatus('لا يوجد رقم هاتف للطالب أو ولي الأمر. لا يمكن إرسال التقرير.', 'warning');
+   console.warn('No phone number found for student ID:', studentId);
+   return;
  }
 
  // معالجة رقم الهاتف لتحويله إلى صيغة E.164 الدولية (+20xxxxxxxxx) لمصر
@@ -1085,6 +1085,26 @@ async function generateAndSendReport(studentId) {
 
  const studentName = student.full_name || 'غير محدد';
 
+ // Build student details block (Arabic labels)
+ const studentDetails = [];
+ studentDetails.push(`الاسم: ${student.full_name || '-'} `);
+ if (student.email) studentDetails.push(`البريد الإلكتروني: ${student.email}`);
+ if (student.phone) studentDetails.push(`هاتف الطالب: ${student.phone}`);
+ if (student.parent_phone) studentDetails.push(`هاتف ولي الأمر: ${student.parent_phone}`);
+ if (student.national_id) studentDetails.push(`الرقم القومي/الهوية: ${student.national_id}`);
+ if (student.class || student.grade || student.level) {
+   const cls = student.class || student.grade || student.level;
+   studentDetails.push(`الصف/المستوى: ${cls}`);
+ }
+ if (student.created_at) {
+   const dt = new Date(student.created_at);
+   if (!isNaN(dt)) studentDetails.push(`تاريخ التسجيل: ${dt.getDate().toString().padStart(2,'0')}/${(dt.getMonth()+1).toString().padStart(2,'0')}/${dt.getFullYear()}`);
+ }
+ if (student.status) {
+   const s = student.status === 'active' ? 'نشط' : student.status === 'inactive' ? 'غير نشط' : student.status;
+   studentDetails.push(`الحالة: ${s}`);
+ }
+
  // Fetch subscriptions
  const { data: subscriptions, error: subsError } = await supabaseClient
  .from('subscriptions')
@@ -1105,9 +1125,10 @@ async function generateAndSendReport(studentId) {
  amount,
  paid_at,
  method,
+ total_amount,
  status,
  notes,
- course:courses (name)
+ course:courses (name, price)
  `)
  .eq('student_id', studentId);
 
@@ -1128,6 +1149,11 @@ async function generateAndSendReport(studentId) {
 
  // --- Construct the Report Message ---
  let message = `*تقرير الطالب: ${studentName}*\n\n`;
+
+ // Student Details
+ message += `*تفاصيل الطالب:*
+ ${studentDetails.join('\n')}
+ \n`;
 
  // Subscriptions Section
  message += "*الاشتراكات:*\n";
@@ -1150,51 +1176,79 @@ async function generateAndSendReport(studentId) {
  message += " لا توجد اشتراكات.\n\n";
  }
 
- // Payments Section
+ // Payments Section (include remaining per payment and total remaining)
  message += "*المدفوعات:*\n";
  if (payments && payments.length > 0) {
- payments.forEach(pay => {
- const courseName = pay.course?.name || 'غير محدد';
- const methodText = pay.payment_method === 'cash' ? 'نقداً' : pay.payment_method === 'card' ? 'بطاقة' : pay.payment_method === 'transfer' ? 'تحويل' : pay.payment_method || 'غير محددة';
- const statusText = pay.status === 'paid' ? 'مدفوع' : pay.status === 'pending' ? 'معلق' : pay.status === 'cancelled' ? 'ملغى' : pay.status || 'غير محددة';
- let dateStr = 'غير محدد';
- if (pay.paid_at) {
- const dateObj = new Date(pay.paid_at);
- if (!isNaN(dateObj)) {
- dateStr = `${dateObj.getDate().toString().padStart(2, '0')}/${(dateObj.getMonth() + 1).toString().padStart(2, '0')}/${dateObj.getFullYear()} ${dateObj.getHours().toString().padStart(2, '0')}:${dateObj.getMinutes().toString().padStart(2, '0')}`;
- }
- }
- message += ` - دورة: ${courseName}\n مبلغ: ${parseFloat(pay.amount || 0).toFixed(2)} ج.م\n تاريخ: ${dateStr}\n طريقة: ${methodText}\n حالة: ${statusText}\n`;
- if (pay.notes) message += ` ملاحظات: ${pay.notes}\n`;
- message += "\n";
- });
+   let totalRemaining = 0;
+   payments.forEach(pay => {
+     const courseName = pay.course?.name || 'غير محدد';
+     const rawMethod = pay.method || pay.payment_method || pay.pay_method || '';
+     const methodText = rawMethod === 'cash' ? 'نقداً' : rawMethod === 'card' ? 'بطاقة' : rawMethod === 'transfer' ? 'تحويل' : rawMethod || 'غير محددة';
+     const statusText = pay.status === 'paid' ? 'مدفوع' : pay.status === 'pending' ? 'معلق' : pay.status === 'cancelled' ? 'ملغى' : pay.status || 'غير محددة';
+     let dateStr = 'غير محدد';
+     if (pay.paid_at) {
+       const dateObj = new Date(pay.paid_at);
+       if (!isNaN(dateObj)) {
+         dateStr = `${dateObj.getDate().toString().padStart(2, '0')}/${(dateObj.getMonth() + 1).toString().padStart(2, '0')}/${dateObj.getFullYear()} ${dateObj.getHours().toString().padStart(2, '0')}:${dateObj.getMinutes().toString().padStart(2, '0')}`;
+       }
+     }
+     // Determine amounts: amount = paid amount, total_amount = expected/total
+     const paidAmount = parseFloat(pay.amount || 0) || 0;
+     const totalAmount = parseFloat(pay.total_amount || pay.course?.price || 0) || 0;
+     const remaining = Math.max(0, totalAmount - paidAmount);
+     totalRemaining += remaining;
+
+  message += ` - دورة: ${courseName}\n إجمالي الدورة: ${totalAmount.toFixed(2)} ج.م\n مدفوع: ${paidAmount.toFixed(2)} ج.م\n متبقي: ${remaining.toFixed(2)} ج.م\n تاريخ: ${dateStr}\n طريقة: ${methodText}\n حالة: ${statusText}\n`;
+  if (pay.notes) message += ` ملاحظات: ${pay.notes}\n`;
+     message += "\n";
+   });
+
+   // overall remaining summary
+   message += `المتبقي الكلي: ${totalRemaining.toFixed(2)} ج.م\n\n`;
  } else {
- message += " لا توجد مدفوعات.\n\n";
+   message += " لا توجد مدفوعات.\n\n";
  }
 
- // Attendance Section
+ // Attendance Section (detailed list + summary)
  message += "*الحضور:*\n";
  if (attendances && attendances.length > 0) {
- const presentCount = attendances.filter(a => a.status === 'present').length;
- const absentCount = attendances.filter(a => a.status === 'absent').length;
- const lateCount = attendances.filter(a => a.status === 'late').length;
- message += ` - حاضر: ${presentCount} مرة\n - غائب: ${absentCount} مرة\n - متأخر: ${lateCount} مرة\n\n`;
+   // list latest up to 12 records with Arabic status
+   const statusMap = {
+     present: 'حاضر',
+     absent: 'غائب',
+     late: 'متأخر',
+     excused: 'معذور',
+     unknown: 'غير معروف'
+   };
+   const recent = attendances.slice(0, 12);
+   recent.forEach(a => {
+     const d = a.date || (a.created_at ? new Date(a.created_at).toISOString().split('T')[0] : '-');
+     const st = statusMap[a.status] || (a.status ? a.status : 'غير معروف');
+     message += ` - ${d}: ${st}`;
+     if (a.notes) message += ` (ملاحظة: ${a.notes})`;
+     message += '\n';
+   });
+   // summary counts
+   const presentCount = attendances.filter(a => a.status === 'حاضر').length;
+   const absentCount = attendances.filter(a => a.status === 'غائب').length;
+   const lateCount = attendances.filter(a => a.status === 'متأخر').length;
+   message += `\n الملخص:\n - حاضر: ${presentCount} مرة\n - غائب: ${absentCount} مرة\n - متأخر: ${lateCount} مرة\n\n`;
  } else {
- message += " لا توجد بيانات حضور.\n\n";
+   message += " لا توجد بيانات حضور.\n\n";
  }
 
  message += "\n*تم إرسال التقرير من أكاديمية أسيوط.*";
 
- // Encode the message for URL
- const encodedMessage = encodeURIComponent(message);
-
- // Construct the WhatsApp URL (using wa.me link) - تأكد من عدم وجود مسافات
- const whatsappUrl = `https://wa.me/${encodeURIComponent(formattedPhoneNumber)}?text=${encodedMessage}`; // <-- بدون مسافات
-
- // Open the WhatsApp link in a new tab
- window.open(whatsappUrl, '_blank');
-
- showStatus(`جارٍ فتح الواتساب لإرسال التقرير إلى ${studentName} (${formattedPhoneNumber})...`, 'success');
+ // Show plain-text WhatsApp preview (no PDF)
+ if (typeof showWhatsAppPreview === 'function') {
+   showWhatsAppPreview(formattedPhoneNumber, message, studentName);
+   showStatus(`جاهز: عرض معاينة رسالة واتساب لـ ${studentName} (${formattedPhoneNumber})`, 'success');
+ } else {
+   const encodedMessage = encodeURIComponent(message);
+   const whatsappUrl = `https://wa.me/${encodeURIComponent(formattedPhoneNumber)}?text=${encodedMessage}`;
+   window.open(whatsappUrl, '_blank');
+   showStatus(`جارٍ فتح الواتساب لإرسال التقرير إلى ${studentName} (${formattedPhoneNumber})...`, 'success');
+ }
 
  } catch (error) {
  console.error('Error generating or sending report for student ID:', studentId, error);
@@ -1345,6 +1399,72 @@ async function showStudentFullDetails(studentId) {
   }
 }
 
+// ----- WhatsApp preview helper (used by generateAndSendReport) -----
+function showWhatsAppPreview(phone, message, studentName) {
+  try {
+    const modal = document.getElementById('waPreviewModal');
+    const phoneEl = document.getElementById('waPreviewPhone');
+    const msgEl = document.getElementById('waPreviewMessage');
+    const copyBtn = document.getElementById('waCopyBtn');
+    const openBtn = document.getElementById('waOpenBtn');
+    const closeBtn = document.getElementById('waCloseBtn');
+    const xBtn = document.getElementById('waPreviewClose');
+    if (!modal || !phoneEl || !msgEl) {
+      // fallback: open wa.me
+      const u = `https://wa.me/${encodeURIComponent(phone)}?text=${encodeURIComponent(message)}`;
+      window.open(u, '_blank');
+      return;
+    }
+
+    phoneEl.textContent = `الوجهة: ${phone}`;
+    msgEl.value = message;
+    modal.style.display = 'flex';
+
+    function closeModal() {
+      modal.style.display = 'none';
+    }
+
+    // single-use handlers
+    const onCopy = () => {
+      try {
+        navigator.clipboard.writeText(message);
+        showStatus('تم نسخ نص الرسالة للحافظة.', 'success');
+      } catch (e) {
+        console.warn('Clipboard copy failed', e);
+        showStatus('تم نسخ النص (طريق بديل).', 'success');
+        const ta = document.createElement('textarea');
+        ta.value = message;
+        document.body.appendChild(ta);
+        ta.select();
+        document.execCommand('copy');
+        ta.remove();
+      }
+    };
+
+    const onOpen = () => {
+      const encoded = encodeURIComponent(message);
+      const url = `https://wa.me/${encodeURIComponent(phone)}?text=${encoded}`;
+      window.open(url, '_blank');
+      showStatus(`جارٍ فتح واتساب لإرسال التقرير إلى ${studentName}...`, 'success');
+      closeModal();
+    };
+
+    const onClose = () => { closeModal(); };
+
+    copyBtn && copyBtn.addEventListener('click', onCopy, { once: true });
+    openBtn && openBtn.addEventListener('click', onOpen, { once: true });
+    closeBtn && closeBtn.addEventListener('click', onClose, { once: true });
+    xBtn && xBtn.addEventListener('click', onClose, { once: true });
+
+  } catch (err) {
+    console.error('showWhatsAppPreview error', err);
+    const url = `https://wa.me/${encodeURIComponent(phone)}?text=${encodeURIComponent(message)}`;
+    window.open(url, '_blank');
+  }
+}
+
+// ...pdf helpers removed
+
 function generateSection(title, data, renderer) {
   if (!data || !data.length) return '';
   return `<div class="detail-section">
@@ -1354,10 +1474,25 @@ function generateSection(title, data, renderer) {
 }
 
 function generateAttendanceTable(data) {
+  const statusMap = {
+    present: 'حاضر',
+    absent: 'غائب',
+    late: 'متأخر',
+    excused: 'معذور'
+  };
+
+  const rows = data.map(att => {
+    const title = att.lesson_id && att.lessons?.title ? att.lessons.title : att.courses?.name || '---';
+    const date = formatDate(att.date);
+    const status = statusMap[att.status] || (att.status ? att.status : 'غير معروف');
+    const notes = att.notes || '-';
+    return `<tr><td>${escapeHtml(title)}</td><td>${escapeHtml(date)}</td><td>${escapeHtml(status)}</td><td>${escapeHtml(notes)}</td></tr>`;
+  }).join('');
+
   return `<table border="1" style="width:100%; border-collapse:collapse;">
     <thead><tr><th>الدورة/الدرس</th><th>التاريخ</th><th>الحالة</th><th>ملاحظات</th></tr></thead>
     <tbody>
-      ${data.map(att => `<tr><td>${att.lesson_id && att.lessons?.title ? att.lessons.title : att.courses?.name || '---'}</td><td>${formatDate(att.date)}</td><td>${att.status}</td><td>${att.notes || '-'}</td></tr>`).join('')}
+      ${rows}
     </tbody>
   </table>`;
 }
@@ -3887,9 +4022,9 @@ async function loadAttendances() {
  }
 
  statsByCourse[courseId].total++;
- if (att.status === 'present') statsByCourse[courseId].present++;
- if (att.status === 'absent') statsByCourse[courseId].absent++;
- if (att.status === 'late') statsByCourse[courseId].late++;
+ if (att.status === 'حاضر') statsByCourse[courseId].present++;
+ if (att.status === 'غائب') statsByCourse[courseId].absent++;
+ if (att.status === 'متأخر') statsByCourse[courseId].late++;
  });
 
  // بناء الجدول
@@ -4073,40 +4208,90 @@ async function loadSecretaryStatus() {
 // ✅ تسجيل الحضور
 async function checkInSecretary() {
   const today = new Date().toISOString().split('T')[0];
+  // Ensure we don't insert duplicates: look for existing record for today
+  try {
+    const { data: existing, error: fetchErr } = await supabaseClient
+      .from('secretary_attendance')
+      .select('*')
+      .eq('date', today)
+      .eq('secretary_id', window.userId)
+      .maybeSingle();
 
-  const { error } = await supabaseClient
-    .from('secretary_attendance')
-    .insert([{
-      date: today,
-      check_in: new Date().toISOString(),
-      secretary_id: window.userId
-    }]);
+    if (fetchErr) throw fetchErr;
 
-  if (error) {
-    console.error("❌ خطأ في تسجيل الحضور:", error);
-    showStatus('خطأ في تسجيل الحضور', 'error');
-  } else {
+    if (existing) {
+      // If a check-in already exists, do nothing
+      if (existing.check_in) {
+        showStatus('✅ الحضور مسجل بالفعل لهذا اليوم', 'info');
+        loadSecretaryStatus();
+        return;
+      }
+      // If a record exists but check_in is empty, update it
+      const { error: updErr } = await supabaseClient
+        .from('secretary_attendance')
+        .update({ check_in: new Date().toISOString() })
+        .eq('id', existing.id);
+      if (updErr) throw updErr;
+      showStatus('✅ تم تسجيل الحضور', 'success');
+      loadSecretaryStatus();
+      return;
+    }
+
+    // No existing record — insert a new one
+    const { error: insertErr } = await supabaseClient
+      .from('secretary_attendance')
+      .insert([{
+        date: today,
+        check_in: new Date().toISOString(),
+        secretary_id: window.userId
+      }]);
+
+    if (insertErr) throw insertErr;
     showStatus('✅ تم تسجيل الحضور', 'success');
     loadSecretaryStatus();
+  } catch (error) {
+    console.error('❌ خطأ في تسجيل الحضور:', error);
+    showStatus('خطأ في تسجيل الحضور', 'error');
   }
 }
 
 // ✅ تسجيل الانصراف
 async function checkOutSecretary() {
   const today = new Date().toISOString().split('T')[0];
+  try {
+    // Ensure there is a record to update
+    const { data: existing, error: fetchErr } = await supabaseClient
+      .from('secretary_attendance')
+      .select('*')
+      .eq('date', today)
+      .eq('secretary_id', window.userId)
+      .maybeSingle();
 
-  const { error } = await supabaseClient
-    .from('secretary_attendance')
-    .update({ check_out: new Date().toISOString() })
-    .eq('date', today)
-    .eq('secretary_id', window.userId);
+    if (fetchErr) throw fetchErr;
 
-  if (error) {
-    console.error("❌ خطأ في تسجيل الانصراف:", error);
-    showStatus('خطأ في تسجيل الانصراف', 'error');
-  } else {
+    if (!existing) {
+      // No check-in found for today — inform the user
+      showStatus('لم يتم العثور على تسجيل حضور اليوم. الرجاء تسجيل الحضور أولاً.', 'warning');
+      return;
+    }
+
+    if (existing.check_out) {
+      showStatus('تم تسجيل الانصراف بالفعل لهذا اليوم', 'info');
+      loadSecretaryStatus();
+      return;
+    }
+
+    const { error: updErr } = await supabaseClient
+      .from('secretary_attendance')
+      .update({ check_out: new Date().toISOString() })
+      .eq('id', existing.id);
+
+    if (updErr) throw updErr;
     showStatus('👋 تم تسجيل الانصراف', 'success');
     loadSecretaryStatus();
+  } catch (error) {
+    console.error('❌ خطأ في تسجيل الانصراف:', error);
+    showStatus('خطأ في تسجيل الانصراف', 'error');
   }
 }
 
@@ -4441,9 +4626,9 @@ async function showAttendanceReceipt(attendanceId) {
  // حساب الإحصائيات فقط إذا كانت البيانات موجودة
  if (studentAttendances && Array.isArray(studentAttendances)) {
  totalSessions = studentAttendances.length;
- presentCount = studentAttendances.filter(a => a.status === 'present').length;
- absentCount = studentAttendances.filter(a => a.status === 'absent').length;
- lateCount = studentAttendances.filter(a => a.status === 'late').length;
+ presentCount = studentAttendances.filter(a => a.status === 'حاضر').length;
+ absentCount = studentAttendances.filter(a => a.status === 'غائب').length;
+ lateCount = studentAttendances.filter(a => a.status === 'متأخر').length;
  attendanceRate = totalSessions > 0 ? Math.round((presentCount / totalSessions) * 100) : 0;
  }
  } catch (fetchError) {

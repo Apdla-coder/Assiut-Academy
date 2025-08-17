@@ -41,9 +41,24 @@
                 }
             });
             
-            // دالة لعرض رسائل الحالة
+            // دالة مساعدة آمنة لتعيين النص لعنصر بواسطة id (لا تُلقي خطأ إذا كان العنصر مفقوداً)
+            function safeSetTextById(id, text) {
+                const el = document.getElementById(id);
+                if (el) {
+                    el.textContent = text;
+                } else {
+                    console.warn(`safeSetTextById: element with id="${id}" not found.`);
+                }
+            }
+
+            // دالة لعرض رسائل الحالة (آمنة — تتحقق من وجود العنصر)
             function showStatus(message, type = 'success') {
                 const statusDiv = document.getElementById('statusMessage');
+                if (!statusDiv) {
+                    // لا نرمي خطأ حتى لا يتوقف تنفيذ السكربت إذا كانت الصفحة بسيطة
+                    console.warn('عنصر statusMessage غير موجود في الصفحة. (showStatus)');
+                    return;
+                }
                 statusDiv.textContent = message;
                 statusDiv.className = `status-message ${type}`;
                 statusDiv.style.display = 'block';
@@ -233,7 +248,7 @@
                         .select('*', { count: 'exact', head: true })
                         .eq('teacher_id', currentUserId);
                     if (coursesCountError) throw coursesCountError;
-                    document.getElementById('totalCourses').textContent = coursesCount || 0;
+                    safeSetTextById('totalCourses', coursesCount || 0);
                     
                     // 2. عدد الدروس في الكورسات المسندة للمعلم
                     const { data: teacherCourses, error: coursesError } = await supabaseClient
@@ -251,7 +266,7 @@
                         if (lessonsCountError) throw lessonsCountError;
                         lessonsCount = count || 0;
                     }
-                    document.getElementById('totalLessons').textContent = lessonsCount;
+                    safeSetTextById('totalLessons', lessonsCount);
                     
                     // 3. عدد الطلاب في الكورسات المسندة للمعلم
                     let studentsCount = 0;
@@ -263,7 +278,7 @@
                         if (subscriptionsCountError) throw subscriptionsCountError;
                         studentsCount = count || 0;
                     }
-                    document.getElementById('totalStudents').textContent = studentsCount;
+                    safeSetTextById('totalStudents', studentsCount);
                     
                     // 4. إنشاء الرسم البياني
                     await loadLessonsPerCourseChartData();
@@ -853,11 +868,12 @@ async function loadExamStudentData(courseId, examId) {
             scoresMap[score.student_id] = { score: score.score, exam_date: score.exam_date };
         });
 
-        // 5. إنشاء جدول عرض الطلاب وإدخال الدرجات
+        // 5. إنشاء جدول عرض الطلاب وإدخال الدرجات (بشريط بحث)
         let tableHtml = `
             <h3 style="margin-top: 20px; color: #2c3e50;">📊 ${examData.title} (درجة التميز: ${examData.max_score}) - ${document.querySelector(`#examCourseFilter option[value="${courseId}"]`)?.text || 'الكورس'}</h3>
+            <div style="margin:10px 0;"><input type="text" id="examStudentsSearch" placeholder="🔍 ابحث عن طالب..." style="width:100%; padding:8px; box-sizing:border-box;"></div>
             <div style="overflow-x: auto;">
-            <table class="teacher-table">
+            <table class="teacher-table" id="examStudentsTable">
                 <thead>
                     <tr>
                         <th style="width: 40%;">اسم الطالب</th>
@@ -904,6 +920,19 @@ async function loadExamStudentData(courseId, examId) {
         `;
 
         tableContainer.innerHTML = tableHtml;
+
+        // ربط البحث داخل جدول الطلاب لاختبار
+        const examSearchInput = document.getElementById('examStudentsSearch');
+        if (examSearchInput) {
+            examSearchInput.addEventListener('input', function() {
+                const q = this.value.toLowerCase();
+                document.querySelectorAll('#examStudentsTable tbody tr').forEach(row => {
+                    const nameCell = row.querySelector('td');
+                    const name = nameCell ? nameCell.textContent.toLowerCase() : '';
+                    row.style.display = name.includes(q) ? '' : 'none';
+                });
+            });
+        }
 
     } catch (error) {
         console.error('💥 خطأ في loadExamStudentData:', error);
@@ -1204,7 +1233,25 @@ async function loadStudentsForCourse(courseId) {
       return;
     }
 
-    updateStudentListDisplay(students);
+        // إضافة صندوق البحث داخل نافذة الحضور (إذا لم يكن موجودًا)
+        if (!document.getElementById('studentSearchInModal')) {
+            const searchHtml = `<div style="margin-bottom:10px;"><input type="text" id="studentSearchInModal" placeholder="🔍 ابحث عن طالب..." style="width:100%; padding:8px; box-sizing:border-box;"></div>`;
+            listContainer.insertAdjacentHTML('beforebegin', searchHtml);
+        }
+
+        // ربط حدث البحث محلياً (مرة واحدة)
+        const searchInput = document.getElementById('studentSearchInModal');
+        if (searchInput) {
+            if (window.handleAttendanceModalSearch) {
+                searchInput.removeEventListener('input', window.handleAttendanceModalSearch);
+            }
+            window.handleAttendanceModalSearch = function () {
+                updateStudentListDisplay(students);
+            };
+            searchInput.addEventListener('input', window.handleAttendanceModalSearch);
+        }
+
+        updateStudentListDisplay(students);
   } catch (error) {
     console.error('Error loading students for course:', error);
     const listContainer = document.getElementById('studentAttendanceList');
@@ -1539,7 +1586,6 @@ async function loadStudentsForCourse(courseId) {
                 }
             }
             
-            // دالة لتحديث عرض قائمة الطلاب في نافذة الحضور
         // دالة لتحديث عرض قائمة الطلاب في نافذة الحضور
         function updateStudentListDisplay(students) {
             const listContainer = document.getElementById('studentAttendanceList');
@@ -1579,29 +1625,7 @@ async function loadStudentsForCourse(courseId) {
             //     checkbox.addEventListener('change', updateSelectAllCheckbox);
             // });
         }        
-        
-        // دالة لجلب طلاب كورس معين وعرضهم في النافذة (نسخة محدثة)
-                // ربط البحث - التأكد من وجود العنصر أولاً
-                const searchInput = document.getElementById('studentSearchInModal');
-                if (searchInput) {
-                    // إزالة أي مستمع أحداث سابق بنفس الاسم لتجنب التكرار
-                    if (window.handleSearchInput) {
-                        searchInput.removeEventListener('input', window.handleSearchInput);
-                    }
-                    // تعريف دالة مستقلة لتجنب مشاكل النطاق
-                    window.handleSearchInput = function() {
-                        // التأكد من أن students معرفة في النطاق الحالي
-                        // إذا لم تكن متوفرة، يمكن استدعاء loadStudentsForCourse مجددًا أو تمرير البيانات بطريقة أخرى
-                        // لكن في هذا السياق، نفترض أن students متوفرة من النطاق الخارجي
-                        updateStudentListDisplay(students);
-                    };
-                    searchInput.addEventListener('input', window.handleSearchInput);
-                } else {
-                    console.warn('عنصر studentSearchInModal غير موجود في الصفحة عند محاولة ربط الحدث');
-                }        
-        
-        
-        // تعديل دالة setAllAttendance لتتناسب مع التصميم الجديد
+    // تعديل دالة setAllAttendance لتتناسب مع التصميم الجديد
             function setAllAttendance(status) {
                 document.querySelectorAll('.student-status-select').forEach(select => {
                     select.value = status;
@@ -1750,8 +1774,10 @@ async function loadStudentsForCourse(courseId) {
                 document.getElementById('profileRole').textContent = currentUserData.role === 'teacher' ? 'معلم' : currentUserData.role;
                 
                 // تحديث الصورة الشخصية
+                // عرض الصورة الشخصية من avatar_url (إذا وُجد) وإلا صورة افتراضية
                 const avatarUrl = currentUserData.avatar_url || 'https://placehold.co/120x120?text=PP';
-                document.getElementById('profileImage').src = avatarUrl;
+                const profileImgEl = document.getElementById('profileImage');
+                if (profileImgEl) profileImgEl.src = avatarUrl;
                 
                 // تحميل بيانات النموذج
                 document.getElementById('fullName').value = currentUserData.full_name || '';
@@ -1953,10 +1979,37 @@ async function loadProfileAttendanceRecords() {
                 }
             }
             
-    // دالة لفتح نافذة تغيير الصورة
+    // دالة لفتح نافذة تغيير الصورة (تدعم تحميل صورة محلية ومعاينتها)
     function openAvatarModal() {
-        document.getElementById('avatarUrlInput').value = currentUserData.avatar_url || '';
-        document.getElementById('avatarModal').style.display = 'flex';
+        const avatarUrlInput = document.getElementById('avatarUrlInput');
+        if (avatarUrlInput) avatarUrlInput.value = currentUserData.avatar_url || '';
+
+        const avatarModal = document.getElementById('avatarModal');
+        if (avatarModal) avatarModal.style.display = 'flex';
+
+        // preview element
+        const preview = document.getElementById('profileImagePreview');
+        if (preview) {
+            preview.src = currentUserData.avatar_url || preview.src || 'https://placehold.co/120x120?text=PP';
+        }
+
+        // bind file input
+        const fileInput = document.getElementById('profileImageInput');
+        if (fileInput) {
+            if (window.handleProfileImageChange) fileInput.removeEventListener('change', window.handleProfileImageChange);
+            window.handleProfileImageChange = function(e) {
+                const file = e.target.files[0];
+                if (!file) return;
+                const reader = new FileReader();
+                reader.onload = function(ev) {
+                    if (preview) preview.src = ev.target.result;
+                    // temporarily store so save can persist it
+                    fileInput.dataset.lastData = ev.target.result;
+                };
+                reader.readAsDataURL(file);
+            };
+            fileInput.addEventListener('change', window.handleProfileImageChange);
+        }
     }
 
     // دالة لإغلاق نافذة تغيير الصورة
@@ -1964,32 +2017,76 @@ async function loadProfileAttendanceRecords() {
         document.getElementById('avatarModal').style.display = 'none';
     }
 
-    // دالة لحفظ رابط الصورة الجديدة
+    // دالة لحفظ رابط الصورة الجديدة أو حفظ الصورة المحلية في localStorage
     async function saveAvatarUrl() {
-        const avatarUrl = document.getElementById('avatarUrlInput').value;
-        
+        const avatarUrlInput = document.getElementById('avatarUrlInput');
+        const fileInput = document.getElementById('profileImageInput');
+        const localData = fileInput && fileInput.dataset && fileInput.dataset.lastData ? fileInput.dataset.lastData : null;
+
+        // إذا وُجد ملف محلي (تم تحويله لbase64 في dataset.lastData) نحاول رفعه إلى Supabase Storage
+        if (localData) {
+            try {
+                // تحويل base64 إلى blob
+                const res = await fetch(localData);
+                const blob = await res.blob();
+                // توليد اسم ملف فريد
+                const ext = blob.type.split('/')[1] || 'png';
+                const filename = `avatars/${currentUserId}_${Date.now()}.${ext}`;
+
+                // رفع الملف إلى bucket 'avatars' (تأكد أن الـ bucket موجود وأنه عام أو اضبط السياسات)
+                const { data: uploadData, error: uploadError } = await supabaseClient.storage
+                    .from('avatars')
+                    .upload(filename, blob, { cacheControl: '3600', upsert: false });
+                if (uploadError) throw uploadError;
+
+                // الحصول على public URL
+                const { data: publicData } = supabaseClient.storage.from('avatars').getPublicUrl(filename);
+                const publicUrl = publicData && publicData.publicUrl ? publicData.publicUrl : null;
+                if (!publicUrl) throw new Error('فشل في الحصول على public URL للصورة.');
+
+                // تحديث حقل avatar_url في جدول users
+                const { data: dbData, error: dbErr } = await supabaseClient
+                    .from('users')
+                    .update({ avatar_url: publicUrl })
+                    .eq('id', currentUserId);
+                if (dbErr) throw dbErr;
+
+                // تحديث الواجهة والبيانات المحلية
+                const profileImg = document.getElementById('profileImage');
+                if (profileImg) profileImg.src = publicUrl;
+                const avatarModal = document.getElementById('avatarModal');
+                if (avatarModal) avatarModal.style.display = 'none';
+                currentUserData.avatar_url = publicUrl;
+                showStatus('تم رفع الصورة وحفظها بنجاح.', 'success');
+                return;
+            } catch (err) {
+                console.error('Error uploading avatar to storage:', err);
+                showStatus(`خطأ في رفع الصورة: ${err.message}`, 'error');
+                return;
+            }
+        }
+
+        // أما إن كان رابطًا خارجيًا فسنخزنه مباشرة في قاعدة البيانات كما كان سابقًا
+        const avatarUrl = avatarUrlInput ? avatarUrlInput.value.trim() : '';
         if (!avatarUrl) {
             showStatus('يرجى إدخال رابط الصورة', 'error');
             return;
         }
 
         try {
-            // تحديث رابط الصورة في قاعدة البيانات
-            const { data, error } = await supabaseClient
+            const { data: dbData, error: dbErr } = await supabaseClient
                 .from('users')
                 .update({ avatar_url: avatarUrl })
                 .eq('id', currentUserId);
 
             if (error) throw error;
 
-            // تحديث الصورة في الواجهة
-            document.getElementById('profileImage').src = avatarUrl;
-            document.getElementById('avatarModal').style.display = 'none';
-            
-            // تحديث البيانات المحلية
+            const profileImg = document.getElementById('profileImage');
+            if (profileImg) profileImg.src = avatarUrl;
+            const avatarModal = document.getElementById('avatarModal');
+            if (avatarModal) avatarModal.style.display = 'none';
             currentUserData.avatar_url = avatarUrl;
-            
-            showStatus('تم تغيير الصورة الشخصية بنجاح', 'success');
+            showStatus('تم حفظ رابط الصورة بنجاح.', 'success');
         } catch (error) {
             console.error('Error saving avatar URL:', error);
             showStatus(`خطأ في تغيير الصورة: ${error.message}`, 'error');

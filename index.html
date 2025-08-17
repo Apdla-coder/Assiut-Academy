@@ -89,7 +89,7 @@
     button:active {
       transform: translateY(0);
     }
-    #status {
+    #status, #regStatus, #resetStatus, #changeEmailStatus {
       margin-top: 25px;
       padding: 15px;
       border-radius: 10px;
@@ -137,6 +137,8 @@
       text-decoration: none;
       font-weight: 600;
       transition: all 0.3s ease;
+      display: block;
+      margin: 5px 0;
     }
     .register-link a:hover {
       color: #764ba2;
@@ -176,6 +178,8 @@
 
     <div class="register-link">
       <a href="#" onclick="showRegisterForm()">إنشاء حساب جديد</a>
+      <a href="#" onclick="showResetPasswordForm()">نسيت كلمة المرور؟</a>
+      <a href="#" onclick="showChangeEmailForm()">تغيير البريد الإلكتروني</a>
     </div>
   </div>
 
@@ -212,6 +216,49 @@
     </div>
   </div>
 
+  <!-- نموذج إعادة تعيين كلمة المرور -->
+  <div id="resetPasswordContainer" style="display: none;">
+    <div class="container">
+      <h2>🔄 إعادة تعيين كلمة المرور</h2>
+      <form id="resetPasswordForm">
+        <label>📧 البريد الإلكتروني:
+          <input type="email" id="resetEmail" required placeholder="أدخل بريدك الإلكتروني">
+        </label>
+        <button type="submit">إرسال رابط إعادة التعيين</button>
+      </form>
+
+      <p id="resetStatus"></p>
+
+      <div class="register-link">
+        <a href="#" onclick="showLoginForm()">العودة لتسجيل الدخول</a>
+      </div>
+    </div>
+  </div>
+
+  <!-- نموذج تغيير البريد الإلكتروني -->
+  <div id="changeEmailContainer" style="display: none;">
+    <div class="container">
+      <h2>✉️ تغيير البريد الإلكتروني</h2>
+      <div id="changeEmailFormContainer">
+        <form id="changeEmailForm">
+          <label>📧 البريد الإلكتروني الحالي:
+            <input type="email" id="currentEmail" required placeholder="أدخل بريدك الإلكتروني الحالي" readonly>
+          </label>
+          <label>📧 البريد الإلكتروني الجديد:
+            <input type="email" id="newEmail" required placeholder="أدخل البريد الإلكتروني الجديد">
+          </label>
+          <button type="submit">إرسال رابط التأكيد</button>
+        </form>
+      </div>
+
+      <p id="changeEmailStatus"></p>
+
+      <div class="register-link">
+        <a href="#" onclick="showLoginForm()">العودة لتسجيل الدخول</a>
+      </div>
+    </div>
+  </div>
+
   <script>
     // تهيئة العميل
     const supabaseClient = supabase.createClient(
@@ -226,12 +273,77 @@
     // عرض نموذج التسجيل
     function showRegisterForm() {
       document.querySelector('.container').style.display = 'none';
-      document.getElementById('registerContainer').style.display = 'flex';
+      document.getElementById('registerContainer').style.display = 'block';
+      document.getElementById('resetPasswordContainer').style.display = 'none';
+      document.getElementById('changeEmailContainer').style.display = 'none';
     }
 
+    // عرض نموذج إعادة تعيين كلمة المرور
+    function showResetPasswordForm() {
+      document.querySelector('.container').style.display = 'none';
+      document.getElementById('registerContainer').style.display = 'none';
+      document.getElementById('resetPasswordContainer').style.display = 'block';
+      document.getElementById('changeEmailContainer').style.display = 'none';
+    }
+
+    // عرض نموذج تغيير البريد الإلكتروني
+    function showChangeEmailForm() {
+      document.querySelector('.container').style.display = 'none';
+      document.getElementById('registerContainer').style.display = 'none';
+      document.getElementById('resetPasswordContainer').style.display = 'none';
+      document.getElementById('changeEmailContainer').style.display = 'block';
+      
+      // التحقق من حالة المستخدم وملء البريد الإلكتروني الحالي
+      checkUserAndFillEmail();
+    }
+
+    // التحقق من حالة المستخدم وملء البريد الإلكتروني الحالي
+// التحقق من حالة المستخدم وملء البريد الإلكتروني الحالي
+async function checkUserAndFillEmail() {
+  try {
+    // التحقق من حالة الجلسة أولاً
+    const { data: { session }, error: sessionError } = await supabaseClient.auth.getSession();
+    
+    if (sessionError) {
+      throw sessionError;
+    }
+    
+    if (!session || !session.user) {
+      document.getElementById('changeEmailFormContainer').style.display = 'none';
+      document.getElementById('changeEmailStatus').className = 'error';
+      document.getElementById('changeEmailStatus').textContent = '❌ يجب تسجيل الدخول أولاً لتغيير البريد الإلكتروني.';
+      return;
+    }
+
+    // الحصول على بيانات المستخدم
+    const { data: { user }, error: userError } = await supabaseClient.auth.getUser();
+    
+    if (userError) {
+      throw userError;
+    }
+    
+    if (user && user.email) {
+      document.getElementById('currentEmail').value = user.email;
+      document.getElementById('changeEmailFormContainer').style.display = 'block';
+      document.getElementById('changeEmailStatus').className = 'info';
+      document.getElementById('changeEmailStatus').textContent = '✅ تم العثور على حسابك. يمكنك الآن تغيير البريد الإلكتروني.';
+    } else {
+      document.getElementById('changeEmailFormContainer').style.display = 'none';
+      document.getElementById('changeEmailStatus').className = 'error';
+      document.getElementById('changeEmailStatus').textContent = '❌ يجب تسجيل الدخول أولاً لتغيير البريد الإلكتروني.';
+    }
+  } catch (error) {
+    console.error('Error checking user:', error);
+    document.getElementById('changeEmailFormContainer').style.display = 'none';
+    document.getElementById('changeEmailStatus').className = 'error';
+    document.getElementById('changeEmailStatus').textContent = '❌ خطأ في التحقق من الحساب: ' + error.message;
+  }
+}
     // عرض نموذج تسجيل الدخول
     function showLoginForm() {
       document.getElementById('registerContainer').style.display = 'none';
+      document.getElementById('resetPasswordContainer').style.display = 'none';
+      document.getElementById('changeEmailContainer').style.display = 'none';
       document.querySelector('.container').style.display = 'block';
     }
 
@@ -252,10 +364,6 @@
           email,
           password
         });
-
-        // طباعة معلومات المستخدم للتشخيص
-        console.log('بيانات المستخدم الكاملة:', data?.user);
-        console.log('user_metadata:', data?.user?.user_metadata);
 
         if (error) {
           status.className = 'error';
@@ -352,11 +460,17 @@
 
       try {
         // First check if user already exists
-        const { data: existingUser } = await supabaseClient
+        const { data: existingUser, error: checkError } = await supabaseClient
           .from('users')
           .select('email')
           .eq('email', email)
           .maybeSingle();
+
+        if (checkError) {
+          status.textContent = 'خطأ في التحقق من البريد الإلكتروني: ' + checkError.message;
+          status.className = 'error';
+          return;
+        }
 
         if (existingUser) {
           status.textContent = 'هذا البريد الإلكتروني مسجل مسبقاً';
@@ -412,14 +526,112 @@
       }
     });
 
-    // فحص حالة المصادقة عند تحميل الصفحة
-    window.addEventListener('load', async () => {
-      const { data: { session } } = await supabaseClient.auth.getSession();
-      if (session) {
-        console.log('المستخدم مسجل دخول مسبقاً:', session.user);
-        currentUser = session.user;
+    // معالج إعادة تعيين كلمة المرور
+    document.getElementById('resetPasswordForm').addEventListener('submit', async function(e) {
+      e.preventDefault();
+      const status = document.getElementById('resetStatus');
+      const email = document.getElementById('resetEmail').value;
+
+      status.textContent = '';
+      status.className = 'info';
+      status.innerHTML = '<span class="loader"></span> جاري إرسال الرابط...';
+
+      try {
+        const { error } = await supabaseClient.auth.resetPasswordForEmail(email, {
+          redirectTo: window.location.origin + '/update-password.html'
+        });
+
+        if (error) throw error;
+
+        status.className = 'success';
+        status.textContent = '📬 تم إرسال رابط إعادة تعيين كلمة المرور إلى بريدك الإلكتروني.';
+      } catch (err) {
+        status.className = 'error';
+        status.textContent = '❌ حدث خطأ: ' + err.message;
       }
     });
+
+// معالج تغيير البريد الإلكتروني
+document.getElementById('changeEmailForm').addEventListener('submit', async function(e) {
+  e.preventDefault();
+  const status = document.getElementById('changeEmailStatus');
+  const currentEmail = document.getElementById('currentEmail').value;
+  const newEmail = document.getElementById('newEmail').value;
+
+  // التحقق من أن البريد الإلكتروني الجديد مختلف عن الحالي
+  if (currentEmail === newEmail) {
+    status.className = 'error';
+    status.textContent = '❌ البريد الإلكتروني الجديد يجب أن يكون مختلفًا عن الحالي';
+    return;
+  }
+
+  status.textContent = '';
+  status.className = 'info';
+  status.innerHTML = '<span class="loader"></span> جاري إرسال رابط التأكيد...';
+
+  try {
+    // التحقق من أن المستخدم مسجل دخول
+    const { data: { session }, error: sessionError } = await supabaseClient.auth.getSession();
+    
+    if (sessionError) {
+      throw sessionError;
+    }
+    
+    if (!session || !session.user) {
+      status.className = 'error';
+      status.textContent = '❌ يجب تسجيل الدخول أولاً';
+      return;
+    }
+
+    const { data: { user }, error: userError } = await supabaseClient.auth.getUser();
+    
+    if (userError) {
+      throw userError;
+    }
+    
+    if (!user) {
+      status.className = 'error';
+      status.textContent = '❌ يجب تسجيل الدخول أولاً';
+      return;
+    }
+
+    // التحقق من أن البريد الإلكتروني الحالي صحيح
+    if (user.email !== currentEmail) {
+      status.className = 'error';
+      status.textContent = '❌ هناك مشكلة في التحقق من البريد الإلكتروني الحالي';
+      return;
+    }
+
+    // إرسال رابط تأكيد البريد الإلكتروني الجديد
+    const { error } = await supabaseClient.auth.updateUser({ email: newEmail });
+
+    if (error) throw error;
+
+    status.className = 'success';
+    status.textContent = '📬 تم إرسال رابط تأكيد البريد الإلكتروني الجديد إلى العنوان الجديد. يرجى التحقق من بريدك.';
+
+    // إعادة تعيين النموذج بعد نجاح العملية
+    setTimeout(() => {
+      document.getElementById('newEmail').value = '';
+    }, 3000);
+
+  } catch (err) {
+    status.className = 'error';
+    status.textContent = '❌ حدث خطأ: ' + err.message;
+  }
+});
+// فحص حالة المصادقة عند تحميل الصفحة
+window.addEventListener('load', async () => {
+  try {
+    const { data: { session }, error } = await supabaseClient.auth.getSession();
+    if (session && !error) {
+      console.log('المستخدم مسجل دخول مسبقاً:', session.user);
+      currentUser = session.user;
+    }
+  } catch (err) {
+    console.error('Error checking session:', err);
+  }
+});
   </script>
 
   <!-- تسجيل Service Worker + زر التثبيت -->
@@ -461,71 +673,69 @@
       console.log('App installed');
     });
 
-
-window.addEventListener('beforeinstallprompt', (e) => {
-  e.preventDefault();
-  deferredPrompt = e;
-  
-  // إظهار زر أو رسالة للمستخدم
-  const installBtn = document.createElement('button');
-  installBtn.innerText = '📲 ثبّت التطبيق';
-  installBtn.style.position = 'fixed';
-  installBtn.style.bottom = '20px';
-  installBtn.style.right = '20px';
-  installBtn.style.padding = '10px 20px';
-  installBtn.style.zIndex = '9999';
-  
-  document.body.appendChild(installBtn);
-  
-  installBtn.addEventListener('click', async () => {
-    installBtn.remove();
-    deferredPrompt.prompt();
-    const { outcome } = await deferredPrompt.userChoice;
-    console.log(`User response to install: ${outcome}`);
-    deferredPrompt = null;
-  });
-});
-
-    // استماع لرسائل من الـ Service Worker
-navigator.serviceWorker.addEventListener('message', (evt) => {
-  const msg = evt.data;
-  if (!msg) return;
-
-  if (msg.type === 'SW_UPDATED') {
-    // هنا تعرض للمستخدم نافذة/توست تخبره أن هناك تحديث
-    // مثال بسيط: انشئ زر فورّي لإعادة تحميل الصفحة وتفعيل النسخة الجديدة
-    const updateBar = document.createElement('div');
-    updateBar.style.position = 'fixed';
-    updateBar.style.left = '0';
-    updateBar.style.right = '0';
-    updateBar.style.bottom = '0';
-    updateBar.style.padding = '12px';
-    updateBar.style.background = '#2c3e50';
-    updateBar.style.color = '#fff';
-    updateBar.style.textAlign = 'center';
-    updateBar.style.zIndex = '10000';
-    updateBar.textContent = 'يوجد تحديث متاح — اضغط للتحديث الآن';
-    updateBar.style.cursor = 'pointer';
-    document.body.appendChild(updateBar);
-
-    updateBar.addEventListener('click', async () => {
-      // اطلب من الـ SW تفعيل نفسه فوراً، ثم أعد تحميل الصفحة
-      const registration = await navigator.serviceWorker.getRegistration();
-      if (registration && registration.waiting) {
-        // أخبر الـ SW الانتظار أنه يرغب في التفعيل فوراً
-        registration.waiting.postMessage({ type: 'SKIP_WAITING' });
-      }
-      // انتظر قليلاً ثم أعد تحميل الصفحة لتستخدم النسخة الجديدة
-      setTimeout(() => location.reload(true), 500);
+    window.addEventListener('beforeinstallprompt', (e) => {
+      e.preventDefault();
+      deferredPrompt = e;
+      
+      // إظهار زر أو رسالة للمستخدم
+      const installBtn = document.createElement('button');
+      installBtn.innerText = '📲 ثبّت التطبيق';
+      installBtn.style.position = 'fixed';
+      installBtn.style.bottom = '20px';
+      installBtn.style.right = '20px';
+      installBtn.style.padding = '10px 20px';
+      installBtn.style.zIndex = '9999';
+      
+      document.body.appendChild(installBtn);
+      
+      installBtn.addEventListener('click', async () => {
+        installBtn.remove();
+        deferredPrompt.prompt();
+        const { outcome } = await deferredPrompt.userChoice;
+        console.log(`User response to install: ${outcome}`);
+        deferredPrompt = null;
+      });
     });
 
-    // اختفاء الزر بعد 20 ثانية تلقائياً
-    setTimeout(() => {
-      updateBar.remove();
-    }, 20000);
-  }
-});
+    // استماع لرسائل من الـ Service Worker
+    navigator.serviceWorker.addEventListener('message', (evt) => {
+      const msg = evt.data;
+      if (!msg) return;
 
+      if (msg.type === 'SW_UPDATED') {
+        // هنا تعرض للمستخدم نافذة/توست تخبره أن هناك تحديث
+        // مثال بسيط: انشئ زر فورّي لإعادة تحميل الصفحة وتفعيل النسخة الجديدة
+        const updateBar = document.createElement('div');
+        updateBar.style.position = 'fixed';
+        updateBar.style.left = '0';
+        updateBar.style.right = '0';
+        updateBar.style.bottom = '0';
+        updateBar.style.padding = '12px';
+        updateBar.style.background = '#2c3e50';
+        updateBar.style.color = '#fff';
+        updateBar.style.textAlign = 'center';
+        updateBar.style.zIndex = '10000';
+        updateBar.textContent = 'يوجد تحديث متاح — اضغط للتحديث الآن';
+        updateBar.style.cursor = 'pointer';
+        document.body.appendChild(updateBar);
+
+        updateBar.addEventListener('click', async () => {
+          // اطلب من الـ SW تفعيل نفسه فوراً، ثم أعد تحميل الصفحة
+          const registration = await navigator.serviceWorker.getRegistration();
+          if (registration && registration.waiting) {
+            // أخبر الـ SW الانتظار أنه يرغب في التفعيل فوراً
+            registration.waiting.postMessage({ type: 'SKIP_WAITING' });
+          }
+          // انتظر قليلاً ثم أعد تحميل الصفحة لتستخدم النسخة الجديدة
+          setTimeout(() => location.reload(true), 500);
+        });
+
+        // اختفاء الزر بعد 20 ثانية تلقائياً
+        setTimeout(() => {
+          updateBar.remove();
+        }, 20000);
+      }
+    });
   </script>
 
 </body>
