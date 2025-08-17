@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Auth Callback</title>
+  <title>Email Confirmation</title>
   <style>
     body {
       font-family: Arial, sans-serif;
@@ -28,40 +28,14 @@
 </head>
 <body>
   <div class="box">
-    <h2>⏳ جاري التحقق...</h2>
+    <h2>✅ تم تأكيد البريد الإلكتروني بنجاح</h2>
+    <p>سيتم تحويلك لصفحة تسجيل الدخول...</p>
   </div>
 
   <script>
-    function getHashParams() {
-      const hash = window.location.hash.substring(1);
-      const result = {};
-      hash.split("&").forEach(param => {
-        let [key, value] = param.split("=");
-        result[key] = decodeURIComponent(value);
-      });
-      return result;
-    }
-
-    window.addEventListener("load", () => {
-      const params = getHashParams();
-
-      if (params.access_token) {
-        // حفظ التوكنات (اختياري، لو عايز تستخدمهم بعدين)
-        localStorage.setItem("access_token", params.access_token);
-        localStorage.setItem("refresh_token", params.refresh_token);
-        localStorage.setItem("expires_at", params.expires_at);
-
-        document.querySelector(".box").innerHTML = "<h2>✅ تم تسجيل الدخول بنجاح</h2>";
-
-        // إعادة التوجيه بعد 1.5 ثانية إلى index.html
-        setTimeout(() => {
-          window.location.href = "index.html";
-        }, 1500);
-
-      } else {
-        document.querySelector(".box").innerHTML = "<h2>❌ فشل التحقق</h2>";
-      }
-    });
+    setTimeout(() => {
+      window.location.href = "index.html";
+    }, 2000);
   </script>
 </body>
 </html>
