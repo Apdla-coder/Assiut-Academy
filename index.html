@@ -411,7 +411,9 @@ async function checkUserAndFillEmail() {
         }
         currentUser = { ...data.user, full_name, role };
 
-        status.className = 'success';
+// في معالج تغيير البريد الإلكتروني
+status.className = 'success';
+status.textContent = '📬 تم إرسال رابط تأكيد البريد الإلكتروني الجديد إلى العنوان الجديد. يرجى التحقق من بريدك والضغط على الرابط للتأكيد.';
 
         if (role === 'admin') {
           status.textContent = `🎉 مرحباً ${full_name}! تحويل إلى لوحة المشرف...`;
