@@ -120,90 +120,89 @@
       return result;
     }
 
-    // التحقق من حالة المستخدم عند تحميل الصفحة
-    window.addEventListener('load', async () => {
-      const status = document.getElementById('status');
-      const loginLink = document.getElementById('loginLink');
-      
-      try {
-        // استخراج القيم من hash
-        const hashParams = getHashParams();
-        const type = hashParams.type;
-        const accessToken = hashParams.access_token;
-        const refreshToken = hashParams.refresh_token;
+// التحقق من حالة المستخدم عند تحميل الصفحة
+window.addEventListener('load', async () => {
+  const status = document.getElementById('status');
+  const loginLink = document.getElementById('loginLink');
+  
+  try {
+    // استخراج القيم من hash
+    const hashParams = getHashParams();
+    const type = hashParams.type;
+    const accessToken = hashParams.access_token;
+    const refreshToken = hashParams.refresh_token;
 
-        console.log('Hash params:', hashParams);
+    console.log('Hash params:', hashParams);
 
-        // التحقق من نوع العملية
-        if (type === 'email_change') {
-          // إذا وجدت الرموز في hash، قم بتعيين الجلسة
-          if (accessToken && refreshToken) {
-            const { error: sessionError } = await supabaseClient.auth.setSession({
-              access_token: accessToken,
-              refresh_token: refreshToken,
-            });
+    // التحقق من نوع العملية
+    if (type === 'email_change') {
+      // إذا وجدت الرموز في hash، قم بتعيين الجلسة
+      if (accessToken && refreshToken) {
+        const { error: sessionError } = await supabaseClient.auth.setSession({
+          access_token: accessToken,
+          refresh_token: refreshToken,
+        });
 
-            if (sessionError) {
-              console.error('Error setting session:', sessionError);
-              status.className = 'error';
-              status.textContent = '❌ خطأ في تأكيد البريد الإلكتروني: ' + sessionError.message;
-              loginLink.style.display = 'block';
-              return;
-            }
-
-            status.className = 'success';
-            status.textContent = '✅ تم تغيير البريد الإلكتروني بنجاح! يمكنك الآن تسجيل الدخول باستخدام البريد الإلكتروني الجديد.';
-            loginLink.style.display = 'block';
-
-            // تسجيل الخروج تلقائيًا بعد التأكيد
-            setTimeout(async () => {
-              await supabaseClient.auth.signOut();
-              window.location.href = 'index.html';
-            }, 3000);
-          } else {
-            status.className = 'success';
-            status.textContent = '✅ تم تأكيد البريد الإلكتروني الجديد بنجاح!';
-            loginLink.style.display = 'block';
-          }
-        } else if (type === 'signup') {
-          // تأكيد التسجيل
-          status.className = 'success';
-          status.textContent = '✅ تم تأكيد البريد الإلكتروني وتفعيل الحساب بنجاح! يمكنك الآن تسجيل الدخول.';
+        if (sessionError) {
+          console.error('Error setting session:', sessionError);
+          status.className = 'error';
+          status.textContent = '❌ خطأ في تأكيد البريد الإلكتروني: ' + sessionError.message;
           loginLink.style.display = 'block';
-        } else if (type === 'recovery') {
-          // رابط إعادة تعيين كلمة المرور
-          status.className = 'info';
-          status.textContent = 'ℹ️ هذا الرابط مخصص لإعادة تعيين كلمة المرور.';
-          loginLink.style.display = 'block';
-        } else {
-          // التحقق من الجلسة الحالية
-          const { data: { user }, error: userError } = await supabaseClient.auth.getUser();
-          
-          if (userError) {
-            console.error('Error getting user:', userError);
-            status.className = 'error';
-            status.textContent = '❌ خطأ في التحقق من الحالة: ' + userError.message;
-            loginLink.style.display = 'block';
-            return;
-          }
-          
-          if (user) {
-            status.className = 'info';
-            status.textContent = '✅ البريد الإلكتروني مؤكد بالفعل. مرحباً ' + (user.email || 'مستخدم') + '!';
-            loginLink.style.display = 'block';
-          } else {
-            status.className = 'error';
-            status.textContent = '❌ رابط غير صحيح أو منتهي الصلاحية';
-            loginLink.style.display = 'block';
-          }
+          return;
         }
-      } catch (error) {
-        console.error('Error checking email change:', error);
-        status.className = 'error';
-        status.textContent = '❌ حدث خطأ في التحقق من العملية: ' + error.message;
+
+        status.className = 'success';
+        status.textContent = '✅ تم تغيير البريد الإلكتروني بنجاح! يمكنك الآن تسجيل الدخول باستخدام البريد الإلكتروني الجديد.';
+        loginLink.style.display = 'block';
+
+        // تسجيل الخروج تلقائيًا بعد التأكيد
+        setTimeout(async () => {
+          await supabaseClient.auth.signOut();
+          window.location.href = 'index.html';
+        }, 3000);
+      } else {
+        status.className = 'success';
+        status.textContent = '✅ تم تأكيد البريد الإلكتروني الجديد بنجاح!';
         loginLink.style.display = 'block';
       }
-    });
+    } else if (type === 'signup') {
+      // تأكيد التسجيل
+      status.className = 'success';
+      status.textContent = '✅ تم تأكيد البريد الإلكتروني وتفعيل الحساب بنجاح! يمكنك الآن تسجيل الدخول.';
+      loginLink.style.display = 'block';
+    } else if (type === 'recovery') {
+      // رابط إعادة تعيين كلمة المرور
+      window.location.href = 'update-password.html';
+    } else {
+      // التحقق من الجلسة الحالية
+      const { data: { user }, error: userError } = await supabaseClient.auth.getUser();
+      
+      if (userError) {
+        console.error('Error getting user:', userError);
+        status.className = 'error';
+        status.textContent = '❌ خطأ في التحقق من الحالة: ' + userError.message;
+        loginLink.style.display = 'block';
+        return;
+      }
+      
+      if (user) {
+        status.className = 'info';
+        status.textContent = '✅ البريد الإلكتروني مؤكد بالفعل. مرحباً ' + (user.email || 'مستخدم') + '!';
+        loginLink.style.display = 'block';
+      } else {
+        status.className = 'error';
+        status.textContent = '❌ رابط غير صحيح أو منتهي الصلاحية';
+        loginLink.style.display = 'block';
+      }
+    }
+  } catch (error) {
+    console.error('Error checking email change:', error);
+    status.className = 'error';
+    status.textContent = '❌ حدث خطأ في التحقق من العملية: ' + error.message;
+    loginLink.style.display = 'block';
+  }
+});
+
   </script>
 </body>
 </html>
