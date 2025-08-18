@@ -1,265 +1,340 @@
 <!DOCTYPE html>
-<html lang="ar" dir="rtl">
+
+<html dir="rtl" lang="ar">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <meta name="theme-color" content="#2c3e50">
-  <title>تسجيل الدخول</title>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<meta content="var(--dark)" name="theme-color"/>
+<title>تسجيل الدخول</title>
+<!-- Manifest -->
+<link href="manifest.json" rel="manifest"/>
+<!-- Favicon -->
+<link href="./logo2.jpg" rel="icon" type="image/jpeg"/>
+<!-- Supabase -->
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<style>
+:root {
+    --primary: #f97316;
+    --primary-dark: #ea580c;
+    --primary-light: #fed7aa;
+    --secondary: #059669;
+    --secondary-light: #d1fae5;
+    --dark: #1f2937;
+    --light: #f9fafb;
+    --gray: #6b7280;
+    --gray-light: #f3f4f6;
+    --border: #e5e7eb;
+    --success: #10b981;
+    --warning: #f59e0b;
+    --danger: #ef4444;
+    --info: #3b82f6;
+    --waiting: #8b5cf6;
+    --sidebar-width: 280px;
+    --header-height: 70px;
+    --shadow-light: 0 1px 3px rgba(0,0,0,0.1);
+    --shadow-medium: 0 4px 6px rgba(0,0,0,0.15);
+    --shadow-heavy: 0 10px 25px rgba(0,0,0,0.3);
+    --radius-sm: 8px;
+    --radius-md: 12px;
+    --radius-lg: 20px;
+}
 
-  <!-- Manifest -->
-  <link rel="manifest" href="manifest.json">
+* {
+  box-sizing: border-box;
+  transition: all 0.3s ease;
+}
 
-  <!-- Favicon -->
-  <link rel="icon" href="./logo2.jpg" type="image/jpeg">
+body {
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+  padding: 20px;
+  background-image: 
+    linear-gradient(rgba(0,0,0,0.55), rgba(0,0,0,0.55)), 
+    url('./backraound.jpg');
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
+  background-attachment: fixed;
+  margin: 0;
+  direction: rtl;
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
 
-  <!-- Supabase -->
-  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+.container {
+  max-width: 420px;
+  width: 100%;
+  padding: 40px;
+  border-radius: var(--radius-lg);
+  background: rgba(255, 255, 255, 0.12);
+  border: 1px solid rgba(255, 255, 255, 0.25);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  box-shadow: var(--shadow-heavy);
+  color: #fff;
+  animation: fadeInUp 0.8s ease both;
+}
 
-  <style>
-    body {
-      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-      padding: 20px;
-      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-      margin: 0;
-      direction: rtl;
-      min-height: 100vh;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-    }
-    .container {
-      max-width: 400px;
-      width: 100%;
-      background: white;
-      padding: 40px;
-      border-radius: 20px;
-      box-shadow: 0 15px 35px rgba(0,0,0,0.1);
-      backdrop-filter: blur(10px);
-    }
-    h2 {
-      text-align: center;
-      color: #333;
-      margin-bottom: 30px;
-      font-size: 28px;
-      font-weight: 700;
-    }
-    label {
-      display: block;
-      margin: 20px 0 8px;
-      font-weight: 600;
-      color: #555;
-      font-size: 14px;
-    }
-    input {
-      width: 100%;
-      padding: 15px;
-      border: 2px solid #e1e5e9;
-      border-radius: 10px;
-      font-size: 16px;
-      box-sizing: border-box;
-      transition: all 0.3s ease;
-      background: #f8f9fa;
-    }
-    input:focus {
-      outline: none;
-      border-color: #667eea;
-      background: white;
-      transform: translateY(-2px);
-      box-shadow: 0 5px 15px rgba(102, 126, 234, 0.2);
-    }
-    button {
-      margin-top: 30px;
-      padding: 15px;
-      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-      color: white;
-      border: none;
-      border-radius: 10px;
-      cursor: pointer;
-      width: 100%;
-      font-size: 16px;
-      font-weight: bold;
-      transition: all 0.3s ease;
-      text-transform: uppercase;
-      letter-spacing: 1px;
-    }
-    button:hover {
-      transform: translateY(-2px);
-      box-shadow: 0 10px 25px rgba(102, 126, 234, 0.3);
-    }
-    button:active {
-      transform: translateY(0);
-    }
-    #status, #regStatus, #resetStatus, #changeEmailStatus {
-      margin-top: 25px;
-      padding: 15px;
-      border-radius: 10px;
-      text-align: center;
-      font-weight: bold;
-      font-size: 14px;
-    }
-    .success { 
-      background: linear-gradient(135deg, #56ab2f 0%, #a8e6cf 100%); 
-      color: white; 
-      border: none;
-    }
-    .error { 
-      background: linear-gradient(135deg, #ff416c 0%, #ff4b2b 100%); 
-      color: white; 
-      border: none;
-    }
-    .info { 
-      background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%); 
-      color: white; 
-      border: none;
-    }
-    .loader {
-      display: inline-block;
-      width: 20px;
-      height: 20px;
-      border: 3px solid rgba(255,255,255,0.3);
-      border-radius: 50%;
-      border-top-color: white;
-      animation: spin 1s ease-in-out infinite;
-      margin-left: 10px;
-    }
-    @keyframes spin {
-      to { transform: rotate(360deg); }
-    }
-    .register-link {
-      text-align: center;
-      margin-top: 25px;
-      padding: 15px;
-      background: rgba(102, 126, 234, 0.1);
-      border-radius: 10px;
-    }
-    .register-link a {
-      color: #667eea;
-      text-decoration: none;
-      font-weight: 600;
-      transition: all 0.3s ease;
-      display: block;
-      margin: 5px 0;
-    }
-    .register-link a:hover {
-      color: #764ba2;
-      text-decoration: underline;
-    }
+@keyframes fadeInUp {
+  from { opacity: 0; transform: translateY(20px); }
+  to { opacity: 1; transform: translateY(0); }
+}
 
-    /* زر التثبيت (سيظهر ديناميكياً فقط عند الحاجة) */
-    .install-btn {
-      position: fixed;
-      bottom: 20px;
-      right: 20px;
-      padding: 10px 20px;
-      background: #2c3e50;
-      color: #fff;
-      border: none;
-      border-radius: 8px;
-      cursor: pointer;
-      z-index: 10000;
-      box-shadow: 0 6px 18px rgba(0,0,0,0.2);
-    }
-  </style>
+h2 {
+  text-align: center;
+  color: #fff;
+  margin-bottom: 25px;
+  font-size: 26px;
+  font-weight: 700;
+  letter-spacing: 1px;
+}
+
+label {
+  display: block;
+  margin: 18px 0 8px;
+  font-weight: 600;
+  color: #f3f4f6;
+  font-size: 14px;
+}
+
+.input-group {
+  position: relative;
+}
+
+.input-group i {
+  position: absolute;
+  top: 50%;
+  left: 14px;
+  transform: translateY(-50%);
+  color: rgba(255,255,255,0.7);
+  pointer-events: none;
+}
+
+input {
+  width: 100%;
+  padding: 14px 40px 14px 14px;
+  border: 1px solid rgba(255,255,255,0.3);
+  border-radius: var(--radius-md);
+  font-size: 15px;
+  background: rgba(255, 255, 255, 0.15);
+  color: #fff;
+}
+
+input::placeholder {
+  color: rgba(255,255,255,0.7);
+}
+
+input:focus {
+  outline: none;
+  border-color: var(--primary-light);
+  background: rgba(255, 255, 255, 0.25);
+  transform: translateY(-2px);
+  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.3), 0 0 12px var(--primary-light);
+}
+
+button {
+  margin-top: 28px;
+  padding: 14px;
+  background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);
+  color: #fff;
+  border: none;
+  border-radius: var(--radius-md);
+  cursor: pointer;
+  width: 100%;
+  font-size: 16px;
+  font-weight: bold;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  box-shadow: 0 4px 15px rgba(249, 115, 22, 0.4);
+}
+
+button:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 12px 28px rgba(0, 0, 0, 0.4), 0 0 20px var(--primary-light);
+}
+
+button:active {
+  transform: translateY(0);
+}
+
+#status, #regStatus, #resetStatus, #changeEmailStatus {
+  margin-top: 20px;
+  padding: 14px;
+  border-radius: var(--radius-md);
+  text-align: center;
+  font-weight: bold;
+  font-size: 14px;
+}
+
+.success { 
+  background: linear-gradient(135deg, var(--success) 0%, var(--secondary-light) 100%); 
+  color: white; 
+}
+
+.error { 
+  background: linear-gradient(135deg, var(--danger) 0%, var(--danger) 100%); 
+  color: white; 
+}
+
+.info { 
+  background: linear-gradient(135deg, var(--info) 0%, var(--info) 100%); 
+  color: white; 
+}
+
+.loader {
+  display: inline-block;
+  width: 20px;
+  height: 20px;
+  border: 3px solid rgba(255,255,255,0.3);
+  border-radius: 50%;
+  border-top-color: white;
+  animation: spin 1s ease-in-out infinite;
+  margin-left: 10px;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+.register-link {
+  text-align: center;
+  margin-top: 20px;
+  padding: 15px;
+  background: rgba(255,255,255,0.08);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-light);
+}
+
+.register-link a {
+  color: var(--primary-light);
+  text-decoration: none;
+  font-weight: 600;
+  transition: all 0.3s ease;
+  display: block;
+  margin: 5px 0;
+}
+
+.register-link a:hover {
+  color: #fff;
+  text-decoration: underline;
+}
+
+.install-btn {
+  position: fixed;
+  bottom: 20px;
+  right: 20px;
+  padding: 10px 20px;
+  background: var(--dark);
+  color: #fff;
+  border: none;
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  z-index: 10000;
+  box-shadow: var(--shadow-heavy);
+}
+
+@media (max-width: 500px) {
+  .container {
+    padding: 25px;
+  }
+  h2 {
+    font-size: 22px;
+  }
+  input, button {
+    font-size: 14px;
+    padding: 12px;
+  }
+}
+</style>
 </head>
 <body>
-  <div class="container">
-    <h2>🔐 تسجيل الدخول</h2>
-    <form id="loginForm">
-      <label>📧 البريد الإلكتروني:
-        <input type="email" id="email" required autocomplete="email" placeholder="أدخل بريدك الإلكتروني">
-      </label>
-      <label>🔒 كلمة المرور:
-        <input type="password" id="password" required autocomplete="current-password" placeholder="أدخل كلمة المرور">
-      </label>
-      <button type="submit">دخول</button>
-    </form>
-
-    <p id="status"></p>
-
-    <div class="register-link">
-      <a href="#" onclick="showRegisterForm()">إنشاء حساب جديد</a>
-      <a href="#" onclick="showResetPasswordForm()">نسيت كلمة المرور؟</a>
-      <a href="#" onclick="showChangeEmailForm()">تغيير البريد الإلكتروني</a>
-    </div>
-  </div>
-
-  <!-- نموذج التسجيل -->
-  <div id="registerContainer" style="display: none;">
-    <div class="container">
-      <h2>📝 تسجيل مستخدم جديد</h2>
-      <form id="registerForm">
-        <label>👤 الاسم الكامل:
-          <input type="text" id="regFullName" required placeholder="أدخل اسمك الكامل">
-        </label>
-        <label>📧 البريد الإلكتروني:
-          <input type="email" id="regEmail" required placeholder="أدخل بريدك الإلكتروني">
-        </label>
-        <label>🔒 كلمة المرور:
-          <input type="password" id="regPassword" required minlength="6" placeholder="أدخل كلمة مرور قوية">
-        </label>
-        <label>👔 الدور:
-          <select id="regRole" style="padding: 15px; border: 2px solid #e1e5e9; border-radius: 10px; font-size: 16px; background: #f8f9fa;">
-            <option value="admin">مشرف</option>
-            <option value="teacher">معلم</option>
-            <option value="secretary">مسؤول الطلاب (السيكرتير)</option>
-          </select>
-        </label>
-        
-        <button type="submit">تسجيل</button>
-      </form>
-
-      <p id="regStatus"></p>
-
-      <div class="register-link">
-        <a href="#" onclick="showLoginForm()">العودة لتسجيل الدخول</a>
-      </div>
-    </div>
-  </div>
-
-  <!-- نموذج إعادة تعيين كلمة المرور -->
-  <div id="resetPasswordContainer" style="display: none;">
-    <div class="container">
-      <h2>🔄 إعادة تعيين كلمة المرور</h2>
-      <form id="resetPasswordForm">
-        <label>📧 البريد الإلكتروني:
-          <input type="email" id="resetEmail" required placeholder="أدخل بريدك الإلكتروني">
-        </label>
-        <button type="submit">إرسال رابط إعادة التعيين</button>
-      </form>
-
-      <p id="resetStatus"></p>
-
-      <div class="register-link">
-        <a href="#" onclick="showLoginForm()">العودة لتسجيل الدخول</a>
-      </div>
-    </div>
-  </div>
-
-  <!-- نموذج تغيير البريد الإلكتروني -->
-  <div id="changeEmailContainer" style="display: none;">
-    <div class="container">
-      <h2>✉️ تغيير البريد الإلكتروني</h2>
-      <div id="changeEmailFormContainer">
-        <form id="changeEmailForm">
-          <label>📧 البريد الإلكتروني الحالي:
-            <input type="email" id="currentEmail" required placeholder="أدخل بريدك الإلكتروني الحالي" readonly>
-          </label>
-          <label>📧 البريد الإلكتروني الجديد:
-            <input type="email" id="newEmail" required placeholder="أدخل البريد الإلكتروني الجديد">
-          </label>
-          <button type="submit">إرسال رابط التأكيد</button>
-        </form>
-      </div>
-
-      <p id="changeEmailStatus"></p>
-
-      <div class="register-link">
-        <a href="#" onclick="showLoginForm()">العودة لتسجيل الدخول</a>
-      </div>
-    </div>
-  </div>
-
-  <script>
+<div class="container">
+<img alt="Logo" src="./logo2.jpg" style="display:block; margin:0 auto 15px;     width: 100px;
+    height: 100px; border-radius:50%; box-shadow: var(--shadow-medium);"/><h2>🔐 تسجيل الدخول</h2>
+<form id="loginForm">
+<label>📧 البريد الإلكتروني:
+        <input autocomplete="email" id="email" placeholder="أدخل بريدك الإلكتروني" required="" type="email"/>
+</label>
+<label>🔒 كلمة المرور:
+        <input autocomplete="current-password" id="password" placeholder="أدخل كلمة المرور" required="" type="password"/>
+</label>
+<button type="submit">دخول</button>
+</form>
+<p id="status"></p>
+<div class="register-link">
+<a href="#" onclick="showRegisterForm()">إنشاء حساب جديد</a>
+<a href="#" onclick="showResetPasswordForm()">نسيت كلمة المرور؟</a>
+<a href="#" onclick="showChangeEmailForm()">تغيير البريد الإلكتروني</a>
+</div>
+</div>
+<!-- نموذج التسجيل -->
+<div id="registerContainer" style="display: none;">
+<div class="container">
+<h2>📝 تسجيل مستخدم جديد</h2>
+<form id="registerForm">
+<label>👤 الاسم الكامل:
+          <input id="regFullName" placeholder="أدخل اسمك الكامل" required="" type="text"/>
+</label>
+<label>📧 البريد الإلكتروني:
+          <input id="regEmail" placeholder="أدخل بريدك الإلكتروني" required="" type="email"/>
+</label>
+<label>🔒 كلمة المرور:
+          <input id="regPassword" minlength="6" placeholder="أدخل كلمة مرور قوية" required="" type="password"/>
+</label>
+<label>👔 الدور:
+          <select id="regRole" style="padding: 15px; border: 2px solid var(--border); border-radius: 10px; font-size: 16px; background: var(--light);">
+<option value="admin">مشرف</option>
+<option value="teacher">معلم</option>
+<option value="secretary">مسؤول الطلاب (السيكرتير)</option>
+</select>
+</label>
+<button type="submit">تسجيل</button>
+</form>
+<p id="regStatus"></p>
+<div class="register-link">
+<a href="#" onclick="showLoginForm()">العودة لتسجيل الدخول</a>
+</div>
+</div>
+</div>
+<!-- نموذج إعادة تعيين كلمة المرور -->
+<div id="resetPasswordContainer" style="display: none;">
+<div class="container">
+<h2>🔄 إعادة تعيين كلمة المرور</h2>
+<form id="resetPasswordForm">
+<label>📧 البريد الإلكتروني:
+          <input id="resetEmail" placeholder="أدخل بريدك الإلكتروني" required="" type="email"/>
+</label>
+<button type="submit">إرسال رابط إعادة التعيين</button>
+</form>
+<p id="resetStatus"></p>
+<div class="register-link">
+<a href="#" onclick="showLoginForm()">العودة لتسجيل الدخول</a>
+</div>
+</div>
+</div>
+<!-- نموذج تغيير البريد الإلكتروني -->
+<div id="changeEmailContainer" style="display: none;">
+<div class="container">
+<h2>✉️ تغيير البريد الإلكتروني</h2>
+<div id="changeEmailFormContainer">
+<form id="changeEmailForm">
+<label>📧 البريد الإلكتروني الحالي:
+            <input id="currentEmail" placeholder="أدخل بريدك الإلكتروني الحالي" readonly="" required="" type="email"/>
+</label>
+<label>📧 البريد الإلكتروني الجديد:
+            <input id="newEmail" placeholder="أدخل البريد الإلكتروني الجديد" required="" type="email"/>
+</label>
+<button type="submit">إرسال رابط التأكيد</button>
+</form>
+</div>
+<p id="changeEmailStatus"></p>
+<div class="register-link">
+<a href="#" onclick="showLoginForm()">العودة لتسجيل الدخول</a>
+</div>
+</div>
+</div>
+<script>
     // تهيئة العميل
     const supabaseClient = supabase.createClient(
       "https://zefsmckaihzfiqqbdake.supabase.co",
@@ -646,9 +721,8 @@ document.getElementById('registerForm').addEventListener('submit', async functio
       }
     });
   </script>
-
-  <!-- تسجيل Service Worker + زر التثبيت -->
-  <script>
+<!-- تسجيل Service Worker + زر التثبيت -->
+<script>
     // سجل SW مرة واحدة (الملف: sw.js)
     if ('serviceWorker' in navigator) {
       navigator.serviceWorker.register('./sw.js')
@@ -724,7 +798,7 @@ document.getElementById('registerForm').addEventListener('submit', async functio
         updateBar.style.right = '0';
         updateBar.style.bottom = '0';
         updateBar.style.padding = '12px';
-        updateBar.style.background = '#2c3e50';
+        updateBar.style.background = 'var(--dark)';
         updateBar.style.color = '#fff';
         updateBar.style.textAlign = 'center';
         updateBar.style.zIndex = '10000';
@@ -750,6 +824,5 @@ document.getElementById('registerForm').addEventListener('submit', async functio
       }
     });
   </script>
-
 </body>
 </html>
