@@ -6,45 +6,6 @@
  
 
 // === Unified Live Update & Realtime Subscriptions (cleaned) ===
-async function updateCurrentTab() {
-  const visibleTab = document.querySelector('.tab-content[style*="display: block"]');
-  if (!visibleTab) return;
-  const currentTabId = visibleTab.id;
-
-  switch (currentTabId) {
-    case 'dashboardContent':
-      if (typeof loadDashboardData === 'function') await loadDashboardData();
-      if (typeof loadRecentActivity === 'function') await loadRecentActivity();
-      break;
-    case 'studentsContent':
-      if (typeof loadStudents === 'function') await loadStudents();
-      break;
-    case 'coursesContent':
-      if (typeof loadCourses === 'function') await loadCourses();
-      break;
-    case 'subscriptionsContent':
-      if (typeof loadSubscriptions === 'function') await loadSubscriptions();
-      break;
-    case 'paymentsContent':
-      if (typeof loadPayments === 'function') await loadPayments();
-      break;
-    case 'attendancesContent':
-      if (typeof loadAttendances === 'function') await loadAttendances();
-      break;
-    case 'teacherExamsContent':
-      if (typeof loadTeacherExamsForSecretary === 'function') await loadTeacherExamsForSecretary();
-      break;
-    case 'parentsContent':
-      if (typeof loadStudentsForParents === 'function') await loadStudentsForParents();
-      break;
-    default:
-      break;
-      case 'dataManagementContent':
-  loadDataManagement();
-  break;
-
-  }
-}
 
 function initRealtimeSubscriptions() {
   if (typeof supabase === 'undefined' && typeof supabaseClient === 'undefined') return;
@@ -123,6 +84,17 @@ document.addEventListener('DOMContentLoaded', async function() {
  window.userRole = userData.role;
  }
 
+ // ====== Cache object for storing data in memory ======
+window.cache = {
+  students: { data: [], timestamp: 0 },
+  courses: { data: [], timestamp: 0 },
+  subscriptions: { data: [], timestamp: 0 },
+  payments: { data: [], timestamp: 0 }
+};
+
+// مدة صلاحية الكاش (مثلاً 5 دقائق)
+const CACHE_TTL = 5 * 60 * 1000;
+
  // ============== تحميل البيانات الأساسية ==============
  // ترتيب التحميل مهم: لا تبدأ بدون هذه البيانات
 
@@ -181,30 +153,14 @@ async function updateCurrentView() {
 }
 // === Tab management (consolidated) ===
 // updateCurrentView above calls the tab updater below. Keep one canonical updateCurrentTab
+
+
+// =============================================================
+// Unified updateCurrentTab (نسخة واحدة فقط)
+// =============================================================
 function updateCurrentTab() {
   const visibleTab = document.querySelector('.tab-content[style*="display: block"]');
-  // If no visible tab, perform a full refresh of all data
-  if (!visibleTab) {
-    // Full refresh: run dashboard + recent activity and refresh lists in background
-    (async () => {
-      try {
-        await loadDashboardData();
-        await loadRecentActivity();
-        await Promise.allSettled([
-          loadStudents(),
-          loadCourses(),
-          loadSubscriptions(),
-          loadPayments(),
-          loadAttendances(),
-          loadTeacherExamsForSecretary(),
-          loadStudentsForParents()
-        ]);
-      } catch (e) {
-        console.error('Error during full refresh:', e);
-      }
-    })();
-    return;
-  }
+  if (!visibleTab) return;
 
   const currentTabId = visibleTab.id;
   try {
@@ -234,71 +190,30 @@ function updateCurrentTab() {
       case 'parentsContent':
         loadStudentsForParents();
         break;
+      case 'dataManagementContent':
+        loadDataManagement();
+        break;
       default:
         console.warn('تبويب غير معروف للتحديث:', currentTabId);
     }
   } catch (err) {
     console.error('Error updating current tab:', err);
   }
-  }
-
-function switchTab(tabName) {
- // إخفاء جميع التبويبات
- document.querySelectorAll('.tab-content').forEach(content => {
- content.style.display = 'none';
- });
-
- // إزالة الفئة النشطة من الروابط
- document.querySelectorAll('.nav-link').forEach(link => {
- link.classList.remove('active');
- });
-
- // إظهار التبويب المطلوب
- const activeTab = document.getElementById(`${tabName}Content`);
- if (activeTab) {
- activeTab.style.display = 'block';
- }
- // تحميل البيانات حسب التبويب
- switch (tabName) {
- case 'dashboard':
- loadDashboardData();
- loadRecentActivity();
- break;
- case 'students':
- loadStudents();
- break;
- case 'courses':
- loadCourses();
- break;
- case 'subscriptions':
- loadSubscriptions();
- break;
- case 'payments':
- loadPayments();
- break;
- case 'attendances':
- loadAttendances();
- startAttendanceAutoRefresh();
- break;
- case 'teacherExams':
- loadTeacherExamsForSecretary();
- break;
- case 'parents': // <-- إضافة حالة جديدة
- loadStudentsForParents();
-case 'dataManagement':
-    loadDataManagement();
-    break;
-
-
- break;
- default:
- console.warn('تبويب غير معروف:', tabName);
- }
-
- // - إضافة جديدة: إخفاء الشريط الجانبي في شاشات الموبايل بعد اختيار التبويب -
- // (يفترض أن الكود المرتبط بهذه الميزة موجود في مكان آخر في ملفك)
- // if (window.innerWidth <= 768) { ... }
 }
+
+// =============================================================
+// switchTab (نسخة واحدة فقط)
+// =============================================================
+function switchTab(tabName) {
+  document.querySelectorAll('.tab-content').forEach(c => c.style.display = 'none');
+  document.querySelectorAll('.nav-link').forEach(l => l.classList.remove('active'));
+
+  const activeTab = document.getElementById(`${tabName}Content`);
+  if (activeTab) activeTab.style.display = 'block';
+
+  updateCurrentTab();
+}
+
 // =============================================================================
 function closeModal(modalId) {
  const modal = document.getElementById(modalId);
@@ -681,9 +596,6 @@ async function initCharts(tabName) {
 
  container.innerHTML = `
  <div class="table-container">
-<button class="btn btn-primary" onclick="showAddStudentModal()" style="margin-bottom: 20px; margin-left:10px;">
-  <i class="fas fa-plus"></i> إضافة طالب جديد
-</button>
 
 <button class="btn btn-success" onclick="exportStudentsExcel()" style="margin-bottom: 20px;">
   <i class="fas fa-file-excel"></i> تحميل بيانات الطلاب Excel
@@ -744,9 +656,6 @@ async function initCharts(tabName) {
  const container = document.getElementById('studentsContainer')
  container.innerHTML = `
  <div class="table-container">
- <button class="btn btn-primary" onclick="showAddStudentModal()" style="margin-bottom: 20px;">
- <i class="fas fa-plus"></i> إضافة طالب جديد
- </button>
  <table>
  <thead>
  <tr>
@@ -867,23 +776,6 @@ async function exportStudentsExcel() {
   }
 }
  
- // Show add student modal
- async function showAddStudentModal() {
- const modal = document.getElementById('studentModal')
- modal.style.display = 'flex'
-
- document.getElementById('studentModalTitle').textContent = 'إضافة طالب جديد'
- document.getElementById('studentForm').reset()
- document.getElementById('studentId').value = ''
-
- document.getElementById('studentForm').onsubmit = async function(e) {
- e.preventDefault()
- await addStudent()
- }
- await updateCurrentTab(); // انتظار انتهاء تحديث كل البيانات
-updateCurrentTab(); // بعدين تحديث التبويب الحالي // تحديث كل البيانات في الخلفية
- }
-
  // Show edit student modal
  function showEditStudentModal(studentId) {
  const student = students.find(s => s.id === studentId)
@@ -906,37 +798,8 @@ updateCurrentTab(); // بعدين تحديث التبويب الحالي // تح
  }
  }
 
- // Add student
- async function addStudent() {
- try {
- const fullName = document.getElementById('fullName').value
- const email = document.getElementById('email').value
- const phone = document.getElementById('phone').value
- // الحصول على رقم ولي الأمر
- const parentPhone = document.getElementById('parentPhone').value // <-- جديد
 
- const { data, error } = await supabaseClient
- .from('students')
- .insert([{
- full_name: fullName,
- email: email,
- phone: phone,
- parent_phone: parentPhone, // <-- جديد
- created_at: new Date().toISOString()
- }])
 
- if (error) throw error
-
- showStatus('تم إضافة الطالب بنجاح')
- closeModal('studentModal')
-    loadStudents();
-    loadDashboardData();
- loadStudents()
- } catch (error) {
- console.error('Error adding student:', error)
- showStatus('خطأ في إضافة الطالب', 'error')
- }
- }
 
  // Update student
  async function updateStudent(studentId) {
@@ -2237,6 +2100,10 @@ async function addCourse() {
 
  if (error) throw error;
 
+await loadCourses(true);        // تحديث الكورسات
+await loadSubscriptions(true);  // تحديث الاشتراكات علشان يظهر الكورس الجديد
+
+
  showStatus('تم إضافة الدورة بنجاح');
  closeModal('courseModal');
  loadCourses(); // إعادة تحميل قائمة الكورسات
@@ -2342,73 +2209,82 @@ function showEditCourseModal(courseId) {
 
 // Load courses
 async function loadCourses() {
- try {
- const container = document.getElementById('coursesContainer')
- container.innerHTML = `<div class="loading"><div class="loading-spinner"></div><p>جارٍ تحميل بيانات الكورسات...</p></div>`
+  try {
+    const container = document.getElementById('coursesContainer');
+    container.innerHTML = `<div class="loading"><div class="loading-spinner"></div><p>جارٍ تحميل بيانات الكورسات...</p></div>`;
 
- // Get courses with teacher names
- const { data, error } = await supabaseClient
- .from('courses')
- .select(`*, users (full_name)`)
- .order('created_at', { ascending: false })
+    // Get courses with teacher names
+    const { data, error } = await supabaseClient
+      .from('courses')
+      .select(`*, users (full_name)`)
+      .order('created_at', { ascending: false });
 
- if (error) throw error
- courses = data
+    if (error) throw error;
+    courses = data;
 
- // Get teachers for dropdown
- const { data: teachersData, error: teachersError } = await supabaseClient
- .from('users')
- .select('id, full_name')
- .eq('role', 'teacher')
+    // ✅ تحديث الكاش
+    cache.courses = {
+      data,
+      timestamp: Date.now()
+    };
 
- if (teachersError) throw teachersError
- teachers = teachersData
+    // ✅ تحديث الـDropdown الخاص بالكورسات في المودال الجديد
+    populateCourseDropdown(cache.courses.data);
 
- container.innerHTML = `
- <div class="table-container">
- <button class="btn btn-primary" onclick="showAddCourseModal()" style="margin-bottom: 20px;">
- <i class="fas fa-plus"></i> إضافة دورة جديد
- </button>
- <table>
- <thead>
- <tr>
- <th>اسم الدورة</th>
- <th>الوصف</th>
- <th>السعر</th>
- <th>المعلم المسؤول</th>
- <th>تاريخ البداية</th>
- <th>تاريخ النهاية</th>
- <th>الإجراءات</th>
- </tr>
- </thead>
- <tbody>
- ${data.map(course => `
- <tr>
- <td><a href="#" onclick="showCourseDetails('${course.id}'); return false;" style="color: var(--primary); text-decoration: underline;">${course.name}</a></td>
- <td>${course.description || '-'}</td>
- <td>${formatCurrency(course.price).replace('SAR', 'ج.م')}</td>
- <td>${course.users?.full_name || '-'}</td>
- <td>${course.start_date ? formatDate(course.start_date) : '-'}</td>
- <td>${course.end_date ? formatDate(course.end_date) : '-'}</td>
- <td class="action-buttons">
- <button class="action-btn edit-btn" onclick="showEditCourseModal('${course.id}')">
- <i class="fas fa-edit"></i>
- </button>
- <button class="action-btn delete-btn" onclick="deleteCourse('${course.id}')">
- <i class="fas fa-trash"></i>
- </button>
- </td>
- </tr>
- `).join('')}
- </tbody>
- </table>
- </div>
- `
- } catch (error) {
- console.error('Error loading courses:', error)
- document.getElementById('coursesContainer').innerHTML = `<div class="loading"><p>خطأ في تحميل بيانات الكورسات</p></div>`
- showStatus('خطأ في تحميل بيانات الكورسات', 'error')
- }
+    // Get teachers for dropdown
+    const { data: teachersData, error: teachersError } = await supabaseClient
+      .from('users')
+      .select('id, full_name')
+      .eq('role', 'teacher');
+
+    if (teachersError) throw teachersError;
+    teachers = teachersData;
+
+    container.innerHTML = `
+      <div class="table-container">
+        <button class="btn btn-primary" onclick="showAddCourseModal()" style="margin-bottom: 20px;">
+          <i class="fas fa-plus"></i> إضافة دورة جديد
+        </button>
+        <table>
+          <thead>
+            <tr>
+              <th>اسم الدورة</th>
+              <th>الوصف</th>
+              <th>السعر</th>
+              <th>المعلم المسؤول</th>
+              <th>تاريخ البداية</th>
+              <th>تاريخ النهاية</th>
+              <th>الإجراءات</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${data.map(course => `
+              <tr>
+                <td><a href="#" onclick="showCourseDetails('${course.id}'); return false;" style="color: var(--primary); text-decoration: underline;">${course.name}</a></td>
+                <td>${course.description || '-'}</td>
+                <td>${formatCurrency(course.price).replace('SAR', 'ج.م')}</td>
+                <td>${course.users?.full_name || '-'}</td>
+                <td>${course.start_date ? formatDate(course.start_date) : '-'}</td>
+                <td>${course.end_date ? formatDate(course.end_date) : '-'}</td>
+                <td class="action-buttons">
+                  <button class="action-btn edit-btn" onclick="showEditCourseModal('${course.id}')">
+                    <i class="fas fa-edit"></i>
+                  </button>
+                  <button class="action-btn delete-btn" onclick="deleteCourse('${course.id}')">
+                    <i class="fas fa-trash"></i>
+                  </button>
+                </td>
+              </tr>
+            `).join('')}
+          </tbody>
+        </table>
+      </div>
+    `;
+  } catch (error) {
+    console.error('Error loading courses:', error);
+    document.getElementById('coursesContainer').innerHTML = `<div class="loading"><p>خطأ في تحميل بيانات الكورسات</p></div>`;
+    showStatus('خطأ في تحميل بيانات الكورسات', 'error');
+  }
 }
 // حذف دورة
 async function deleteCourse(courseId) {
@@ -3337,9 +3213,6 @@ async function loadSubscriptions(extraData = null, searchQuery = '') {
  <td>${subscription.status === 'active' ? 'نشط' : 'غير نشط'}</td>
  <td>${subscription.notes || '-'}</td>
  <td class="action-buttons">
- <button class="action-btn edit-btn" onclick="showEditSubscriptionModal('${subscription.id}')">
- <i class="fas fa-edit"></i>
- </button>
  <button class="action-btn delete-btn" onclick="deleteSubscription('${subscription.id}')">
  <i class="fas fa-trash"></i>
  </button>
@@ -3428,43 +3301,34 @@ async function exportSubscriptionsExcel() {
 
 
 // Show add subscription modal
-async function showAddSubscriptionModal() {
- const modal = document.getElementById('subscriptionModal')
- modal.style.display = 'flex'
+function showAddSubscriptionModal() {
+  // Reset form values
+  const studentName = document.getElementById("studentName");
+  const studentPhone = document.getElementById("studentPhone");
+  const studentEmail = document.getElementById("studentEmail");
+  const courseSelect = document.getElementById("courseSelect");
+  const paymentAmount = document.getElementById("paymentAmount");
+  const modalTitle = document.getElementById("subscriptionModalTitle");
 
- document.getElementById('subscriptionModalTitle').textContent = 'إضافة اشتراك جديد'
- document.getElementById('subscriptionForm').reset()
- document.getElementById('subscriptionId').value = ''
- 
- // Populate students dropdown
- const studentSelect = document.getElementById('student')
- studentSelect.innerHTML = '<option value="">اختر طالباً</option>'
- students.forEach(student => {
- const option = document.createElement('option')
- option.value = student.id
- option.textContent = student.full_name
- studentSelect.appendChild(option)
- })
- 
- // Populate courses dropdown
- const courseSelect = document.getElementById('course')
- courseSelect.innerHTML = '<option value="">اختر كورساً</option>'
- courses.forEach(course => {
- const option = document.createElement('option')
- option.value = course.id
- option.textContent = course.name
- courseSelect.appendChild(option)
- })
- 
- document.getElementById('subscriptionForm').onsubmit = async function(e) {
- e.preventDefault()
- await addSubscription()
- }
- const today = new Date().toISOString().split('T')[0]
- document.getElementById('subscriptionDate').value = today
- await updateCurrentTab(); // انتظار انتهاء تحديث كل البيانات
-updateCurrentTab(); // بعدين تحديث التبويب الحالي // <-- تحديث كامل بعد إضافة اشتراك جديد
- }
+  if (studentName) studentName.value = "";
+  if (studentPhone) studentPhone.value = "";
+  if (studentEmail) studentEmail.value = "";
+  if (courseSelect) courseSelect.value = "";
+  if (paymentAmount) paymentAmount.value = "";
+
+  // ✅ اعرض الكورسات المحملة في تبويب الكورسات
+  if (typeof courses !== "undefined" && courses.length > 0) {
+    populateCourseDropdown(courses);
+  } else if (cache.courses?.data?.length > 0) {
+    populateCourseDropdown(cache.courses.data);
+  }
+
+  // عنوان المودال
+  if (modalTitle) modalTitle.textContent = "إضافة اشتراك شامل";
+
+  // إظهار المودال
+  openModal("subscriptionModal");
+}
 
  // Show edit subscription modal
  function showEditSubscriptionModal(subscriptionId) {
@@ -3533,6 +3397,10 @@ updateCurrentTab(); // بعدين تحديث التبويب الحالي // <-- 
 
  if (error) throw error
 
+await loadSubscriptions(true);  // تحديث الاشتراكات
+await loadPayments(true);       // تحديث المدفوعات لو مرتبطة
+
+
  showStatus('تم إضافة الاشتراك بنجاح')
  closeModal('subscriptionModal')
  loadSubscriptions()
@@ -3576,28 +3444,30 @@ updateCurrentTab(); // بعدين تحديث التبويب الحالي
  }
 
  // Delete subscription
- async function deleteSubscription(subscriptionId) {
- if (!confirm('هل أنت متأكد من حذف هذا الاشتراك؟')) {
- return
- }
+// Delete subscription (Cascade من DB)
+async function deleteSubscription(subscriptionId) {
+  if (!confirm('هل أنت متأكد من حذف هذا الاشتراك وكافة المتعلقات به؟')) {
+    return;
+  }
 
- try {
- const { error } = await supabaseClient
- .from('subscriptions')
- .delete()
- .eq('id', subscriptionId)
+  try {
+    const { error } = await supabaseClient
+      .from('subscriptions')
+      .delete()
+      .eq('id', subscriptionId);
 
- if (error) throw error
+    if (error) throw error;
 
- showStatus('تم حذف الاشتراك بنجاح')
- loadSubscriptions()
- } catch (error) {
- console.error('Error deleting subscription:', error)
- showStatus('خطأ في حذف الاشتراك', 'error')
- }
- await updateCurrentTab(); // انتظار انتهاء تحديث كل البيانات
-updateCurrentTab(); // بعدين تحديث التبويب الحالي
- }
+    showStatus('تم حذف الاشتراك وكافة المتعلقات به بنجاح ✅');
+    loadSubscriptions();
+  } catch (error) {
+    console.error('❌ خطأ في حذف الاشتراك:', error);
+    showStatus('خطأ في حذف الاشتراك', 'error');
+  }
+
+  await updateCurrentTab();
+}
+
 
  // Load payments
 // ...existing code...
@@ -3650,9 +3520,6 @@ async function loadPayments() {
     // إنشاء HTML لكل طالب
     let innerHTMLContent = `
       <div class="table-container">
-        <button class="btn btn-primary" onclick="showAddPaymentModal()" style="margin-bottom: 20px;">
-          <i class="fas fa-plus"></i> إضافة دفعة جديدة
-        </button>
         <button class="btn btn-success" onclick="exportPaymentsExcel()" style="margin-bottom: 20px; margin-right:10px;">
   <i class="fas fa-file-excel"></i> تحميل بيانات المدفوعات
 </button>
@@ -3739,9 +3606,6 @@ async function loadPayments() {
  const container = document.getElementById('paymentsContainer')
  container.innerHTML = `
  <div class="table-container">
- <button class="btn btn-primary" onclick="showAddPaymentModal()" style="margin-bottom: 20px;">
- <i class="fas fa-plus"></i> إضافة دفعة جديدة
- </button>
  <table>
  <thead>
  <tr>
@@ -4080,123 +3944,7 @@ function printAttendanceReceipt() {
 updateCurrentTab(); // بعدين تحديث التبويب الحالي // <-- تحديث كامل بعد تغيير الدورة
  }
 
- // Show add payment modal
- async function showAddPaymentModal() {
- const modal = document.getElementById('paymentModal');
- if (!modal) {
- console.error('نافذة paymentModal غير موجودة في DOM');
- showStatus('خطأ في فتح نافذة الدفع', 'error');
- return;
- }
- modal.style.display = 'flex';
 
- document.getElementById('paymentModalTitle').textContent = 'إضافة دفعة جديدة';
- document.getElementById('paymentForm').reset();
- document.getElementById('paymentId').value = ''; // تأكد من أنه فارغ للحالة "إضافة"
-
- // --- تعيين التاريخ الحالي تلقائيًا ---
- const today = new Date().toISOString().split('T')[0];
- const paymentDateInput = document.getElementById('paymentDate');
- if (paymentDateInput) {
- paymentDateInput.value = today;
- } else {
- console.warn('حقل paymentDate غير موجود في النموذج');
- }
- // --- نهاية تعيين التاريخ ---
-
- // Populate students dropdown
- const studentSelect = document.getElementById('paymentStudent');
- if (studentSelect) {
- studentSelect.innerHTML = '<option value="">اختر طالباً</option>';
- students.forEach(student => {
- const option = document.createElement('option');
- option.value = student.id;
- option.textContent = student.full_name;
- studentSelect.appendChild(option);
- });
- }
-
- // Populate courses dropdown
- const courseSelect = document.getElementById('paymentCourse');
- if (courseSelect) {
- courseSelect.innerHTML = '<option value="">اختر كورساً</option>';
- courses.forEach(course => {
- const option = document.createElement('option');
- option.value = course.id;
- option.textContent = course.name;
- // تخزين السعر في dataset لسهولة الوصول لاحقاً
- option.dataset.price = course.price || 0;
- courseSelect.appendChild(option);
- });
-
- // --- ربط مستمع الحدث onchange ---
- // إزالة أي مستمع حدث سابق أولاً لتجنب التكرار
- courseSelect.onchange = null;
- courseSelect.onchange = updateCourseTotalAmount;
- // --- نهاية ربط الحدث ---
- }
-
- // ربط نموذج الإرسال
- const paymentForm = document.getElementById('paymentForm');
- if (paymentForm) {
- paymentForm.onsubmit = async function(e) {
- e.preventDefault();
- await addPayment();
- };
- }
- // ربط مستمعي الحدث للتحديث التلقائي للمبلغ المتبقي
- const totalAmountInput = document.getElementById('totalAmount');
- const amountInput = document.getElementById('amount');
-
- if (totalAmountInput) {
- // تحديث المتبقي عند تغيير إجمالي الدورة
- totalAmountInput.oninput = updateRemainingAmount;
- }
- if (amountInput) {
- // تحديث المتبقي عند تغيير المبلغ المدفوع
- amountInput.oninput = updateRemainingAmount;
- }
-
- await updateCurrentTab(); // انتظار انتهاء تحديث كل البيانات
-updateCurrentTab(); // بعدين تحديث التبويب الحالي // <-- تحديث كامل بعد إضافة دفعة جديدة
-
- }
-
- // Add payment
- async function addPayment() {
- try {
- const studentId = document.getElementById('paymentStudent').value
- const courseId = document.getElementById('paymentCourse').value
- const amount = parseFloat(document.getElementById('amount').value)
- const totalAmount = parseFloat(document.getElementById('totalAmount').value)
- const method = document.getElementById('paymentMethod').value
- const paidAt = document.getElementById('paymentDate').value
- const status = document.getElementById('paymentStatus').value
- const notes = document.getElementById('paymentNotes').value
-
- const { data, error } = await supabaseClient
- .from('payments')
- .insert([{
- student_id: studentId,
- course_id: courseId,
- amount: amount,
- total_amount: totalAmount,
- method: method,
- paid_at: paidAt,
- status: status,
- notes: notes
- }])
-
- if (error) throw error
-
- showStatus('تم إضافة الدفعة بنجاح')
- closeModal('paymentModal')
- loadPayments()
- } catch (error) {
- console.error('Error adding payment:', error)
- showStatus('خطأ في إضافة الدفعة', 'error')
- }
- }
 
  // Update payment
  async function updatePayment(paymentId) {
@@ -5239,3 +4987,276 @@ async function handleSecretaryAttendance() {
   }
 }
 
+
+
+// ====== Performance Patch: Caching + Polling + Disable Realtime ======
+(function(){
+  const CACHE_TTL = 60000; // 1 minute
+  const __callCache = new Map();
+
+  function wrapWithTTL(fnName){
+    try {
+      const orig = window[fnName];
+      if (typeof orig !== 'function') return;
+
+      let lastTime = 0;
+      let pending = null;
+      window[fnName] = async function(...args){
+        const force = args[0] === true || args[0]?.force === true;
+        const now = Date.now();
+        if (!force && (now - lastTime) < CACHE_TTL) {
+          // Return pending promise if exists to dedupe bursts
+          if (pending) return pending;
+          const cacheKey = fnName + '::result';
+          if (__callCache.has(cacheKey)) return __callCache.get(cacheKey);
+        }
+        pending = orig.apply(this, args);
+        const result = await pending;
+        __callCache.set(fnName + '::result', result);
+        lastTime = Date.now();
+        pending = null;
+        return result;
+      };
+    } catch(e){ console.warn('wrapWithTTL failed for', fnName, e); }
+  }
+
+  // Wrap common loaders
+  [
+    'loadStudents',
+    'loadCourses',
+    'loadSubscriptions',
+    'loadPayments',
+    'loadAttendances',
+    'loadRecentActivity',
+    'loadDashboardData',
+    'loadModules',
+    'loadCourseModulesAndLessons',
+    'loadTeacherExamsForSecretary',
+    'loadStudentsForParents',
+    'loadCurrentUser',
+    'loadUserProfile',
+    'loadUserAvatar',
+    'loadSecretaryStatus'
+  ].forEach(wrapWithTTL);
+
+  // Disable realtime by monkey-patching channel subscription (no-op)
+  try {
+    if (typeof supabaseClient?.channel === 'function') {
+      const noopChannel = function(){ 
+        const api = {
+          on(){ return api; },
+          subscribe(){ console.log('Realtime disabled'); return api; },
+          unsubscribe(){ return api; }
+        };
+        return api;
+      };
+      supabaseClient.channel = noopChannel;
+    }
+  } catch(e){ console.warn('Failed to override realtime', e); }
+
+  // Lightweight polling of the visible tab only
+  if (typeof window.updateCurrentTab === 'function') {
+    setInterval(() => {
+      try { window.updateCurrentTab(); } catch(e){}
+    }, 60000);
+  }
+})();
+// ====== End Performance Patch ======
+
+function openModal(id) {
+  const modal = document.getElementById(id);
+  if (modal) {
+    modal.style.display = "block";
+
+    if (id === "subscriptionModal") {
+      setTimeout(() => {   // 👈 نتأكد إن العنصر ظهر
+        updateCoursePrice();
+      }, 100);
+    }
+  }
+}
+
+
+// ====== Populate Course Dropdown for Unified Modal ======
+function populateCourseDropdown(courses) {
+  const select = document.getElementById("courseSelect");
+  if (!select) return;
+
+  select.innerHTML = '<option value="">اختر كورساً</option>';
+
+  courses.forEach(course => {
+    const option = document.createElement("option");
+    option.value = course.id;
+    option.textContent = course.name;
+    option.setAttribute("data-price", course.price || 0); // 👈 السعر في option
+    select.appendChild(option);
+  });
+}
+
+// ====== Unified Subscription Form Handler ======
+document.getElementById("subscriptionForm").addEventListener("submit", async (e) => {
+  e.preventDefault();
+
+  try {
+// 1️⃣ بيانات الطالب
+const studentData = {
+  full_name: document.getElementById("studentName").value,
+  phone: document.getElementById("studentPhone").value,
+  email: document.getElementById("studentEmail").value,
+  parent_phone: document.getElementById("studentParentPhone").value  // 👈 جديد
+};
+
+const { data: student, error: studentError } = await supabaseClient
+  .from("students")
+  .insert([studentData])
+  .select()
+  .single();
+
+if (studentError) throw studentError;
+
+    // 2️⃣ الاشتراك
+const subscriptionData = {
+  student_id: student.id,
+  course_id: document.getElementById("courseSelect").value,
+  status: "active",
+  subscribed_at: new Date().toISOString()   // 👈 بدل start_date
+};
+
+    const { data: subscription, error: subscriptionError } = await supabaseClient
+      .from("subscriptions")
+      .insert([subscriptionData])
+      .select()
+      .single();
+
+    if (subscriptionError) throw subscriptionError;
+
+    // 3️⃣ دفعة
+const price = parseFloat(document.getElementById("coursePrice").value) || 0;
+const paid = parseFloat(document.getElementById("paymentAmount").value) || 0;
+
+const paymentData = {
+  student_id: student.id,
+  course_id: subscription.course_id,
+  subscription_id: subscription.id, // ربط الدفعة بالاشتراك
+  amount: paid,                     // المدفوع
+  total_amount: price,               // سعر الكورس
+  paid_at: new Date().toISOString(),
+  status: paid >= price ? "paid" : "partial"  // لو دفع كله تبقى مدفوع، غير كده جزئي
+};
+
+
+    const { error: paymentError } = await supabaseClient
+      .from("payments")
+      .insert([paymentData]);
+
+    if (paymentError) throw paymentError;
+
+
+    // ✅ تحديث التبويبات
+    await loadStudents(true);
+    await loadCourses(true);
+    await loadSubscriptions(true);
+    await loadPayments(true);
+
+    closeModal("subscriptionModal");
+    showStatus("تم إضافة الاشتراك الشامل بنجاح ✅", "success");
+
+  } catch (err) {
+    console.error("Error adding subscription:", err.message);
+    showStatus("خطأ أثناء إضافة الاشتراك", "error");
+  }
+});
+// جلب السعر الأساسي من جدول الكورسات
+async function updateCoursePrice() {
+  const select = document.getElementById("courseSelect");
+  const priceInput = document.getElementById("coursePrice");
+  if (!select || !priceInput) return;
+
+  const courseId = select.value;
+  if (!courseId) {
+    priceInput.value = ""; // فضيه لو مفيش كورس
+    calculateRemaining();
+    return;
+  }
+
+  try {
+    const { data, error } = await supabaseClient
+      .from("courses")
+      .select("price")
+      .eq("id", courseId)
+      .single();
+
+    if (error) throw error;
+
+    const price = parseFloat(data?.price) || 0;
+
+    // 👈 نخلي القيمة نص عشان نضمن إنها تظهر في الـ input
+    priceInput.value = price ? price.toString() : "";
+
+    calculateRemaining();
+  } catch (err) {
+    console.error("Error fetching course price:", err.message);
+    priceInput.value = "";
+  }
+}
+
+// حساب المتبقي
+function calculateRemaining() {
+  const price = parseFloat(document.getElementById("coursePrice").value) || 0;  // السعر الأساسي
+  const paid = parseFloat(document.getElementById("paymentAmount").value) || 0;
+  const remaining = price - paid;
+
+  // 👈 المتبقي فقط يظهر هنا
+  document.getElementById("remainingAmount").value = remaining >= 0 ? remaining : 0;
+}
+
+function calculateRemaining() {
+  const price = parseFloat(document.getElementById("coursePrice").value) || 0;
+  const paid = parseFloat(document.getElementById("paymentAmount").value) || 0;
+  const remaining = price - paid;
+
+  document.getElementById("remainingAmount").value = remaining >= 0 ? remaining : 0;
+}
+
+
+
+// ربط الأحداث (مرة واحدة بعد تحميل الصفحة)
+document.addEventListener("DOMContentLoaded", () => {
+  const courseSelect = document.getElementById("courseSelect");
+  const paymentInput = document.getElementById("paymentAmount");
+
+  if (courseSelect) {
+    courseSelect.addEventListener("change", updateCoursePrice);
+  }
+  if (paymentInput) {
+    paymentInput.addEventListener("input", calculateRemaining);
+  }
+});
+
+// === Global update broadcaster (added cleanup) ===
+function broadcastDashboardUpdate(detail = {}) {
+  try {
+    // Trigger a soft refresh for the currently visible tab
+    if (typeof updateCurrentTab === 'function') {
+      updateCurrentTab();
+    }
+    // Dispatch a DOM event so any listeners (charts/tables) can respond
+    document.dispatchEvent(new CustomEvent('dashboard:update', { detail }));
+    console.debug('broadcastDashboardUpdate: event dispatched', detail);
+  } catch (err) {
+    console.error('broadcastDashboardUpdate failed:', err);
+    if (typeof showStatus === 'function') showStatus('حدث خطأ أثناء تحديث اللوحة', 'error');
+  }
+}
+window.broadcastDashboardUpdate = broadcastDashboardUpdate;
+// === end broadcaster ===
+
+
+// Ensure showStatus is available globally
+try { if (typeof showStatus === 'function') window.showStatus = showStatus; } catch (_) {}
+
+// Ensure startAttendanceAutoRefresh is available globally
+try { if (typeof startAttendanceAutoRefresh === 'function') window.startAttendanceAutoRefresh = startAttendanceAutoRefresh; } catch (_) {}
+
+// Ensure stopAttendanceAutoRefresh is available globally
+try { if (typeof stopAttendanceAutoRefresh === 'function') window.stopAttendanceAutoRefresh = stopAttendanceAutoRefresh; } catch (_) {}

@@ -172,12 +172,26 @@ async function loadUserData() {
 
         currentUserId = user.id;
 
+        // ✅ ضمان وجود المستخدم في جدول users (upsert)
+        const { error: upsertError } = await supabaseClient
+            .from('users')
+            .upsert({
+                id: user.id,
+                email: user.email,
+                full_name: user.user_metadata?.full_name || user.email?.split('@')[0] || 'المعلم',
+                role: 'teacher' // أو سيبها فاضية لو ممكن يتغير الدور لاحقًا
+            }, { onConflict: 'id' });
+
+        if (upsertError) {
+            console.error('❌ خطأ أثناء upsert للمستخدم:', upsertError);
+        }
+
         // جلب بيانات المستخدم من جدول users
         const { data: userData, error: userError } = await supabaseClient
             .from('users')
             .select('id, full_name, role, specialty, avatar_url')
             .eq('id', currentUserId)
-            .maybeSingle(); // ✅ خليها maybeSingle بدل single عشان ما يوقفش لو مفيش بيانات
+            .maybeSingle();
 
         if (userError && userError.code !== 'PGRST116') {
             throw userError;
@@ -207,10 +221,9 @@ async function loadUserData() {
                         window.currentViewedTeacherId = teacherUser.id;
                     } else {
                         console.warn('⚠️ لم يُعثر على مستخدم teacher بهذا المعرف.');
-                        return; // ما نعرضش رسالة خطأ في الواجهة عشان ما تلخبطش أول تحميل
+                        return;
                     }
                 } else {
-                    // فعلاً مفيش teacher_id والمستخدم مش Teacher
                     showStatus('ليس لديك الصلاحية للوصول إلى هذه الصفحة.', 'error');
                     document.querySelector('.content').innerHTML =
                       '<p class="no-data error">ليس لديك الصلاحية للوصول إلى هذه الصفحة.</p>';
@@ -235,7 +248,6 @@ async function loadUserData() {
             await loadDashboardData();
         } else {
             console.warn('⚠️ لم يتم العثور على بيانات للمستخدم الحالي.');
-            // ممكن هنا تعرض loader بدل ما ترمي خطأ
         }
     } catch (error) {
         console.error('❌ Error loading user data:', error);
@@ -386,7 +398,6 @@ async function loadUserData() {
                 document.getElementById('courseDetailTitle').textContent = course.name;
                 document.getElementById('detailCourseName').textContent = course.name;
                 document.getElementById('detailCourseDescription').textContent = course.description || '-';
-                document.getElementById('detailCoursePrice').textContent = formatCurrency(course.price).replace('SAR', 'ج.م').replace('ج.م', '');
                 document.getElementById('detailCourseStartDate').textContent = course.start_date ? formatDate(course.start_date) : '-';
                 document.getElementById('detailCourseEndDate').textContent = course.end_date ? formatDate(course.end_date) : '-';
                 
@@ -539,10 +550,6 @@ async function loadUserData() {
                                 <div class="card-field">
                                     <span class="field-label">الوصف:</span>
                                     <span class="field-value">${course.description || '-'}</span>
-                                </div>
-                                <div class="card-field">
-                                    <span class="field-label">السعر:</span>
-                                    <span class="field-value">${formatCurrency(course.price).replace('SAR', 'ج.م')}</span>
                                 </div>
                                 <div class="card-field">
                                     <span class="field-label">البداية:</span>
@@ -1771,47 +1778,55 @@ async function loadStudentsForCourse(courseId) {
 // دالة لتحميل بيانات الملف الشخصي
 // دالة لتحميل بيانات الملف الشخصي
         // دالة لتحميل بيانات الملف الشخصي
-        async function loadProfileData() {
-            try {
-                // تحديث معلومات المستخدم الأساسية
-                document.getElementById('profileName').textContent = currentUserData.full_name || 'غير محدد';
-                document.getElementById('profileRole').textContent = currentUserData.role === 'teacher' ? 'معلم' : currentUserData.role;
-                
-                // تحديث الصورة الشخصية
-                // عرض الصورة الشخصية من avatar_url (إذا وُجد) وإلا صورة افتراضية
-                const avatarUrl = currentUserData.avatar_url || 'https://placehold.co/120x120?text=PP';
-                const profileImgEl = document.getElementById('profileImage');
-                if (profileImgEl) profileImgEl.src = avatarUrl;
-                
-                // تحميل بيانات النموذج
-                document.getElementById('fullName').value = currentUserData.full_name || '';
-                document.getElementById('email').value = currentUserData.email || '';
-                document.getElementById('phone').value = currentUserData.phone || '';
-                document.getElementById('specialty').value = currentUserData.specialty || '';
-                
-                // تحميل سجل الحضور الشخصي (آخر 5 تسجيلات)
-                await loadProfileAttendanceRecords();
-                
-                // --- ربط الأحداث بعد التأكد من وجود العناصر ---
-                // 1. ربط نموذج الملف الشخصي بحدث الإرسال
-                const profileForm = document.getElementById('profileForm');
-                if (profileForm) {
-                    // التحقق مما إذا كان الحدث مربوطًا بالفعل لتجنب التكرار
-                    if (!profileForm.dataset.profileFormListenerAdded) {
-                        profileForm.addEventListener('submit', saveProfileChanges);
-                        // وضع علامة لتجنب ربط الحدث مجددًا
-                        profileForm.dataset.profileFormListenerAdded = 'true';
-                    }
-                } else {
-                    console.warn('عنصر profileForm غير موجود في الصفحة عند محاولة ربط الحدث');
-                }
-
-                
-            } catch (error) {
-                console.error('Error loading profile data:', error);
-                showStatus('خطأ في تحميل بيانات الملف الشخصي', 'error');
-            }
+async function loadProfileData() {
+    try {
+        // تحديث معلومات المستخدم الأساسية
+        document.getElementById('profileName').textContent = currentUserData.full_name || 'غير محدد';
+        document.getElementById('profileRole').textContent = currentUserData.role === 'teacher' ? 'معلم' : currentUserData.role;
+        
+        // تحديث الصورة الشخصية
+        const avatarUrl = currentUserData.avatar_url || 'https://placehold.co/120x120?text=PP';
+        const profileImgEl = document.getElementById('profileImage');
+        if (profileImgEl) profileImgEl.src = avatarUrl;
+        
+        // تحميل بيانات النموذج
+        document.getElementById('fullName').value = currentUserData.full_name || '';
+        document.getElementById('email').value = currentUserData.email || '';
+        document.getElementById('phone').value = currentUserData.phone || '';
+        document.getElementById('specialty').value = currentUserData.specialty || '';
+        
+        // تحميل سجل الحضور الشخصي
+        await loadProfileAttendanceRecords();
+        
+        // --- ربط الأحداث ---
+        // 1. ربط نموذج الملف الشخصي
+        const profileForm = document.getElementById('profileForm');
+        if (profileForm && !profileForm.dataset.profileFormListenerAdded) {
+            profileForm.addEventListener('submit', saveProfileChanges);
+            profileForm.dataset.profileFormListenerAdded = 'true';
         }
+
+        // 2. ربط input الصورة (preview + حفظ)
+        const fileInput = document.getElementById('profileImageInput');
+        const preview = document.getElementById('profileImagePreview');
+        if (fileInput && !fileInput.dataset.listenerAdded) {
+            fileInput.addEventListener('change', function (e) {
+                const file = e.target.files[0];
+                if (!file) return;
+                const reader = new FileReader();
+                reader.onload = function (ev) {
+                    if (preview) preview.src = ev.target.result;
+                };
+                reader.readAsDataURL(file);
+            });
+            fileInput.dataset.listenerAdded = 'true';
+        }
+
+    } catch (error) {
+        console.error('Error loading profile data:', error);
+        showStatus('خطأ في تحميل بيانات الملف الشخصي', 'error');
+    }
+}
 
 // دالة لتحميل سجل الحضور الشخصي في قسم الملف الشخصي
 // دالة لتحميل سجل الحضور الشخصي في قسم الملف الشخصي
@@ -1936,248 +1951,179 @@ async function loadProfileAttendanceRecords() {
 
 
 // دالة لإعادة تعيين نموذج الملف الشخصي
-            function resetProfileForm() {
-                document.getElementById('fullName').value = currentUserData.full_name || '';
-                document.getElementById('email').value = currentUserData.email || '';
-                document.getElementById('phone').value = currentUserData.phone || '';
-                document.getElementById('specialty').value = currentUserData.specialty || '';
-            }
-            
-            // دالة لحفظ تغييرات الملف الشخصي
-            async function saveProfileChanges(event) {
-                event.preventDefault();
-                
-                const fullName = document.getElementById('fullName').value;
-                const email = document.getElementById('email').value;
-                const phone = document.getElementById('phone').value;
-                const specialty = document.getElementById('specialty').value;
-                
-                try {
-                    // تحديث بيانات المستخدم في جدول users
-                    const { data, error } = await supabaseClient
-                        .from('users')
-                        .update({
-                            full_name: fullName,
-                            email: email,
-                            phone: phone,
-                            specialty: specialty
-                        })
-                        .eq('id', currentUserId);
-                    
-                    if (error) throw error;
-                    
-                    // تحديث البيانات المحلية
-                    currentUserData.full_name = fullName;
-                    currentUserData.email = email;
-                    currentUserData.phone = phone;
-                    currentUserData.specialty = specialty;
-                    
-                    // تحديث اسم المستخدم في الهيدر
-                    document.getElementById('userNameHeader').textContent = fullName;
-                    document.getElementById('profileName').textContent = fullName;
-                    
-                    showStatus('تم حفظ التغييرات بنجاح', 'success');
-                } catch (error) {
-                    console.error('Error saving profile changes:', error);
-                    showStatus(`خطأ في حفظ التغييرات: ${error.message}`, 'error');
-                }
-            }
-            
-    // دالة لفتح نافذة تغيير الصورة (تدعم تحميل صورة محلية ومعاينتها)
-    function openAvatarModal() {
-        const avatarUrlInput = document.getElementById('avatarUrlInput');
-        if (avatarUrlInput) avatarUrlInput.value = currentUserData.avatar_url || '';
-
-        const avatarModal = document.getElementById('avatarModal');
-        if (avatarModal) avatarModal.style.display = 'flex';
-
-        // preview element
-        const preview = document.getElementById('profileImagePreview');
-        if (preview) {
-            preview.src = currentUserData.avatar_url || preview.src || 'https://placehold.co/120x120?text=PP';
-        }
-
-        // bind file input
-        const fileInput = document.getElementById('profileImageInput');
-        if (fileInput) {
-            if (window.handleProfileImageChange) fileInput.removeEventListener('change', window.handleProfileImageChange);
-            window.handleProfileImageChange = function(e) {
-                const file = e.target.files[0];
-                if (!file) return;
-                const reader = new FileReader();
-                reader.onload = function(ev) {
-                    if (preview) preview.src = ev.target.result;
-                    // temporarily store so save can persist it
-                    fileInput.dataset.lastData = ev.target.result;
-                };
-                reader.readAsDataURL(file);
-            };
-            fileInput.addEventListener('change', window.handleProfileImageChange);
-        }
-    }
-
-    // دالة لإغلاق نافذة تغيير الصورة
-    function closeAvatarModal() {
-        document.getElementById('avatarModal').style.display = 'none';
-    }
-
-    // دالة لحفظ رابط الصورة الجديدة أو حفظ الصورة المحلية في localStorage
-    async function saveAvatarUrl() {
-        const avatarUrlInput = document.getElementById('avatarUrlInput');
-        const fileInput = document.getElementById('profileImageInput');
-        const localData = fileInput && fileInput.dataset && fileInput.dataset.lastData ? fileInput.dataset.lastData : null;
-
-        // إذا وُجد ملف محلي (تم تحويله لbase64 في dataset.lastData) نحاول رفعه إلى Supabase Storage
-        if (localData) {
-            try {
-                // تحويل base64 إلى blob
-                const res = await fetch(localData);
-                const blob = await res.blob();
-                // توليد اسم ملف فريد
-                const ext = blob.type.split('/')[1] || 'png';
-                const filename = `avatars/${currentUserId}_${Date.now()}.${ext}`;
-
-                // رفع الملف إلى bucket 'avatars' (تأكد أن الـ bucket موجود وأنه عام أو اضبط السياسات)
-                const { data: uploadData, error: uploadError } = await supabaseClient.storage
-                    .from('avatars')
-                    .upload(filename, blob, { cacheControl: '3600', upsert: false });
-                if (uploadError) throw uploadError;
-
-                // الحصول على public URL
-                const { data: publicData } = supabaseClient.storage.from('avatars').getPublicUrl(filename);
-                const publicUrl = publicData && publicData.publicUrl ? publicData.publicUrl : null;
-                if (!publicUrl) throw new Error('فشل في الحصول على public URL للصورة.');
-
-                // تحديث حقل avatar_url في جدول users
-                const { data: dbData, error: dbErr } = await supabaseClient
-                    .from('users')
-                    .update({ avatar_url: publicUrl })
-                    .eq('id', currentUserId);
-                if (dbErr) throw dbErr;
-
-                // تحديث الواجهة والبيانات المحلية
-                const profileImg = document.getElementById('profileImage');
-                if (profileImg) profileImg.src = publicUrl;
-                const avatarModal = document.getElementById('avatarModal');
-                if (avatarModal) avatarModal.style.display = 'none';
-                currentUserData.avatar_url = publicUrl;
-                showStatus('تم رفع الصورة وحفظها بنجاح.', 'success');
-                return;
-            } catch (err) {
-                console.error('Error uploading avatar to storage:', err);
-                showStatus(`خطأ في رفع الصورة: ${err.message}`, 'error');
-                return;
-            }
-        }
-
-        // أما إن كان رابطًا خارجيًا فسنخزنه مباشرة في قاعدة البيانات كما كان سابقًا
-        const avatarUrl = avatarUrlInput ? avatarUrlInput.value.trim() : '';
-        if (!avatarUrl) {
-            showStatus('يرجى إدخال رابط الصورة', 'error');
-            return;
-        }
-
-        try {
-            const { data: dbData, error: dbErr } = await supabaseClient
-                .from('users')
-                .update({ avatar_url: avatarUrl })
-                .eq('id', currentUserId);
-
-            if (error) throw error;
-
-            const profileImg = document.getElementById('profileImage');
-            if (profileImg) profileImg.src = avatarUrl;
-            const avatarModal = document.getElementById('avatarModal');
-            if (avatarModal) avatarModal.style.display = 'none';
-            currentUserData.avatar_url = avatarUrl;
-            showStatus('تم حفظ رابط الصورة بنجاح.', 'success');
-        } catch (error) {
-            console.error('Error saving avatar URL:', error);
-            showStatus(`خطأ في تغيير الصورة: ${error.message}`, 'error');
-        }
-    }
-
-// دالة لتحميل بيانات الملف الشخصي
-async function loadProfileData() {
-    console.log("loadProfileData: بدء التنفيذ");
-    try {
-        // التحقق من وجود currentUserData
-        if (!currentUserData) {
-            console.error("loadProfileData: currentUserData غير معرف");
-            showStatus('خطأ في تحميل بيانات الملف الشخصي: بيانات المستخدم غير متوفرة', 'error');
-            return;
-        }
-
-        // تحديث معلومات المستخدم الأساسية
-        document.getElementById('profileName').textContent = currentUserData.full_name || 'غير محدد';
-        document.getElementById('profileRole').textContent = currentUserData.role === 'teacher' ? 'معلم' : currentUserData.role;
-        
-        // تحديث الصورة الشخصية
-        const avatarUrl = currentUserData.avatar_url || 'https://placehold.co/120x120?text=PP';
-        document.getElementById('profileImage').src = avatarUrl;
-        
-        // تحميل بيانات النموذج
-        document.getElementById('fullName').value = currentUserData.full_name || '';
-        document.getElementById('email').value = currentUserData.email || '';
-        document.getElementById('phone').value = currentUserData.phone || '';
-        document.getElementById('specialty').value = currentUserData.specialty || '';
-        
-        console.log("loadProfileData: جاري تحميل سجل الحضور...");
-        // تحميل سجل الحضور الشخصي (آخر 5 تسجيلات)
-        await loadProfileAttendanceRecords(); // <-- التأكد من استدعاء الدالة
-        console.log("loadProfileData: تم الانتهاء من تحميل سجل الحضور.");
-        
-        // --- ربط الأحداث بعد التأكد من وجود العناصر ---
-        // 1. ربط نموذج الملف الشخصي بحدث الإرسال
-        const profileForm = document.getElementById('profileForm');
-        if (profileForm) {
-            if (!profileForm.dataset.profileFormListenerAdded) {
-                profileForm.addEventListener('submit', saveProfileChanges);
-                profileForm.dataset.profileFormListenerAdded = 'true';
-                console.log("loadProfileData: تم ربط حدث submit لنموذج الملف الشخصي.");
-            }
-        } else {
-            console.warn('loadProfileData: عنصر profileForm غير موجود في الصفحة عند محاولة ربط الحدث');
-        }
-
-        // 2. ربط حدث تغيير الصورة الشخصية (للتحميل المحلي)
-        const profileImageInput = document.getElementById('profileImageInput');
-        if (profileImageInput) {
-            if (!profileImageInput.dataset.profileImageInputListenerAdded) {
-                profileImageInput.removeEventListener('change', window.handleProfileImageChange);
-                window.handleProfileImageChange = function(e) {
-                    const file = e.target.files[0];
-                    if (file) {
-                        const reader = new FileReader();
-                        reader.onload = function(event) {
-                            document.getElementById('profileImage').src = event.target.result;
-                            showStatus('تم تغيير الصورة الشخصية', 'success');
-                        }
-                        reader.readAsDataURL(file);
-                    }
-                };
-                profileImageInput.addEventListener('change', window.handleProfileImageChange);
-                profileImageInput.dataset.profileImageInputListenerAdded = 'true';
-                console.log("loadProfileData: تم ربط حدث change لتحميل الصورة.");
-            }
-        }
-
-    } catch (error) {
-        console.error('loadProfileData: Error caught:', error);
-        showStatus(`خطأ في تحميل بيانات الملف الشخصي: ${error.message}`, 'error');
-    } finally {
-        console.log("loadProfileData: انتهى التنفيذ.");
-    }
+function resetProfileForm() {
+  document.getElementById('fullName').value = currentUserData.full_name || '';
+  document.getElementById('email').value = currentUserData.email || '';
+  document.getElementById('phone').value = currentUserData.phone || '';
+  document.getElementById('specialty').value = currentUserData.specialty || '';
 }
-    // (duplicate loadUserData removed - use the earlier full implementation)
 
-            // ربط نموذج الملف الشخصي بحدث الإرسال
-            document.getElementById('profileForm').addEventListener('submit', saveProfileChanges);
-            
+// دالة لحفظ تغييرات الملف الشخصي
+async function saveProfileChanges(event) {
+  event.preventDefault();
 
-            
-        document.addEventListener('DOMContentLoaded', async () => {
-            await loadUserData(); // أولاً حمّل بيانات المستخدم
-            switchTab('dashboard'); // بعدها انتقل للتبويب المطلوب
+  const fullName = document.getElementById('fullName').value;
+  const email = document.getElementById('email').value;
+  const phone = document.getElementById('phone').value;
+  const specialty = document.getElementById('specialty').value;
 
-            });
+  try {
+    const { error } = await supabaseClient
+      .from('users')
+      .update({
+        full_name: fullName,
+        email,
+        phone,
+        specialty
+      })
+      .eq('id', currentUserId);
+
+    if (error) throw error;
+
+    // تحديث البيانات المحلية
+    currentUserData.full_name = fullName;
+    currentUserData.email = email;
+    currentUserData.phone = phone;
+    currentUserData.specialty = specialty;
+
+    // تحديث الواجهة
+    document.getElementById('userNameHeader').textContent = fullName;
+    document.getElementById('profileName').textContent = fullName;
+
+    showStatus('✅ تم حفظ التغييرات بنجاح', 'success');
+  } catch (err) {
+    console.error('Error saving profile changes:', err);
+    showStatus(`❌ خطأ في حفظ التغييرات: ${err.message}`, 'error');
+  }
+}
+
+// فتح نافذة تغيير الصورة
+// دالة لفتح نافذة تغيير الصورة
+function openAvatarModal() {
+  const avatarModal = document.getElementById('avatarModal');
+  if (avatarModal) avatarModal.style.display = 'flex';
+
+  const fileInput = document.getElementById('profileImageInput');
+  const preview = document.getElementById('profileImagePreview');
+
+  if (fileInput) {
+    // لو فيه event قديم نشيله
+    if (window.handleProfileImageChange) {
+      fileInput.removeEventListener('change', window.handleProfileImageChange);
+    }
+
+    // نربط حدث جديد
+    window.handleProfileImageChange = function (e) {
+      const file = e.target.files[0];
+      if (!file) return;
+
+      const reader = new FileReader();
+      reader.onload = function (ev) {
+        if (preview) preview.src = ev.target.result;
+        // ✅ نخزن البيانات في dataset.lastData
+        fileInput.dataset.lastData = ev.target.result;
+      };
+      reader.readAsDataURL(file);
+    };
+
+    fileInput.addEventListener('change', window.handleProfileImageChange);
+  }
+}
+
+// إغلاق نافذة تغيير الصورة
+function closeAvatarModal() {
+  document.getElementById('avatarModal').style.display = 'none';
+}
+
+// رفع الصورة إلى Supabase
+async function saveAvatarUrl() {
+  const fileInput = document.getElementById('profileImageInput');
+  const file = fileInput?.files?.[0];
+
+  if (!file) {
+    showStatus('⚠️ اختر صورة أولاً', 'error');
+    return;
+  }
+
+  try {
+    // نجيب المستخدم الحالي
+    const { data: { user }, error: authError } = await supabaseClient.auth.getUser();
+    if (authError || !user) throw new Error("⚠️ لم يتم العثور على مستخدم مسجل دخول");
+    const currentUserId = user.id;
+
+    // توليد اسم فريد
+    const ext = file.name.split('.').pop() || 'png';
+    const filename = `avatars/${currentUserId}_${Date.now()}.${ext}`;
+
+    // رفع الصورة مباشرة
+    const { error: uploadError } = await supabaseClient.storage
+      .from('avatars')
+      .upload(filename, file, { cacheControl: '3600', upsert: true });
+
+    if (uploadError) throw uploadError;
+
+    // جلب الرابط العام
+    const { data: publicData } = supabaseClient
+      .storage
+      .from('avatars')
+      .getPublicUrl(filename);
+
+    const publicUrl = publicData?.publicUrl;
+    if (!publicUrl) throw new Error('فشل الحصول على الرابط العام.');
+
+    // تحديث قاعدة البيانات
+    const { error: dbErr } = await supabaseClient
+      .from('users')
+      .update({ avatar_url: publicUrl })
+      .eq('id', currentUserId);
+
+    if (dbErr) throw dbErr;
+
+    // تحديث الواجهة
+    document.getElementById('profileImage').src = publicUrl;
+    currentUserData.avatar_url = publicUrl;
+
+    closeAvatarModal();
+    showStatus('✅ تم رفع الصورة وحفظها بنجاح.', 'success');
+  } catch (err) {
+    console.error('❌ Error uploading avatar:', err);
+    showStatus(`❌ ${err.message}`, 'error');
+  }
+}
+
+// تحميل بيانات الملف الشخصي
+async function loadProfileData() {
+  try {
+    if (!currentUserData) {
+      showStatus('⚠️ بيانات المستخدم غير متوفرة', 'error');
+      return;
+    }
+
+    document.getElementById('profileName').textContent = currentUserData.full_name || 'غير محدد';
+    document.getElementById('profileRole').textContent = currentUserData.role === 'teacher' ? 'معلم' : currentUserData.role;
+    document.getElementById('profileImage').src = currentUserData.avatar_url || 'https://placehold.co/120x120?text=PP';
+
+    document.getElementById('fullName').value = currentUserData.full_name || '';
+    document.getElementById('email').value = currentUserData.email || '';
+    document.getElementById('phone').value = currentUserData.phone || '';
+    document.getElementById('specialty').value = currentUserData.specialty || '';
+
+    await loadProfileAttendanceRecords();
+  } catch (err) {
+    console.error('loadProfileData error:', err);
+    showStatus(`❌ خطأ في تحميل بيانات الملف الشخصي: ${err.message}`, 'error');
+  }
+}
+
+// عند تحميل الصفحة
+document.addEventListener('DOMContentLoaded', async () => {
+  await loadUserData();
+  await loadProfileData();
+  switchTab('dashboard');
+  
+  // ربط الفورم بحدث الحفظ
+  const profileForm = document.getElementById('profileForm');
+  if (profileForm) {
+    profileForm.addEventListener('submit', saveProfileChanges);
+  }
+});
