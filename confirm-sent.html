@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>تم إرسال بريد التأكيد</title>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <style>
+    body {
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      padding: 20px;
+      background: #f5f7fa;
+      margin: 0;
+      direction: rtl;
+    }
+    .container {
+      max-width: 450px;
+      margin: 60px auto;
+      background: white;
+      padding: 40px;
+      border-radius: 12px;
+      box-shadow: 0 6px 16px rgba(0,0,0,0.1);
+      text-align: center;
+    }
+    .icon {
+      font-size: 60px;
+      color: #007BFF;
+      margin-bottom: 20px;
+    }
+    h2 {
+      color: #333;
+      margin-bottom: 15px;
+    }
+    p {
+      color: #555;
+      line-height: 1.7;
+    }
+    .btn {
+      display: inline-block;
+      margin-top: 30px;
+      padding: 12px 24px;
+      background: #007BFF;
+      color: white;
+      text-decoration: none;
+      border-radius: 6px;
+      font-weight: bold;
+      font-size: 16px;
+    }
+    .btn:hover {
+      background: #0056b3;
+    }
+    .resend {
+      margin-top: 20px;
+      color: #007BFF;
+      cursor: pointer;
+      text-decoration: underline;
+      font-size: 14px;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="icon">✉️</div>
+    <h2>تم إرسال بريد التأكيد</h2>
+    <p>
+      شكرًا لك على التسجيل!<br>
+      لقد أرسلنا رابط تفعيل الحساب إلى بريدك الإلكتروني.<br>
+      من فضلك تحقق من صندوق البريد (والمجلدات غير المرغوب فيها) وانقر على الرابط لتأكيد حسابك.
+    </p>
+    <a href="index.html" class="btn">العودة إلى تسجيل الدخول</a>
+    <p id="resendLink" class="resend">لم يصلك البريد؟ أعد الإرسال</p>
+  </div>
+
+  <script>
+    // تهيئة Supabase
+    const supabase = supabase.createClient(
+      "https://zefsmckaihzfiqqbdake.supabase.co",
+      "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InplZnNtY2thaWh6ZmlxcWJkYWtlIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTQyMzUzNTgsImV4cCI6MjA2OTgxMTM1OH0.vktk2VkEPtMclb6jb_pFa1DbrqWX9SOZRsBR577o5mc"
+    );
+
+    // إعادة إرسال بريد التأكيد
+    document.getElementById('resendLink').addEventListener('click', async () => {
+      const email = localStorage.getItem('signupEmail');
+      if (!email) {
+        alert('لم يتم العثور على البريد. من فضلك أعد التسجيل.');
+        return;
+      }
+
+      document.getElementById('resendLink').textContent = 'جاري الإرسال...';
+      const { error } = await supabase.auth.resend({
+        type: 'signup',
+        email: email
+      });
+
+      if (error) {
+        alert('فشل في إعادة الإرسال: ' + error.message);
+        document.getElementById('resendLink').textContent = 'أعد الإرسال';
+      } else {
+        alert('تم إرسال رابط التأكيد إلى بريدك مرة أخرى.');
+        document.getElementById('resendLink').textContent = 'تم الإرسال';
+      }
+    });
+  </script>
+</body>
+</html>
