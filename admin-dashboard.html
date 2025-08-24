@@ -6,12 +6,12 @@
     <title>لوحة تحكم المدير</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-    <style>
-        :root {
-            --primary: #f97316;
-            --primary-dark: #ea580c;
-            --primary-light: #fed7aa;
-            --secondary: #059669;
+  <style>
+    :root {
+        --primary: #f97316;
+        --primary-dark: #ea580c;
+        --primary-light: #fed7aa;
+        --secondary: #059669;
             --secondary-light: #d1fae5;
             --dark: #1f2937;
             --light: #f9fafb;
@@ -177,6 +177,33 @@
             background: var(--info);
         }
         
+        .attendance-records h3 {
+            margin: 15px 0 10px;
+            color: var(--primary);
+            font-size: 1rem;
+            border-bottom: 1px solid var(--border);
+            padding-bottom: 5px;
+        }
+
+        .attendance-list {
+            margin-bottom: 20px;
+        }
+
+        .attendance-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 8px 12px;
+            margin: 6px 0;
+            border: 1px solid var(--border);
+            border-radius: var(--radius-sm);
+            background: var(--gray-light);
+            font-size: 0.9rem;
+        }
+        .attendance-item span {
+            min-width: 100px;
+        }
+
         /* Financial Summary */
         .financial-summary {
             display: grid;
@@ -259,6 +286,291 @@
             margin-top: 0;
         }
         
+        /* Attendance Tables */
+        .attendance-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 15px 0;
+            font-size: 0.9rem;
+        }
+        
+        .attendance-table th,
+        .attendance-table td {
+            padding: 10px;
+            text-align: center;
+            border: 1px solid var(--border);
+        }
+        
+        .attendance-table th {
+            background-color: var(--primary-light);
+            font-weight: 600;
+        }
+        
+        .attendance-table tr:nth-child(even) {
+            background-color: var(--gray-light);
+        }
+        
+
+/* تحسين تصميم بطاقات الحضور */
+.attendance-cards {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    gap: 15px;
+    margin-top: 15px;
+}
+
+.attendance-card {
+    background: white;
+    border-radius: var(--radius-md);
+    box-shadow: var(--shadow-light);
+    overflow: hidden;
+    transition: transform 0.3s, box-shadow 0.3s;
+    border: 1px solid var(--border);
+}
+
+.attendance-card:hover {
+    transform: translateY(-5px);
+    box-shadow: var(--shadow-medium);
+}
+
+.card-header {
+    background: var(--primary);
+    color: white;
+    padding: 15px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.card-header h3 {
+    margin: 0;
+    font-size: 1.1rem;
+    font-weight: 600;
+}
+
+.card-body {
+    padding: 15px;
+}
+
+.info-row {
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: 10px;
+    padding-bottom: 10px;
+    border-bottom: 1px solid var(--border-light);
+}
+
+.info-row:last-child {
+    margin-bottom: 0;
+    padding-bottom: 0;
+    border-bottom: none;
+}
+
+.label {
+    font-weight: 600;
+    color: var(--dark);
+}
+
+.value {
+    color: var(--gray);
+}
+
+/* حالات الحضور في البطاقات */
+.status {
+    padding: 5px 12px;
+    border-radius: 20px;
+    font-size: 0.8rem;
+    font-weight: 500;
+}
+
+.status.present {
+    background-color: var(--secondary-light);
+    color: var(--secondary);
+}
+
+.status.partial {
+    background-color: #fff3cd;
+    color: #856404;
+}
+
+.status.absent {
+    background-color: #f8d7da;
+    color: #721c24;
+}
+
+/* رسالة عدم وجود بيانات */
+.no-data {
+    text-align: center;
+    padding: 30px;
+    color: var(--gray);
+    font-style: italic;
+    background: var(--gray-light);
+    border-radius: var(--radius-sm);
+    margin: 15px 0;
+    font-size: 1rem;
+}
+
+/* تحسين للشاشات الصغيرة */
+@media (max-width: 768px) {
+    .attendance-cards {
+        grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+        gap: 12px;
+    }
+    
+    .card-header {
+        padding: 12px;
+    }
+    
+    .card-header h3 {
+        font-size: 1rem;
+    }
+    
+    .card-body {
+        padding: 12px;
+    }
+    
+    .info-row {
+        margin-bottom: 8px;
+        padding-bottom: 8px;
+    }
+    
+    .status {
+        padding: 4px 10px;
+        font-size: 0.75rem;
+    }
+}
+
+@media (max-width: 480px) {
+    .attendance-cards {
+        grid-template-columns: 1fr;
+        gap: 10px;
+    }
+    
+    .card-header {
+        padding: 10px;
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 8px;
+    }
+    
+    .card-header h3 {
+        font-size: 0.95rem;
+    }
+    
+    .card-body {
+        padding: 10px;
+    }
+    
+    .info-row {
+        margin-bottom: 6px;
+        padding-bottom: 6px;
+        font-size: 0.9rem;
+    }
+    
+    .status {
+        padding: 3px 8px;
+        font-size: 0.7rem;
+    }
+    
+    .no-data {
+        padding: 20px;
+        font-size: 0.9rem;
+    }
+}
+        
+/* أنماط فلاتر الحضور */
+.attendance-filters {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 15px;
+    margin-bottom: 20px;
+    padding: 15px;
+    background: var(--gray-light);
+    border-radius: var(--radius-sm);
+    align-items: end;
+}
+
+.filter-group {
+    display: flex;
+    flex-direction: column;
+    flex: 1;
+    min-width: 200px;
+}
+
+.filter-group label {
+    font-weight: 600;
+    margin-bottom: 5px;
+    color: var(--dark);
+}
+
+.filter-group input {
+    padding: 10px;
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    font-size: 0.9rem;
+}
+
+.filter-group input:focus {
+    outline: none;
+    border-color: var(--primary);
+    box-shadow: 0 0 0 2px rgba(249, 115, 22, 0.2);
+}
+
+.clear-btn {
+    background: var(--danger);
+    color: white;
+    border: none;
+    padding: 10px 15px;
+    border-radius: var(--radius-sm);
+    cursor: pointer;
+    font-size: 0.9rem;
+    height: fit-content;
+    align-self: flex-end;
+}
+
+.clear-btn:hover {
+    background: #dc2626;
+}
+
+/* تحسين للشاشات الصغيرة */
+@media (max-width: 768px) {
+    .attendance-filters {
+        flex-direction: column;
+        gap: 12px;
+        padding: 12px;
+    }
+    
+    .filter-group {
+        min-width: 100%;
+    }
+    
+    .clear-btn {
+        align-self: stretch;
+        text-align: center;
+    }
+}
+
+@media (max-width: 480px) {
+    .attendance-filters {
+        padding: 10px;
+        gap: 10px;
+    }
+    
+    .filter-group label {
+        font-size: 0.9rem;
+    }
+    
+    .filter-group input {
+        padding: 8px;
+        font-size: 0.85rem;
+    }
+    
+    .clear-btn {
+        padding: 8px 12px;
+        font-size: 0.85rem;
+    }
+}
+
         /* Mobile Responsive */
         @media (max-width: 768px) {
             .header {
@@ -319,6 +631,16 @@
             .section-header h2 {
                 font-size: 1.1rem;
             }
+            
+            /* Attendance Tables for Mobile */
+            .attendance-table {
+                font-size: 0.8rem;
+            }
+            
+            .attendance-table th,
+            .attendance-table td {
+                padding: 8px 4px;
+            }
         }
         
         @media (max-width: 480px) {
@@ -339,9 +661,208 @@
             .stat-card h3 {
                 font-size: 1.1rem;
             }
+            
+            .financial-summary {
+                gap: 10px;
+            }
+            
+            .financial-card {
+                padding: 10px;
+            }
+            
+            .financial-card h3 {
+                font-size: 0.85rem;
+            }
+            
+            .financial-card .amount {
+                font-size: 1.2rem;
+            }
+            
+            .section-header {
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 10px;
+            }
+            
+            .section-header h2 {
+                font-size: 1rem;
+            }
+            
+            /* Attendance Tables for Small Mobile */
+            .attendance-table {
+                font-size: 0.7rem;
+            }
+            
+            .attendance-table th,
+            .attendance-table td {
+                padding: 6px 3px;
+            }
+        }
+        
+        /* Navigation Menu for Mobile */
+        .mobile-menu-btn {
+            display: none;
+            background: none;
+            border: none;
+            color: white;
+            font-size: 1.5rem;
+            cursor: pointer;
+        }
+        
+        @media (max-width: 768px) {
+            .mobile-menu-btn {
+                display: block;
+            }
+            
+            .nav-menu {
+                position: fixed;
+                top: 0;
+                right: -100%;
+                width: 80%;
+                height: 100%;
+                background: white;
+                box-shadow: -2px 0 5px rgba(0,0,0,0.1);
+                transition: right 0.3s ease;
+                z-index: 1000;
+                padding: 20px;
+                overflow-y: auto;
+            }
+            
+            .nav-menu.active {
+                right: 0;
+            }
+            
+            .nav-menu .close-btn {
+                position: absolute;
+                top: 15px;
+                left: 15px;
+                background: none;
+                border: none;
+                font-size: 1.5rem;
+                cursor: pointer;
+                color: var(--dark);
+            }
+            
+            .nav-menu ul {
+                list-style: none;
+                padding: 0;
+                margin-top: 50px;
+            }
+            
+            .nav-menu ul li {
+                margin-bottom: 15px;
+            }
+            
+            .nav-menu ul li a {
+                display: block;
+                padding: 12px 15px;
+                color: var(--dark);
+                text-decoration: none;
+                border-radius: var(--radius-sm);
+                transition: background 0.3s;
+            }
+            
+            .nav-menu ul li a:hover {
+                background: var(--gray-light);
+            }
+            
+            .nav-menu ul li a.active {
+                background: var(--primary-light);
+                color: var(--primary);
+                font-weight: 600;
+            }
+            
+            .overlay {
+                position: fixed;
+                top: 0;
+                left: 0;
+                width: 100%;
+                height: 100%;
+                background: rgba(0,0,0,0.5);
+                z-index: 999;
+                display: none;
+            }
+            
+            .overlay.active {
+                display: block;
+            }
+        }
+        
+        /* Cards for Mobile */
+        .card-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+            gap: 12px;
+        }
+        
+        .card {
+            background: white;
+            border-radius: var(--radius-md);
+            padding: 15px;
+            box-shadow: var(--shadow-light);
+            text-align: center;
+            transition: transform 0.2s;
+        }
+        
+        .card:hover {
+            transform: translateY(-3px);
+        }
+        
+        .card h3 {
+            font-size: 1.2rem;
+            margin-bottom: 8px;
+            color: var(--primary);
+        }
+        
+        .card p {
+            font-size: 0.9rem;
+            color: var(--gray);
+        }
+        
+        .card i {
+            font-size: 1.5rem;
+            margin-bottom: 10px;
+            color: var(--primary);
+        }
+        
+        /* Quick Actions */
+        .quick-actions {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+            gap: 10px;
+            margin-top: 20px;
+        }
+        
+        .action-btn {
+            background: var(--primary);
+            color: white;
+            border: none;
+            padding: 12px;
+            border-radius: var(--radius-sm);
+            text-align: center;
+            cursor: pointer;
+            transition: background 0.3s;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: 5px;
+        }
+        
+        .action-btn:hover {
+            background: var(--primary-dark);
+        }
+        
+        .action-btn i {
+            font-size: 1.2rem;
+        }
+        
+        .action-btn span {
+            font-size: 0.85rem;
         }
     </style>
-</head>
+    
+  </head>
 <body>
 <header class="header">
     <h1>لوحة تحكم المدير</h1>
@@ -401,6 +922,21 @@
     </div>
 </div>
 
+
+<!-- ✅ قسم الحضور والانصراف -->
+<div id="attendanceSection" class="content-section">
+  <div class="section-header">
+    <h2><i class="fas fa-user-check"></i> سجل حضور وانصراف الموظفين</h2>
+  </div>
+
+  <h3>المعلمين</h3>
+  <div id="teacherAttendanceList">جاري التحميل...</div>
+
+  <h3 style="margin-top:20px;">السكرتارية</h3>
+  <div id="secretaryAttendanceList">جاري التحميل...</div>
+</div>
+
+
 <script>
 const supabaseUrl = "https://zefsmckaihzfiqqbdake.supabase.co";
 const supabaseKey = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InplZnNtY2thaWh6ZmlxcWJkYWtlIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTQyMzUzNTgsImV4cCI6MjA2OTgxMTM1OH0.vktk2VkEPtMclb6jb_pFa1DbrqWX9SOZRsBR577o5mc";
@@ -440,7 +976,13 @@ async function loadAllData(){
   await loadWithPermissionCheck(loadTeacherAttendance, 'teacher_attendance');
   await loadWithPermissionCheck(loadSecretaryAttendance, 'secretary_attendance');
   await loadWithPermissionCheck(loadExamScores, 'exam_scores');
-  
+  await loadWithPermissionCheck(loadTeacherAttendance, 'teacher_attendance');
+await loadWithPermissionCheck(loadSecretaryAttendance, 'secretary_attendance');
+
+// ✅ تحديث العرض
+renderTeacherAttendance();
+renderSecretaryAttendance();
+
   console.log("All data loading completed");
 }
 
@@ -520,7 +1062,18 @@ async function loadLessons(){
 
 async function loadTeacherAttendance(){
   console.log("Loading teacher attendance...");
-  const {data,error}=await supabase.from('teacher_attendance').select('*');
+  const {data,error}=await supabase
+    .from('teacher_attendance')
+    .select(`
+      id,
+      date,
+      check_in_time,
+      check_out_time,
+      users (
+        full_name
+      )
+    `);
+
   if(error) throw error;
   teacherAttendanceData=data;
   console.log("Teacher attendance loaded:", data.length);
@@ -528,10 +1081,16 @@ async function loadTeacherAttendance(){
 
 async function loadSecretaryAttendance(){
   console.log("Loading secretary attendance...");
-  const {data,error}=await supabase.from('secretary_attendance').select('*');
+  const {data,error}=await supabase
+    .from('secretary_attendance')
+    .select(`
+      id, date, check_in, check_out,
+      users!secretary_id ( full_name )
+    `)
+    .order('date', { ascending: false });
   if(error) throw error;
   secretaryAttendanceData=data;
-  console.log("Secretary attendance loaded:", data.length);
+  console.log("Secretary attendance loaded:", data.length, data);
 }
 
 async function loadExamScores(){
@@ -657,6 +1216,234 @@ function logout(){
   // إعادة التوجيه إلى صفحة index.html
   window.location.href = 'index.html';
 }
+
+// =============================
+// 🎓 عرض حضور المعلمين
+// =============================
+function renderTeacherAttendance() {
+  const container = document.getElementById("teacherAttendanceList");
+  if (!container) return;
+
+  // استخراج التواريخ الفعلية من السجلات
+  const dates = [...new Set(
+    teacherAttendanceData
+      .map(r => getRecordDate(r.check_in_time, r.check_out_time, true))
+      .filter(Boolean)
+  )];
+
+  let filterHtml = `
+    <div class="attendance-filters">
+      <div class="filter-group">
+        <label for="teacherDateFilter">بحث بالتاريخ:</label>
+        <select id="teacherDateFilter" onchange="filterTeacherAttendance()">
+          <option value="">كل التواريخ</option>
+          ${dates.map(d => `<option value="${d}">${formatDate(d)}</option>`).join("")}
+        </select>
+      </div>
+      <button class="clear-btn" onclick="clearTeacherFilters()">مسح الفلتر</button>
+    </div>
+  `;
+
+  if (!teacherAttendanceData.length) {
+    container.innerHTML = filterHtml + "<p class='no-data'>لا توجد سجلات حضور للمعلمين.</p>";
+    return;
+  }
+
+  container.innerHTML = filterHtml;
+  updateTeacherAttendanceDisplay(teacherAttendanceData);
+}
+
+function updateTeacherAttendanceDisplay(data) {
+  const container = document.getElementById("teacherAttendanceList");
+  if (!container) return;
+
+  const filters = container.querySelector('.attendance-filters');
+  container.innerHTML = '';
+  if (filters) container.appendChild(filters);
+
+  if (!data.length) {
+    container.innerHTML += "<p class='no-data'>لا توجد سجلات حضور لهذا التاريخ.</p>";
+    return;
+  }
+
+  let html = '<div class="attendance-cards">';
+
+  data.forEach(r => {
+    const checkInTime = r.check_in_time ? new Date(r.check_in_time).toLocaleTimeString('ar-EG', { hour: '2-digit', minute: '2-digit' }) : '-';
+    const checkOutTime = r.check_out_time ? new Date(r.check_out_time).toLocaleTimeString('ar-EG', { hour: '2-digit', minute: '2-digit' }) : '-';
+
+    let status = 'غائب';
+    let statusClass = 'absent';
+    if (r.check_in_time && r.check_out_time) {
+      status = 'حاضر';
+      statusClass = 'present';
+    } else if (r.check_in_time) {
+      status = 'حضور جزئي';
+      statusClass = 'partial';
+    }
+
+    html += `
+      <div class="attendance-card">
+        <div class="card-header">
+          <h3>${r.users ? r.users.full_name : "-"}</h3>
+          <span class="status ${statusClass}">${status}</span>
+        </div>
+        <div class="card-body">
+          <div class="info-row"><span class="label">التاريخ:</span>
+            <span class="value">${getRecordDate(r.check_in_time, r.check_out_time)}</span>
+          </div>
+          <div class="info-row"><span class="label">الحضور:</span><span class="value">${checkInTime}</span></div>
+          <div class="info-row"><span class="label">الانصراف:</span><span class="value">${checkOutTime}</span></div>
+        </div>
+      </div>`;
+  });
+
+  html += "</div>";
+  container.innerHTML += html;
+}
+
+function filterTeacherAttendance() {
+  const dateFilter = document.getElementById('teacherDateFilter').value;
+
+  if (!dateFilter) {
+    updateTeacherAttendanceDisplay(teacherAttendanceData);
+    return;
+  }
+
+  const filteredData = teacherAttendanceData.filter(record => {
+    const actualDate = getRecordDate(record.check_in_time, record.check_out_time, true);
+    return actualDate === dateFilter;
+  });
+
+  updateTeacherAttendanceDisplay(filteredData);
+}
+
+function clearTeacherFilters() {
+  document.getElementById('teacherDateFilter').value = '';
+  updateTeacherAttendanceDisplay(teacherAttendanceData);
+}
+
+// =============================
+// 🗂️ عرض حضور السكرتارية
+// =============================
+function renderSecretaryAttendance() {
+  const container = document.getElementById("secretaryAttendanceList");
+  if (!container) return;
+
+  const dates = [...new Set(
+    secretaryAttendanceData
+      .map(r => getRecordDate(r.check_in, r.check_out, true))
+      .filter(Boolean)
+  )];
+
+  let filterHtml = `
+    <div class="attendance-filters">
+      <div class="filter-group">
+        <label for="secretaryDateFilter">بحث بالتاريخ:</label>
+        <select id="secretaryDateFilter" onchange="filterSecretaryAttendance()">
+          <option value="">كل التواريخ</option>
+          ${dates.map(d => `<option value="${d}">${formatDate(d)}</option>`).join("")}
+        </select>
+      </div>
+      <button class="clear-btn" onclick="clearSecretaryFilters()">مسح الفلتر</button>
+    </div>
+  `;
+
+  if (!secretaryAttendanceData.length) {
+    container.innerHTML = filterHtml + "<p class='no-data'>لا توجد سجلات حضور للسكرتارية.</p>";
+    return;
+  }
+
+  container.innerHTML = filterHtml;
+  updateSecretaryAttendanceDisplay(secretaryAttendanceData);
+}
+
+function updateSecretaryAttendanceDisplay(data) {
+  const container = document.getElementById("secretaryAttendanceList");
+  if (!container) return;
+
+  const filters = container.querySelector('.attendance-filters');
+  container.innerHTML = '';
+  if (filters) container.appendChild(filters);
+
+  if (!data.length) {
+    container.innerHTML += "<p class='no-data'>لا توجد سجلات حضور لهذا التاريخ.</p>";
+    return;
+  }
+
+  let html = '<div class="attendance-cards">';
+
+  data.forEach(r => {
+    const checkInTime = r.check_in ? new Date(r.check_in).toLocaleTimeString('ar-EG', { hour: '2-digit', minute: '2-digit' }) : '-';
+    const checkOutTime = r.check_out ? new Date(r.check_out).toLocaleTimeString('ar-EG', { hour: '2-digit', minute: '2-digit' }) : '-';
+
+    let status = 'غائب';
+    let statusClass = 'absent';
+    if (r.check_in && r.check_out) {
+      status = 'حاضر';
+      statusClass = 'present';
+    } else if (r.check_in) {
+      status = 'حضور جزئي';
+      statusClass = 'partial';
+    }
+
+    html += `
+      <div class="attendance-card">
+        <div class="card-header">
+          <h3>${r.users?.full_name || '-'}</h3>
+          <span class="status ${statusClass}">${status}</span>
+        </div>
+        <div class="card-body">
+          <div class="info-row"><span class="label">التاريخ:</span>
+            <span class="value">${getRecordDate(r.check_in, r.check_out)}</span>
+          </div>
+          <div class="info-row"><span class="label">الحضور:</span><span class="value">${checkInTime}</span></div>
+          <div class="info-row"><span class="label">الانصراف:</span><span class="value">${checkOutTime}</span></div>
+        </div>
+      </div>`;
+  });
+
+  html += "</div>";
+  container.innerHTML += html;
+}
+
+function filterSecretaryAttendance() {
+  const dateFilter = document.getElementById('secretaryDateFilter').value;
+
+  if (!dateFilter) {
+    updateSecretaryAttendanceDisplay(secretaryAttendanceData);
+    return;
+  }
+
+  const filteredData = secretaryAttendanceData.filter(record => {
+    const actualDate = getRecordDate(record.check_in, record.check_out, true);
+    return actualDate === dateFilter;
+  });
+
+  updateSecretaryAttendanceDisplay(filteredData);
+}
+
+function clearSecretaryFilters() {
+  document.getElementById('secretaryDateFilter').value = '';
+  updateSecretaryAttendanceDisplay(secretaryAttendanceData);
+}
+
+// =============================
+// 📌 أدوات مشتركة
+// =============================
+function getRecordDate(checkIn, checkOut, asISO = false) {
+  const sourceDate = checkIn || checkOut;
+  if (!sourceDate) return null;
+  const d = new Date(sourceDate);
+  return asISO ? d.toISOString().split("T")[0] : d.toLocaleDateString("ar-EG");
+}
+
+function formatDate(dateStr) {
+  const d = new Date(dateStr);
+  return d.toLocaleDateString("ar-EG");
+}
+
+
 </script>
 </body>
 </html>

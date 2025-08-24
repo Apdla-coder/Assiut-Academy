@@ -1,5 +1,7 @@
   <!DOCTYPE html>
   <html lang="ar" dir="rtl">
+
+
   <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
@@ -1601,6 +1603,8 @@
       }
     </style>
   </head>
+
+
   <body>
     <!-- Sidebar -->
     <div class="sidebar" id="sidebar">
@@ -1729,13 +1733,6 @@
 <!-- Profile Tab -->
 <div id="profileContent" class="tab-content">
   <div class="profile-header">
-    <div class="profile-picture-container">
-      <img src="https://placehold.co/120x120?text=PP" alt="الصورة الشخصية"
-           class="profile-picture" id="profileImage">
-      <button class="change-picture-btn" onclick="openAvatarModal()">
-        <i class="fas fa-camera"></i>
-      </button>
-    </div>
     <div class="profile-name" id="profileName">اسم المعلم</div>
     <div class="profile-role" id="profileRole">معلم</div>
 
@@ -1775,37 +1772,6 @@
   </div>
 </div>
 
-<!-- Avatar Upload Modal -->
-<div id="avatarModal" class="modal">
-  <div class="modal-content">
-    <div class="modal-header">
-      <h3>تغيير الصورة الشخصية</h3>
-      <span class="modal-close" onclick="closeAvatarModal()">&times;</span>
-    </div>
-    <div class="modal-body">
-      <input type="file" id="avatarInput" accept="image/*">
-      <div class="form-actions" style="margin-top: 15px;">
-<button type="button" class="btn btn-primary" onclick="saveAvatarUrl()">رفع الصورة</button>
-        <button type="button" class="btn btn-secondary" onclick="closeAvatarModal()">إلغاء</button>
-      </div>
-    </div>
-  </div>
-</div>
-
-    <!-- Avatar URL Modal -->
-  <div id="avatarModal" class="modal">
-    <div class="modal-content">
-      <div class="modal-header">
-        <h2 class="modal-title">تغيير الصورة الشخصية</h2>
-        <span class="close" onclick="closeAvatarModal()">&times;</span>
-      </div>
-      <div class="modal-body">
-        <p>أدخل رابط صورة فيسبوك الخاصة بك:</p>
-        <input type="url" id="avatarUrlInput" class="avatar-url-input" placeholder="https://example.com/profile.jpg">
-        <button class="save-avatar-btn" onclick="saveAvatarUrl()">حفظ الصورة</button>
-      </div>
-    </div>
-  </div>
     <!-- Course Detail Modal -->
     <div id="courseDetailModal" class="modal">
       <div class="modal-content">
@@ -2014,4 +1980,6 @@
 })();
 </script>
   </body>
+
+  
   </html>

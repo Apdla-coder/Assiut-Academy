@@ -666,8 +666,6 @@ async function loadSubscriptions(extraData = null, searchQuery = '') {
  <th>الطالب</th>
  <th>تاريخ الاشتراك</th>
  <th>الحالة</th>
- <th>ملاحظات</th>
- <th>الإجراءات</th>
  </tr>
  </thead>
  <tbody>
@@ -679,10 +677,6 @@ async function loadSubscriptions(extraData = null, searchQuery = '') {
  <td>${subscription.students?.full_name || '-'}</td>
  <td>${formatDate(subscription.subscribed_at)}</td>
  <td>${subscription.status === 'active' ? 'نشط' : 'غير نشط'}</td>
- <td>${subscription.notes || '-'}</td>
- <td class="action-buttons">
- <button class="action-btn delete-btn" onclick="deleteSubscription('${subscription.id}')">
- <i class="fas fa-trash"></i>
  </button>
  </td>
  </tr>
@@ -910,31 +904,6 @@ await loadPayments(true);       // تحديث المدفوعات لو مرتبط
  await updateCurrentTab(); // انتظار انتهاء تحديث كل البيانات
 updateCurrentTab(); // بعدين تحديث التبويب الحالي
  }
-
- // Delete subscription
-// Delete subscription (Cascade من DB)
-async function deleteSubscription(subscriptionId) {
-  if (!confirm('هل أنت متأكد من حذف هذا الاشتراك وكافة المتعلقات به؟')) {
-    return;
-  }
-
-  try {
-    const { error } = await supabaseClient
-      .from('subscriptions')
-      .delete()
-      .eq('id', subscriptionId);
-
-    if (error) throw error;
-
-    showStatus('تم حذف الاشتراك وكافة المتعلقات به بنجاح ✅');
-    loadSubscriptions();
-  } catch (error) {
-    console.error('❌ خطأ في حذف الاشتراك:', error);
-    showStatus('خطأ في حذف الاشتراك', 'error');
-  }
-
-  await updateCurrentTab();
-}
 
 
  // Load payments

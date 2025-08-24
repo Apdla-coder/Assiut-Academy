@@ -189,7 +189,7 @@ async function loadUserData() {
         // جلب بيانات المستخدم من جدول users
         const { data: userData, error: userError } = await supabaseClient
             .from('users')
-            .select('id, full_name, role, specialty, avatar_url')
+            .select('id, full_name, role, specialty')
             .eq('id', currentUserId)
             .maybeSingle();
 
@@ -1675,455 +1675,270 @@ async function loadStudentsForCourse(courseId) {
                 }
             }
             
-            // دوال الحضور الشخصي للمعلم
-            async function checkTodayStatus() {
-                const today = new Date().toISOString().split('T')[0];
-                const { data } = await supabaseClient.from('teacher_attendance').select('*').eq('teacher_id', currentUserId).eq('date', today).single();
-                if (data) {
-                    document.getElementById('checkInBtn').disabled = !!data.check_in_time;
-                    document.getElementById('checkOutBtn').disabled = !!data.check_out_time;
-                }
-            }
-            
-            async function recordCheckIn() {
-                const today = new Date().toISOString().split('T')[0];
-                const { data: exists, error: checkError } = await supabaseClient
-                    .from('teacher_attendance')
-                    .select('*')
-                    .eq('teacher_id', currentUserId)
-                    .eq('date', today)
-                    .single();
-                if (checkError && checkError.code !== 'PGRST116') {
-                    console.error("Error checking attendance:", checkError);
-                    showStatus(`خطأ في التحقق من الحضور: ${checkError.message}`, 'error');
-                    return;
-                }
-                if (exists) {
-                    showStatus(`سجلت حضورك بالفعل في ${exists.check_in_time}`, 'error');
-                    return;
-                }
-                // استخدام الوقت بالتنسيق الصحيح (أرقام لاتينية)
-                const time = new Date().toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: false });
-                const { error: insertError } = await supabaseClient
-                    .from('teacher_attendance')
-                    .insert([
-                        {
-                            teacher_id: currentUserId,
-                            date: today,
-                            check_in_time: time
-                        }
-                    ]);
-                if (insertError) {
-                    console.error("Error recording check-in:", insertError);
-                    showStatus(`خطأ في تسجيل الحضور: ${insertError.message}`, 'error');
-                } else {
-                    showStatus(`تم تسجيل حضورك ${time}`);
-                    document.getElementById('checkInBtn').disabled = true;
-                    checkTodayStatus();
-                    loadMyAttendance();
-                }
-            }
-            
-            async function recordCheckOut() {
-                const today = new Date().toISOString().split('T')[0];
-                const { data: row, error: fetchError } = await supabaseClient
-                    .from('teacher_attendance')
-                    .select('*')
-                    .eq('teacher_id', currentUserId)
-                    .eq('date', today)
-                    .single();
-                if (fetchError && fetchError.code !== 'PGRST116') {
-                    console.error("Error fetching attendance record:", fetchError);
-                    showStatus(`خطأ في جلب سجل الحضور: ${fetchError.message}`, 'error');
-                    return;
-                }
-                if (!row) {
-                    showStatus('سجل حضورك أولاً', 'error');
-                    return;
-                }
-                if (row.check_out_time) {
-                    showStatus(`سجلت انصرافك بالفعل ${row.check_out_time}`, 'error');
-                    return;
-                }
-                // استخدام الوقت بالتنسيق الصحيح (أرقام لاتينية)
-                const time = new Date().toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: false });
-                const { error: updateError } = await supabaseClient
-                    .from('teacher_attendance')
-                    .update({ check_out_time: time })
-                    .eq('id', row.id);
-                if (updateError) {
-                    console.error("Error recording check-out:", updateError);
-                    showStatus(`خطأ في تسجيل الانصراف: ${updateError.message}`, 'error');
-                } else {
-                    showStatus(`تم تسجيل انصرافك ${time}`);
-                    document.getElementById('checkOutBtn').disabled = true;
-                    checkTodayStatus();
-                    loadMyAttendance();
-                }
-            }
-            
-            function calcStay(start, end) {
-                const [sh, sm] = start.split(':').map(Number);
-                const [eh, em] = end.split(':').map(Number);
-                const mins = (eh * 60 + em) - (sh * 60 + sm);
-                const h = Math.floor(mins / 60);
-                const m = mins % 60;
-                return `${h}س ${m}د`;
-            }
-            
+// ✅ التحقق من حضور اليوم
+async function checkTodayStatus() {
+    const today = new Date().toISOString().split('T')[0];
+    const { data, error } = await supabaseClient
+        .from('teacher_attendance')
+        .select('*')
+        .eq('teacher_id', currentUserId)
+        .eq('date', today)
+        .maybeSingle();
 
-            
-            // دالة لتحميل بيانات الملف الشخصي
-        // دالة لتحميل بيانات الملف الشخصي
-// دالة لتحميل بيانات الملف الشخصي
-// دالة لتحميل بيانات الملف الشخصي
-        // دالة لتحميل بيانات الملف الشخصي
-async function loadProfileData() {
-    try {
-        // تحديث معلومات المستخدم الأساسية
-        document.getElementById('profileName').textContent = currentUserData.full_name || 'غير محدد';
-        document.getElementById('profileRole').textContent = currentUserData.role === 'teacher' ? 'معلم' : currentUserData.role;
-        
-        // تحديث الصورة الشخصية
-        const avatarUrl = currentUserData.avatar_url || 'https://placehold.co/120x120?text=PP';
-        const profileImgEl = document.getElementById('profileImage');
-        if (profileImgEl) profileImgEl.src = avatarUrl;
-        
-        // تحميل بيانات النموذج
-        document.getElementById('fullName').value = currentUserData.full_name || '';
-        document.getElementById('email').value = currentUserData.email || '';
-        document.getElementById('phone').value = currentUserData.phone || '';
-        document.getElementById('specialty').value = currentUserData.specialty || '';
-        
-        // تحميل سجل الحضور الشخصي
-        await loadProfileAttendanceRecords();
-        
-        // --- ربط الأحداث ---
-        // 1. ربط نموذج الملف الشخصي
-        const profileForm = document.getElementById('profileForm');
-        if (profileForm && !profileForm.dataset.profileFormListenerAdded) {
-            profileForm.addEventListener('submit', saveProfileChanges);
-            profileForm.dataset.profileFormListenerAdded = 'true';
-        }
+    if (error) {
+        console.error("checkTodayStatus error:", error);
+        return;
+    }
 
-        // 2. ربط input الصورة (preview + حفظ)
-        const fileInput = document.getElementById('profileImageInput');
-        const preview = document.getElementById('profileImagePreview');
-        if (fileInput && !fileInput.dataset.listenerAdded) {
-            fileInput.addEventListener('change', function (e) {
-                const file = e.target.files[0];
-                if (!file) return;
-                const reader = new FileReader();
-                reader.onload = function (ev) {
-                    if (preview) preview.src = ev.target.result;
-                };
-                reader.readAsDataURL(file);
-            });
-            fileInput.dataset.listenerAdded = 'true';
-        }
-
-    } catch (error) {
-        console.error('Error loading profile data:', error);
-        showStatus('خطأ في تحميل بيانات الملف الشخصي', 'error');
+    if (data) {
+        document.getElementById('checkInBtn').disabled = !!data.check_in_time;
+        document.getElementById('checkOutBtn').disabled = !!data.check_out_time;
     }
 }
 
-// دالة لتحميل سجل الحضور الشخصي في قسم الملف الشخصي
-// دالة لتحميل سجل الحضور الشخصي في قسم الملف الشخصي
-// دالة لتحميل سجل الحضور الشخصي في قسم الملف الشخصي
+// ✅ تسجيل الحضور
+async function recordCheckIn() {
+    const today = new Date().toISOString().split('T')[0];
+
+    const { data: exists, error: checkError } = await supabaseClient
+        .from('teacher_attendance')
+        .select('*')
+        .eq('teacher_id', currentUserId)
+        .eq('date', today)
+        .maybeSingle();
+
+    if (checkError && checkError.code !== 'PGRST116') {
+        console.error("Error checking attendance:", checkError);
+        showStatus(`خطأ في التحقق من الحضور: ${checkError.message}`, 'error');
+        return;
+    }
+    if (exists) {
+        showStatus(`سجلت حضورك بالفعل في ${new Date(exists.check_in_time).toLocaleTimeString('ar-EG', { hour: '2-digit', minute: '2-digit' })}`, 'error');
+        return;
+    }
+
+    const now = new Date().toISOString(); // datetime كامل
+    const { error: insertError } = await supabaseClient
+        .from('teacher_attendance')
+        .insert([{
+            teacher_id: currentUserId,
+            date: today,
+            check_in_time: now
+        }]);
+
+    if (insertError) {
+        console.error("Error recording check-in:", insertError);
+        showStatus(`خطأ في تسجيل الحضور: ${insertError.message}`, 'error');
+    } else {
+        showStatus(`تم تسجيل حضورك ${new Date(now).toLocaleTimeString('ar-EG', { hour: '2-digit', minute: '2-digit' })}`);
+        document.getElementById('checkInBtn').disabled = true;
+        checkTodayStatus();
+        loadProfileAttendanceRecords(); // تحديث سجل الحضور في الملف الشخصي
+    }
+}
+
+// ✅ تسجيل الانصراف
+async function recordCheckOut() {
+    const today = new Date().toISOString().split('T')[0];
+
+    const { data: row, error: fetchError } = await supabaseClient
+        .from('teacher_attendance')
+        .select('id, check_in_time, check_out_time') // 🎯 نجيب id فقط والحقول المطلوبة
+        .eq('teacher_id', currentUserId)
+        .eq('date', today)
+        .maybeSingle();
+
+    console.log("📌 Attendance row fetched:", row);
+
+    if (fetchError && fetchError.code !== 'PGRST116') {
+        console.error("Error fetching attendance record:", fetchError);
+        showStatus(`خطأ في جلب سجل الحضور: ${fetchError.message}`, 'error');
+        return;
+    }
+    if (!row) {
+        showStatus('سجل حضورك أولاً', 'error');
+        return;
+    }
+    if (row.check_out_time) {
+        showStatus(`سجلت انصرافك بالفعل ${new Date(row.check_out_time).toLocaleTimeString('ar-EG', { hour: '2-digit', minute: '2-digit' })}`, 'error');
+        return;
+    }
+
+    const now = new Date().toISOString(); // datetime كامل
+    console.log("📌 Trying to update checkout with:", now, "for row id:", row.id);
+
+    const { data: updated, error: updateError } = await supabaseClient
+        .from('teacher_attendance')
+        .update({ check_out_time: now })
+        .eq('id', row.id)
+        .select(); // 🎯 عشان يرجع البيانات بعد التحديث
+
+    if (updateError) {
+        console.error("Error recording check-out:", updateError);
+        showStatus(`خطأ في تسجيل الانصراف: ${updateError.message}`, 'error');
+    } else {
+        console.log("✅ Checkout updated successfully:", updated);
+        showStatus(`تم تسجيل انصرافك ${new Date(now).toLocaleTimeString('ar-EG', { hour: '2-digit', minute: '2-digit' })}`);
+        document.getElementById('checkOutBtn').disabled = true;
+        checkTodayStatus();
+        loadProfileAttendanceRecords(); // تحديث سجل الحضور
+    }
+}
+
+// ✅ حساب مدة البقاء (من timestamp لـ timestamp)
+function calcStay(start, end) {
+    const sh = new Date(start);
+    const eh = new Date(end);
+    const mins = Math.floor((eh - sh) / 60000);
+    const h = Math.floor(mins / 60);
+    const m = mins % 60;
+    return `${h}س ${m}د`;
+}
+
+// ✅ تحميل سجل الحضور الشخصي
 async function loadProfileAttendanceRecords() {
-    console.log("loadProfileAttendanceRecords: بدء التنفيذ");
-    
     const containerId = 'profileAttendanceRecords';
     const container = document.getElementById(containerId);
 
-    // التحقق من وجود العنصر فورًا
     if (!container) {
         console.error(`loadProfileAttendanceRecords: العنصر بـ id="${containerId}" غير موجود في DOM.`);
         return;
     }
 
     try {
-        console.log("loadProfileAttendanceRecords: التحقق من currentUserId:", currentUserId);
-
-        // التحقق من أن currentUserId معرف
         if (!currentUserId) {
             throw new Error("لم يتم تعيين معرف المستخدم الحالي (currentUserId).");
         }
 
-        console.log(`loadProfileAttendanceRecords: جاري جلب سجلات الحضور للمستخدم ${currentUserId}...`);
-
-        // جلب سجلات حضور المعلم من جدول teacher_attendance
         const { data, error } = await supabaseClient
             .from('teacher_attendance')
             .select('*')
             .eq('teacher_id', currentUserId)
             .order('date', { ascending: false })
-            .limit(5); // جلب آخر 5 تسجيلات
+            .limit(5);
 
-        console.log("loadProfileAttendanceRecords: نتيجة الاستعلام من Supabase:", { data, error });
+        if (error) throw error;
 
-        // التحقق من وجود أخطاء في الاستعلام
-        if (error) {
-            console.error("loadProfileAttendanceRecords: خطأ في استعلام Supabase:", error);
-            throw error;
-        }
-
-        // التحقق من وجود بيانات
         if (!data || data.length === 0) {
-            console.log("loadProfileAttendanceRecords: لا توجد سجلات حضور للمستخدم.");
             container.innerHTML = '<p class="no-data">لا توجد سجلات حضور.</p>';
             return;
         }
 
-        console.log(`loadProfileAttendanceRecords: تم العثور على ${data.length} سجل(ات) حضور.`);
-
-        // إنشاء HTML لعرض السجلات
         let attendanceHtml = '';
         data.forEach(record => {
-            console.log("loadProfileAttendanceRecords: معالجة السجل:", record);
-            
-            // حساب مدة البقاء إذا كان وقت الحضور والانصراف متوفران
             let stay = '-';
             if (record.check_in_time && record.check_out_time) {
-                try {
-                    stay = calcStay(record.check_in_time, record.check_out_time);
-                    console.log(`loadProfileAttendanceRecords: حساب المدة بين ${record.check_in_time} و ${record.check_out_time} = ${stay}`);
-                } catch (calcError) {
-                    console.error("loadProfileAttendanceRecords: خطأ في حساب المدة:", calcError);
-                    stay = 'خطأ في الحساب';
-                }
-            } else {
-                console.log("loadProfileAttendanceRecords: أوقات الحضور أو الانصراف غير متوفرة.");
+                stay = calcStay(record.check_in_time, record.check_out_time);
             }
 
             attendanceHtml += `
             <div class="profile-attendance-record">
                 <div class="profile-attendance-date">${record.date || '---'}</div>
                 <div class="profile-attendance-times">
-                    <div class="profile-attendance-time">حضور: ${record.check_in_time || '-'}</div>
-                    <div class="profile-attendance-time">انصراف: ${record.check_out_time || '-'}</div>
+                    <div class="profile-attendance-time">حضور: ${record.check_in_time ? new Date(record.check_in_time).toLocaleTimeString('ar-EG', { hour: '2-digit', minute: '2-digit' }) : '-'}</div>
+                    <div class="profile-attendance-time">انصراف: ${record.check_out_time ? new Date(record.check_out_time).toLocaleTimeString('ar-EG', { hour: '2-digit', minute: '2-digit' }) : '-'}</div>
                     <div class="profile-attendance-stay">المدة: ${stay}</div>
                 </div>
-            </div>
-            `;
+            </div>`;
         });
 
-        console.log("loadProfileAttendanceRecords: تحديث محتوى الحاوية بسجلات الحضور.");
         container.innerHTML = attendanceHtml;
-        console.log("loadProfileAttendanceRecords: تم تحميل سجل الحضور بنجاح.");
-
     } catch (error) {
-        console.error('loadProfileAttendanceRecords: Error caught in catch block:', error);
-        
-        // محاولة تحديث الحاوية برسالة خطأ
-        const errorMessage = error.message || error.toString() || 'خطأ غير معروف';
-        console.log("loadProfileAttendanceRecords: محاولة عرض رسالة الخطأ:", errorMessage);
-
-        // التحقق مرة أخرى من وجود الحاوية قبل التحديث
-        const errorContainer = document.getElementById(containerId);
-        if (errorContainer) {
-            errorContainer.innerHTML = `<p class="no-data error">خطأ في تحميل سجل الحضور: ${errorMessage}</p>`;
-            console.log("loadProfileAttendanceRecords: تم عرض رسالة الخطأ للمستخدم.");
-        } else {
-            console.error(`loadProfileAttendanceRecords: العنصر بـ id="${containerId}" غير موجود عند محاولة عرض رسالة الخطأ.`);
-        }
-    } finally {
-        console.log("loadProfileAttendanceRecords: انتهى التنفيذ.");
+        console.error('loadProfileAttendanceRecords error:', error);
+        container.innerHTML = `<p class="no-data error">خطأ في تحميل سجل الحضور: ${error.message}</p>`;
     }
 }
 
+// ✅ عرض رسالة حالة
+function showStatus(message, type = 'info') {
+    const statusElement = document.getElementById('statusMessage');
+    if (statusElement) {
+        statusElement.textContent = message;
+        statusElement.className = `status ${type}`;
+        setTimeout(() => {
+            statusElement.textContent = '';
+            statusElement.className = 'status';
+        }, 3000);
+    } else {
+        console.warn('عنصر statusMessage غير موجود في الصفحة.');
+    }
+}
 
-            // دالة لإظهار حالة العملية
-            function showStatus(message, type = 'info') {
-                const statusElement = document.getElementById('statusMessage');
-                if (statusElement) {
-                    statusElement.textContent = message;
-                    statusElement.className = `status ${type}`;
-                    setTimeout(() => {
-                        statusElement.textContent = '';
-                        statusElement.className = 'status';
-                    }, 3000);
-                } else {
-                    console.warn('عنصر statusMessage غير موجود في الصفحة.');
-                }
-            }
-
-
-// دالة لإعادة تعيين نموذج الملف الشخصي
+// ✅ إعادة تعيين نموذج الملف الشخصي
 function resetProfileForm() {
-  document.getElementById('fullName').value = currentUserData.full_name || '';
-  document.getElementById('email').value = currentUserData.email || '';
-  document.getElementById('phone').value = currentUserData.phone || '';
-  document.getElementById('specialty').value = currentUserData.specialty || '';
-}
-
-// دالة لحفظ تغييرات الملف الشخصي
-async function saveProfileChanges(event) {
-  event.preventDefault();
-
-  const fullName = document.getElementById('fullName').value;
-  const email = document.getElementById('email').value;
-  const phone = document.getElementById('phone').value;
-  const specialty = document.getElementById('specialty').value;
-
-  try {
-    const { error } = await supabaseClient
-      .from('users')
-      .update({
-        full_name: fullName,
-        email,
-        phone,
-        specialty
-      })
-      .eq('id', currentUserId);
-
-    if (error) throw error;
-
-    // تحديث البيانات المحلية
-    currentUserData.full_name = fullName;
-    currentUserData.email = email;
-    currentUserData.phone = phone;
-    currentUserData.specialty = specialty;
-
-    // تحديث الواجهة
-    document.getElementById('userNameHeader').textContent = fullName;
-    document.getElementById('profileName').textContent = fullName;
-
-    showStatus('✅ تم حفظ التغييرات بنجاح', 'success');
-  } catch (err) {
-    console.error('Error saving profile changes:', err);
-    showStatus(`❌ خطأ في حفظ التغييرات: ${err.message}`, 'error');
-  }
-}
-
-// فتح نافذة تغيير الصورة
-// دالة لفتح نافذة تغيير الصورة
-function openAvatarModal() {
-  const avatarModal = document.getElementById('avatarModal');
-  if (avatarModal) avatarModal.style.display = 'flex';
-
-  const fileInput = document.getElementById('profileImageInput');
-  const preview = document.getElementById('profileImagePreview');
-
-  if (fileInput) {
-    // لو فيه event قديم نشيله
-    if (window.handleProfileImageChange) {
-      fileInput.removeEventListener('change', window.handleProfileImageChange);
-    }
-
-    // نربط حدث جديد
-    window.handleProfileImageChange = function (e) {
-      const file = e.target.files[0];
-      if (!file) return;
-
-      const reader = new FileReader();
-      reader.onload = function (ev) {
-        if (preview) preview.src = ev.target.result;
-        // ✅ نخزن البيانات في dataset.lastData
-        fileInput.dataset.lastData = ev.target.result;
-      };
-      reader.readAsDataURL(file);
-    };
-
-    fileInput.addEventListener('change', window.handleProfileImageChange);
-  }
-}
-
-// إغلاق نافذة تغيير الصورة
-function closeAvatarModal() {
-  document.getElementById('avatarModal').style.display = 'none';
-}
-
-// رفع الصورة إلى Supabase
-async function saveAvatarUrl() {
-  const fileInput = document.getElementById('profileImageInput');
-  const file = fileInput?.files?.[0];
-
-  if (!file) {
-    showStatus('⚠️ اختر صورة أولاً', 'error');
-    return;
-  }
-
-  try {
-    // نجيب المستخدم الحالي
-    const { data: { user }, error: authError } = await supabaseClient.auth.getUser();
-    if (authError || !user) throw new Error("⚠️ لم يتم العثور على مستخدم مسجل دخول");
-    const currentUserId = user.id;
-
-    // توليد اسم فريد
-    const ext = file.name.split('.').pop() || 'png';
-    const filename = `avatars/${currentUserId}_${Date.now()}.${ext}`;
-
-    // رفع الصورة مباشرة
-    const { error: uploadError } = await supabaseClient.storage
-      .from('avatars')
-      .upload(filename, file, { cacheControl: '3600', upsert: true });
-
-    if (uploadError) throw uploadError;
-
-    // جلب الرابط العام
-    const { data: publicData } = supabaseClient
-      .storage
-      .from('avatars')
-      .getPublicUrl(filename);
-
-    const publicUrl = publicData?.publicUrl;
-    if (!publicUrl) throw new Error('فشل الحصول على الرابط العام.');
-
-    // تحديث قاعدة البيانات
-    const { error: dbErr } = await supabaseClient
-      .from('users')
-      .update({ avatar_url: publicUrl })
-      .eq('id', currentUserId);
-
-    if (dbErr) throw dbErr;
-
-    // تحديث الواجهة
-    document.getElementById('profileImage').src = publicUrl;
-    currentUserData.avatar_url = publicUrl;
-
-    closeAvatarModal();
-    showStatus('✅ تم رفع الصورة وحفظها بنجاح.', 'success');
-  } catch (err) {
-    console.error('❌ Error uploading avatar:', err);
-    showStatus(`❌ ${err.message}`, 'error');
-  }
-}
-
-// تحميل بيانات الملف الشخصي
-async function loadProfileData() {
-  try {
-    if (!currentUserData) {
-      showStatus('⚠️ بيانات المستخدم غير متوفرة', 'error');
-      return;
-    }
-
-    document.getElementById('profileName').textContent = currentUserData.full_name || 'غير محدد';
-    document.getElementById('profileRole').textContent = currentUserData.role === 'teacher' ? 'معلم' : currentUserData.role;
-    document.getElementById('profileImage').src = currentUserData.avatar_url || 'https://placehold.co/120x120?text=PP';
-
     document.getElementById('fullName').value = currentUserData.full_name || '';
     document.getElementById('email').value = currentUserData.email || '';
     document.getElementById('phone').value = currentUserData.phone || '';
     document.getElementById('specialty').value = currentUserData.specialty || '';
-
-    await loadProfileAttendanceRecords();
-  } catch (err) {
-    console.error('loadProfileData error:', err);
-    showStatus(`❌ خطأ في تحميل بيانات الملف الشخصي: ${err.message}`, 'error');
-  }
 }
 
-// عند تحميل الصفحة
+// ✅ حفظ تغييرات الملف الشخصي
+async function saveProfileChanges(event) {
+    event.preventDefault();
+
+    const fullName = document.getElementById('fullName').value;
+    const email = document.getElementById('email').value;
+    const phone = document.getElementById('phone').value;
+    const specialty = document.getElementById('specialty').value;
+
+    try {
+        const { error } = await supabaseClient
+            .from('users')
+            .update({
+                full_name: fullName,
+                email,
+                phone,
+                specialty
+            })
+            .eq('id', currentUserId);
+
+        if (error) throw error;
+
+        currentUserData.full_name = fullName;
+        currentUserData.email = email;
+        currentUserData.phone = phone;
+        currentUserData.specialty = specialty;
+
+        document.getElementById('userNameHeader').textContent = fullName;
+        document.getElementById('profileName').textContent = fullName;
+
+        showStatus('✅ تم حفظ التغييرات بنجاح', 'success');
+    } catch (err) {
+        console.error('Error saving profile changes:', err);
+        showStatus(`❌ خطأ في حفظ التغييرات: ${err.message}`, 'error');
+    }
+}
+
+// ✅ تحميل بيانات الملف الشخصي
+async function loadProfileData() {
+    try {
+        if (!currentUserData) {
+            showStatus('⚠️ بيانات المستخدم غير متوفرة', 'error');
+            return;
+        }
+
+        document.getElementById('profileName').textContent = currentUserData.full_name || 'غير محدد';
+        document.getElementById('profileRole').textContent = currentUserData.role === 'teacher' ? 'معلم' : currentUserData.role;
+        document.getElementById('fullName').value = currentUserData.full_name || '';
+        document.getElementById('email').value = currentUserData.email || '';
+        document.getElementById('phone').value = currentUserData.phone || '';
+        document.getElementById('specialty').value = currentUserData.specialty || '';
+
+        await loadProfileAttendanceRecords();
+    } catch (err) {
+        console.error('loadProfileData error:', err);
+        showStatus(`❌ خطأ في تحميل بيانات الملف الشخصي: ${err.message}`, 'error');
+    }
+}
+
+// ✅ عند تحميل الصفحة
 document.addEventListener('DOMContentLoaded', async () => {
-  await loadUserData();
-  await loadProfileData();
-  switchTab('dashboard');
-  
-  // ربط الفورم بحدث الحفظ
-  const profileForm = document.getElementById('profileForm');
-  if (profileForm) {
-    profileForm.addEventListener('submit', saveProfileChanges);
-  }
+    await loadUserData();
+    await loadProfileData();
+    switchTab('dashboard');
+
+    const profileForm = document.getElementById('profileForm');
+    if (profileForm) {
+        profileForm.addEventListener('submit', saveProfileChanges);
+    }
 });
