@@ -86,16 +86,10 @@ document.addEventListener('DOMContentLoaded', async function() {
  window.userRole = userData.role;
  }
 
- // ====== Cache object for storing data in memory ======
-window.cache = {
-  students: { data: [], timestamp: 0 },
-  courses: { data: [], timestamp: 0 },
-  subscriptions: { data: [], timestamp: 0 },
-  payments: { data: [], timestamp: 0 }
-};
+ 
 
 // مدة صلاحية الكاش (مثلاً 5 دقائق)
-const CACHE_TTL = 5 * 60 * 1000;
+
 
  // ============== تحميل البيانات الأساسية ==============
  // ترتيب التحميل مهم: لا تبدأ بدون هذه البيانات
@@ -155,7 +149,6 @@ async function updateCurrentView() {
 }
 // === Tab management (consolidated) ===
 // updateCurrentView above calls the tab updater below. Keep one canonical updateCurrentTab
-
 
 // =============================================================
 // Unified updateCurrentTab (نسخة واحدة فقط)
@@ -603,7 +596,6 @@ async function loadModules() {
  }
 }
 
-
 async function loadSubscriptions(extraData = null, searchQuery = '') {
  try {
  const container = document.getElementById('subscriptionsContainer');
@@ -761,35 +753,27 @@ async function exportSubscriptionsExcel() {
   }
 }
 
-
 // Show add subscription modal
-function showAddSubscriptionModal() {
-  // Reset form values
-  const studentName = document.getElementById("studentName");
-  const studentPhone = document.getElementById("studentPhone");
-  const studentEmail = document.getElementById("studentEmail");
-  const courseSelect = document.getElementById("courseSelect");
-  const paymentAmount = document.getElementById("paymentAmount");
-  const modalTitle = document.getElementById("subscriptionModalTitle");
-
-  if (studentName) studentName.value = "";
-  if (studentPhone) studentPhone.value = "";
-  if (studentEmail) studentEmail.value = "";
-  if (courseSelect) courseSelect.value = "";
-  if (paymentAmount) paymentAmount.value = "";
-
-  // ✅ اعرض الكورسات المحملة في تبويب الكورسات
-  if (typeof courses !== "undefined" && courses.length > 0) {
-    populateCourseDropdown(courses);
-  } else if (cache.courses?.data?.length > 0) {
-    populateCourseDropdown(cache.courses.data);
+async function showAddSubscriptionModal() {
+  const modal = document.getElementById('subscriptionModal');
+  if (!modal) {
+    console.error("❌ لم يتم العثور على نافذة الاشتراكات");
+    return;
   }
 
-  // عنوان المودال
-  if (modalTitle) modalTitle.textContent = "إضافة اشتراك شامل";
+  modal.style.display = 'flex';
+  document.getElementById('subscriptionModalTitle').textContent = 'إضافة اشتراك جديد';
+  document.getElementById('subscriptionForm').reset();
 
-  // إظهار المودال
-  openModal("subscriptionModal");
+  // لو الكورسات مش محمّلة
+  if (!window.courses || window.courses.length === 0) {
+    await loadCourses(); // ينادي على الكورسات من Supabase
+  }
+
+  // بعد ما الكورسات تبقى متخزنة في window.courses
+  if (typeof populateCourseDropdown === 'function') {
+    populateCourseDropdown(window.courses);
+  }
 }
 
  // Show edit subscription modal
@@ -862,7 +846,6 @@ function showAddSubscriptionModal() {
 await loadSubscriptions(true);  // تحديث الاشتراكات
 await loadPayments(true);       // تحديث المدفوعات لو مرتبطة
 
-
  showStatus('تم إضافة الاشتراك بنجاح')
  closeModal('subscriptionModal')
  loadSubscriptions()
@@ -904,7 +887,6 @@ await loadPayments(true);       // تحديث المدفوعات لو مرتبط
  await updateCurrentTab(); // انتظار انتهاء تحديث كل البيانات
 updateCurrentTab(); // بعدين تحديث التبويب الحالي
  }
-
 
  // Load payments
 // ...existing code...
@@ -1086,8 +1068,6 @@ async function loadPayments() {
  </div>
  `
  }
-
-
 
 function translatePaymentStatus(status) {
   switch (status) {
@@ -1381,8 +1361,6 @@ function printAttendanceReceipt() {
 updateCurrentTab(); // بعدين تحديث التبويب الحالي // <-- تحديث كامل بعد تغيير الدورة
  }
 
-
-
  // Update payment
  async function updatePayment(paymentId) {
  try {
@@ -1606,7 +1584,6 @@ const { data, error } = await supabaseClient
   `)
   .order('date', { ascending: false });
 
-
     if (error) throw error;
 
     const workbook = new ExcelJS.Workbook();
@@ -1654,7 +1631,6 @@ date: rec.date ? new Date(rec.date).toLocaleDateString("ar-EG") : "-"
   }
 }
 
-
 // دالة طباعة سجل الحضور للطالب
 function printStudentAttendance(studentId) {
  const studentRecords = window.addAttendance.filter(att => att.student_id === studentId);
@@ -1692,111 +1668,109 @@ function printStudentAttendance(studentId) {
  printWindow.print();
 }
 
-
-// ✅ جلب المستخدم الحالي وتخزينه
+// === Supabase Client (يجب أن يكون معرّف مسبقًا في الصفحة) ===
+// تأكد من أن supabaseClient تم تعريفه قبل هذا الكود
+// ✅ تحميل المستخدم الحالي
 async function loadCurrentUser() {
-  const { data, error } = await supabaseClient.auth.getUser();
-  if (error) {
-    console.error("خطأ في جلب بيانات المستخدم:", error);
-    return;
-  }
-  if (data?.user) {
-    window.userId = data.user.id;
-    console.log("✅ Current user loaded:", window.userId);
-    // بعد ما نعرف السكرتير، نجيب حالته
-    loadSecretaryStatus();
+  try {
+    const { data, error } = await supabaseClient.auth.getUser();
+    if (error) throw error;
+
+    if (data?.user) {
+      window.userId = data.user.id;
+      console.log("✅ المستخدم الحالي:", window.userId);
+      window.loadSecretaryStatus(); // تحديث الحالة
+    } else {
+      window.location.href = 'index.html';
+    }
+  } catch (err) {
+    console.error("❌ خطأ في جلب المستخدم:", err);
+    showStatus?.("فشل التحقق من المستخدم", "error");
+    window.location.href = 'index.html';
   }
 }
 
-// ✅ تحميل حالة السكرتير الحالية
+// ✅ تحميل حالة السكرتير
 async function loadSecretaryStatus() {
-  const today = new Date().toISOString().split('T')[0];
+  if (!window.userId) return;
 
+  const today = new Date().toISOString().split('T')[0];
   const { data, error } = await supabaseClient
     .from('secretary_attendance')
     .select('*')
-    .eq('date', today)
     .eq('secretary_id', window.userId)
-    .maybeSingle();
-
-  if (error) {
-    console.error("خطأ في تحميل حالة السكرتير:", error);
-    return;
-  }
-
-  // Guard: ensure we have a user id
-  if (!window.userId) {
-    console.warn('loadSecretaryStatus: window.userId is not set');
-    return;
-  }
+    .eq('date', today)
+    .single(); // single() لأن التاريخ فريد
 
   const statusEl = document.getElementById('secretaryStatus');
-  const checkInBtn = document.getElementById('checkInBtn');
-  const checkOutBtn = document.getElementById('checkOutBtn');
+  const checkInBtn = document.getElementById('secCheckIn');
+  const checkOutBtn = document.getElementById('secCheckOut');
 
-  // Helper to safely set disabled state
-  const safeSetDisabled = (el, value) => { if (el) el.disabled = !!value; };
-  const safeSetText = (el, text) => { if (el) el.textContent = text; };
+  if (error) {
+    if (error.code !== 'PGRST116') {
+      console.error("❌ خطأ في جلب الحالة:", error);
+    }
+    // لا يوجد سجل
+    statusEl.textContent = "⏳ لم يتم تسجيل الحضور بعد";
+    checkInBtn.disabled = false;
+    checkOutBtn.disabled = true;
+    return;
+  }
 
-  if (!data) {
-    safeSetText(statusEl, "⏳ لم يتم تسجيل الحضور بعد");
-    safeSetDisabled(checkInBtn, false);
-    safeSetDisabled(checkOutBtn, true);
-  } else if (data && !data.check_out) {
-    safeSetText(statusEl, "✅ تم تسجيل الحضور (في انتظار الانصراف)");
-    safeSetDisabled(checkInBtn, true);
-    safeSetDisabled(checkOutBtn, false);
+  if (!data.check_in) {
+    statusEl.textContent = "⏳ لم يتم تسجيل الحضور بعد";
+    checkInBtn.disabled = false;
+    checkOutBtn.disabled = true;
+  } else if (data.check_in && !data.check_out) {
+    statusEl.textContent = "✅ تم الحضور (في انتظار الانصراف)";
+    checkInBtn.disabled = true;
+    checkOutBtn.disabled = false;
   } else {
-    safeSetText(statusEl, "👋 تم تسجيل الحضور والانصراف");
-    safeSetDisabled(checkInBtn, true);
-    safeSetDisabled(checkOutBtn, true);
+    statusEl.textContent = "👋 تم الحضور والانصراف";
+    checkInBtn.disabled = true;
+    checkOutBtn.disabled = true;
   }
 }
 
 // ✅ تسجيل الحضور
 async function checkInSecretary() {
+  if (!window.userId) return;
+
   const today = new Date().toISOString().split('T')[0];
-  // Ensure we don't insert duplicates: look for existing record for today
+  const now = new Date().toISOString();
+
   try {
-    const { data: existing, error: fetchErr } = await supabaseClient
+    const { data: existing, error: fetchError } = await supabaseClient
       .from('secretary_attendance')
-      .select('*')
-      .eq('date', today)
+      .select('id, check_in')
       .eq('secretary_id', window.userId)
-      .maybeSingle();
+      .eq('date', today)
+      .single();
 
-    if (fetchErr) throw fetchErr;
-
-    if (existing) {
-      // If a check-in already exists, do nothing
-      if (existing.check_in) {
-        showStatus('✅ الحضور مسجل بالفعل لهذا اليوم', 'info');
-        loadSecretaryStatus();
-        return;
-      }
-      // If a record exists but check_in is empty, update it
-      const { error: updErr } = await supabaseClient
-        .from('secretary_attendance')
-        .update({ check_in: new Date().toISOString() })
-        .eq('id', existing.id);
-      if (updErr) throw updErr;
-      showStatus('✅ تم تسجيل الحضور', 'success');
-      loadSecretaryStatus();
+    if (!fetchError && existing.check_in) {
+      showStatus('✅ الحضور مسجل بالفعل', 'info');
       return;
     }
 
-    // No existing record — insert a new one
-    const { error: insertErr } = await supabaseClient
-      .from('secretary_attendance')
-      .insert([{
-        date: today,
-        check_in: new Date().toISOString(),
-        secretary_id: window.userId
-      }]);
+    if (existing) {
+      const { error } = await supabaseClient
+        .from('secretary_attendance')
+        .update({ check_in: now })
+        .eq('id', existing.id);
+      if (error) throw error;
+    } else {
+      const { error } = await supabaseClient
+        .from('secretary_attendance')
+        .insert({
+          secretary_id: window.userId,
+          date: today,
+          check_in: now
+        });
+      if (error) throw error;
+    }
 
-    if (insertErr) throw insertErr;
     showStatus('✅ تم تسجيل الحضور', 'success');
-    loadSecretaryStatus();
+    window.loadSecretaryStatus();
   } catch (error) {
     console.error('❌ خطأ في تسجيل الحضور:', error);
     showStatus('خطأ في تسجيل الحضور', 'error');
@@ -1805,615 +1779,80 @@ async function checkInSecretary() {
 
 // ✅ تسجيل الانصراف
 async function checkOutSecretary() {
+  if (!window.userId) {
+    showStatus('❌ لم يتم تحميل المستخدم', 'error');
+    return;
+  }
+
   const today = new Date().toISOString().split('T')[0];
+  const now = new Date().toISOString();
+
   try {
-    // Ensure there is a record to update
-    const { data: existing, error: fetchErr } = await supabaseClient
+    const { data: existing, error: fetchError } = await supabaseClient
       .from('secretary_attendance')
-      .select('*')
-      .eq('date', today)
+      .select('id, check_in, check_out')
       .eq('secretary_id', window.userId)
-      .maybeSingle();
+      .eq('date', today)
+      .single();
 
-    if (fetchErr) throw fetchErr;
+    if (fetchError) {
+      if (fetchError.code === 'PGRST116') {
+        showStatus('⚠️ لم يتم تسجيل الحضور بعد', 'warning');
+      } else {
+        console.error('❌ خطأ في جلب السجل:', fetchError);
+        showStatus('خطأ في الاتصال', 'error');
+      }
+      return;
+    }
 
-    if (!existing) {
-      // No check-in found for today — inform the user
-      showStatus('لم يتم العثور على تسجيل حضور اليوم. الرجاء تسجيل الحضور أولاً.', 'warning');
+    if (!existing.check_in) {
+      showStatus('⚠️ لا يمكن الانصراف بدون حضور', 'warning');
       return;
     }
 
     if (existing.check_out) {
-      showStatus('تم تسجيل الانصراف بالفعل لهذا اليوم', 'info');
-      loadSecretaryStatus();
+      showStatus('ℹ️ تم الانصراف مسبقًا', 'info');
       return;
     }
 
-    const { error: updErr } = await supabaseClient
+    // تحديث الانصراف
+    const { error: updateError } = await supabaseClient
       .from('secretary_attendance')
-      .update({ check_out: new Date().toISOString() })
+      .update({ check_out: now })
       .eq('id', existing.id);
 
-    if (updErr) throw updErr;
+    if (updateError) {
+      console.error('❌ خطأ في التحديث:', updateError);
+      showStatus('فشل في تسجيل الانصراف', 'error');
+      return;
+    }
+
+    console.log('✅ تم تسجيل الانصراف بنجاح:', now);
     showStatus('👋 تم تسجيل الانصراف', 'success');
-    loadSecretaryStatus();
+    window.loadSecretaryStatus();
   } catch (error) {
-    console.error('❌ خطأ في تسجيل الانصراف:', error);
-    showStatus('خطأ في تسجيل الانصراف', 'error');
+    console.error('❌ خطأ غير متوقع:', error);
+    showStatus('حدث خطأ', 'error');
   }
 }
 
-// ✅ تحميل المستخدم أول ما الصفحة تفتح
-loadCurrentUser();
+// ✅ جعل الدوال عالمية
+window.loadCurrentUser = loadCurrentUser;
+window.loadSecretaryStatus = loadSecretaryStatus;
+window.checkInSecretary = checkInSecretary;
+window.checkOutSecretary = checkOutSecretary;
 
-
-// Filter attendances
- function filterAttendances() {
- const searchTerm = document.getElementById('attendanceSearch').value.toLowerCase()
- const filteredAttendances = attendances.filter(att => 
- (att.students?.full_name && att.students.full_name.toLowerCase().includes(searchTerm)) ||
- (att.courses?.name && att.courses.name.toLowerCase().includes(searchTerm))
- )
- 
- const container = document.getElementById('attendancesContainer')
- container.innerHTML = `
- <div class="table-container">
- <button class="btn btn-primary" onclick="showAddAttendanceModal()" style="margin-bottom: 20px;">
- <i class="fas fa-plus"></i> إضافة حضور جديد
- </button>
- <table>
- <thead>
- <tr>
- <th>اسم الطالب</th>
- <th>الدورة</th>
- <th>التاريخ</th>
- <th>الحالة</th>
- <th>ملاحظات</th>
- <th>الإجراءات</th>
- </tr>
- </thead>
- <tbody>
- ${filteredAttendances.map(attendance => `
- <tr>
- <td>${attendance.students?.full_name || '-'}</td>
- <td>${attendance.courses?.name || '-'}</td>
- <td>${formatDate(attendance.date)}</td>
- <td><span class="attendance-status ${attendance.status}">${attendance.status === 'present' ? 'حاضر' : attendance.status === 'absent' ? 'غائب' : 'متأخر'}</span></td>
- <td>${attendance.notes || '-'}</td>
- <td class="action-buttons">
- <button class="action-btn edit-btn" onclick="showEditAttendanceModal('${attendance.id}')">
- <i class="fas fa-edit"></i>
- </button>
- <button class="action-btn delete-btn" onclick="deleteAttendance('${attendance.id}')">
- <i class="fas fa-trash"></i>
- </button>
- </td>
- </tr>
- `).join('')}
- </tbody>
- </table>
- </div>
- `
- }
-
- // Show add attendance modal
- async function showAddAttendanceModal() {
- const modal = document.getElementById('attendanceModal')
- modal.style.display = 'flex'
- 
- document.getElementById('attendanceModalTitle').textContent = 'إضافة حضور جديد'
- document.getElementById('attendanceForm').reset()
- document.getElementById('attendanceId').value = ''
- 
- // Populate students dropdown
- const studentSelect = document.getElementById('attendanceStudent')
- studentSelect.innerHTML = '<option value="">اختر طالباً</option>'
- students.forEach(student => {
- const option = document.createElement('option')
- option.value = student.id
- option.textContent = student.full_name
- studentSelect.appendChild(option)
- })
- 
- // Populate courses dropdown
- const courseSelect = document.getElementById('attendanceCourse')
- courseSelect.innerHTML = '<option value="">اختر كورساً</option>'
- courses.forEach(course => {
- const option = document.createElement('option')
- option.value = course.id
- option.textContent = course.name
- courseSelect.appendChild(option)
- })
- 
- document.getElementById('attendanceForm').onsubmit = async function(e) {
- e.preventDefault()
- await addAttendance()
- }
- const today = new Date().toISOString().split('T')[0]
- document.getElementById('attendanceDate').value = today
-
- await updateCurrentTab(); // انتظار انتهاء تحديث كل البيانات
-updateCurrentTab(); // بعدين تحديث التبويب الحالي // <-- تحديث كامل بعد إضافة حضور جديد
-
- }
-// دالة لتحديث إجمالي سعر الدورة تلقائياً
-
- // Show edit attendance modal
- function showEditAttendanceModal(attendanceId) {
- const attendance = attendances.find(a => a.id === attendanceId)
- if (!attendance) return
-
- const modal = document.getElementById('attendanceModal')
- modal.style.display = 'flex'
- 
- document.getElementById('attendanceModalTitle').textContent = 'تعديل بيانات الحضور'
- document.getElementById('attendanceId').value = attendance.id
- document.getElementById('attendanceDate').value = attendance.date
- document.getElementById('attendanceStatus').value = attendance.status
- document.getElementById('attendanceNotes').value = attendance.notes || ''
- 
- // Populate students dropdown and select current student
- const studentSelect = document.getElementById('attendanceStudent')
- studentSelect.innerHTML = '<option value="">اختر طالباً</option>'
- students.forEach(student => {
- const option = document.createElement('option')
- option.value = student.id
- option.textContent = student.full_name
- if (student.id === attendance.student_id) {
- option.selected = true
- }
- studentSelect.appendChild(option)
- })
- 
- // Populate courses dropdown and select current course
- const courseSelect = document.getElementById('attendanceCourse')
- courseSelect.innerHTML = '<option value="">اختر كورساً</option>'
- courses.forEach(course => {
- const option = document.createElement('option')
- option.value = course.id
- option.textContent = course.name
- if (course.id === attendance.course_id) {
- option.selected = true
- }
- courseSelect.appendChild(option)
- })
- 
- document.getElementById('attendanceForm').onsubmit = async function(e) {
- e.preventDefault()
- await updateAttendance(attendanceId)
- }
- }
-
- // Add attendance
- async function addAttendance() {
- try {
- const studentId = document.getElementById('attendanceStudent').value
- const courseId = document.getElementById('attendanceCourse').value
- const attendanceDate = document.getElementById('attendanceDate').value
- const status = document.getElementById('attendanceStatus').value
- const notes = document.getElementById('attendanceNotes').value
-
- const { data, error } = await supabaseClient
- .from('attendances')
- .insert([{
- student_id: studentId,
- course_id: courseId,
- date: attendanceDate,
- status: status,
- notes: notes
- }])
-
- if (error) throw error
-
- showStatus('تم إضافة الحضور بنجاح')
- closeModal('attendanceModal')
- loadAttendances()
- } catch (error) {
- console.error('Error adding attendance:', error)
- showStatus('خطأ في إضافة الحضور', 'error')
- }
- }
-
- // Update attendance
- async function updateAttendance(attendanceId) {
- try {
- const studentId = document.getElementById('attendanceStudent').value
- const courseId = document.getElementById('attendanceCourse').value
- const attendanceDate = document.getElementById('attendanceDate').value
- const status = document.getElementById('attendanceStatus').value
- const notes = document.getElementById('attendanceNotes').value
-
- const { data, error } = await supabaseClient
- .from('attendances')
- .update({
- student_id: studentId,
- course_id: courseId,
- date: attendanceDate,
- status: status,
- notes: notes
- })
- .eq('id', attendanceId)
-
- if (error) throw error
-
- showStatus('تم تحديث بيانات الحضور بنجاح')
- closeModal('attendanceModal')
- loadAttendances()
- } catch (error) {
- console.error('Error updating attendance:', error)
- showStatus('خطأ في تحديث بيانات الحضور', 'error')
- }
-
- await updateCurrentTab(); // انتظار انتهاء تحديث كل البيانات
-updateCurrentTab(); // بعدين تحديث التبويب الحالي // <-- تحديث كامل بعد تغيير الحضور
-
- }
-
- // Delete attendance
- async function deleteAttendance(attendanceId) {
- if (!confirm('هل أنت متأكد من حذف هذا الحضور؟')) {
- return
- }
-
- try {
- const { error } = await supabaseClient
- .from('attendances')
- .delete()
- .eq('id', attendanceId)
-
- if (error) throw error
-
- showStatus('تم حذف الحضور بنجاح')
- loadAttendances()
- } catch (error) {
- console.error('Error deleting attendance:', error)
- showStatus('خطأ في حذف الحضور', 'error')
- }
- await updateCurrentTab(); // انتظار انتهاء تحديث كل البيانات
-updateCurrentTab(); // بعدين تحديث التبويب الحالي // <-- تحديث كامل بعد حذف الحضور
- }
-// دالة لعرض إيصال الحضور
-// دالة لعرض إيصال الحضور مع السجل الكامل
-
-// دالة لعرض إيصال الحضور مع السجل الكامل
-async function showAttendanceReceipt(attendanceId) {
- try {
- // التأكد من تحميل البيانات إذا لزم
- if (!attendances || attendances.length === 0) {
- await loadAttendances();
- }
- if (!students || students.length === 0) {
- const { data: studentsData, error: studentsError } = await supabaseClient.from('students').select('id, full_name');
- if (studentsError) throw studentsError;
- students = studentsData || [];
- }
- if (!courses || courses.length === 0) {
- const { data: coursesData, error: coursesError } = await supabaseClient.from('courses').select('id, full_name');
- if (coursesError) throw coursesError;
- courses = coursesData || [];
- }
-
- const attendance = attendances.find(a => a.id === attendanceId);
- if (!attendance) {
- showStatus('سجل الحضور غير موجود', 'error');
- return;
- }
-
- const student = students.find(s => s.id === attendance.student_id);
- const course = courses.find(c => c.id === attendance.course_id);
- 
- const statusText = attendance.status === 'present' ? 'حاضر' : 
- attendance.status === 'absent' ? 'غائب' : 'متأخر';
- 
- // جلب السجل الكامل للحضور لهذا الطالب في هذا الدورة
- let studentAttendances = []; // تهيئة افتراضية
- let totalSessions = 0, presentCount = 0, absentCount = 0, lateCount = 0, attendanceRate = 0;
-
- try {
- const { data: fetchedAttendances, error: attendancesError } = await supabaseClient
- .from('attendances')
- .select('*')
- .eq('student_id', attendance.student_id)
- .eq('course_id', attendance.course_id)
- .order('date', { ascending: false });
-
- if (attendancesError) {
- console.error('Error fetching student attendances:', attendancesError);
- throw attendancesError;
- }
-
- studentAttendances = fetchedAttendances || [];
- 
- // حساب الإحصائيات فقط إذا كانت البيانات موجودة
- if (studentAttendances && Array.isArray(studentAttendances)) {
- totalSessions = studentAttendances.length;
- presentCount = studentAttendances.filter(a => a.status === 'حاضر').length;
- absentCount = studentAttendances.filter(a => a.status === 'غائب').length;
- lateCount = studentAttendances.filter(a => a.status === 'متأخر').length;
- attendanceRate = totalSessions > 0 ? Math.round((presentCount / totalSessions) * 100) : 0;
- }
- } catch (fetchError) {
- console.error('Error in attendance data fetching block:', fetchError);
- studentAttendances = []; // ضمان أن تكون مصفوفة حتى لو فشل الاستعلام
- // يمكن عرض رسالة للمستخدم أو متابعة مع بيانات فارغة
- }
-
- const receiptContent = document.getElementById('attendanceReceiptContent');
- if (!receiptContent) {
- console.error('عنصر attendanceReceiptContent غير موجود');
- showStatus('خطأ في عرض الإيصال: العنصر غير موجود', 'error');
- return;
- }
-
- // بناء محتوى الإيصال
- let attendanceTableRows = '';
- if (studentAttendances && studentAttendances.length > 0) {
- attendanceTableRows = studentAttendances.map(att => {
- const attStatus = att.status === 'present' ? 'حاضر' : 
- att.status === 'absent' ? 'غائب' : 'متأخر';
- return `
- <tr>
- <td style="border: 1px solid #ddd; padding: 8px;">${formatDate(att.date)}</td>
- <td style="border: 1px solid #ddd; padding: 8px;">${attStatus}</td>
- <td style="border: 1px solid #ddd; padding: 8px;">${att.notes || '-'}</td>
- </tr>
- `;
- }).join('');
- } else {
- attendanceTableRows = `<tr><td colspan="3" style="border: 1px solid #ddd; padding: 8px; text-align: center;">لا توجد سجلات حضور سابقة</td></tr>`;
- }
-
- receiptContent.innerHTML = `
- <div style="text-align: center; padding: 20px; direction: rtl; font-family: 'Tajawal', sans-serif;">
- <div id="receiptLogo" style="margin-bottom: 20px;">
- <img src="logo.png" alt="شعار المركز" style="max-width: 100px;"> 
- <h2>Assiut Academy</h2>
- </div>
- <h3>إيصال حضور</h3>
- <hr>
- <div style="text-align: right; margin: 20px 0;">
- <p><strong>رقم السجل:</strong> ${attendance.id}</p>
- <p><strong>التاريخ:</strong> ${formatDate(attendance.date)}</p>
- <p><strong>اسم الطالب:</strong> ${student?.full_name || '-'}</p>
- <p><strong>الدورة:</strong> ${course?.name || '-'}</p>
- <p><strong>الحالة:</strong> ${statusText}</p>
- ${attendance.notes ? `<p><strong>ملاحظات:</strong> ${attendance.notes}</p>` : ''}
- </div>
- 
- <hr>
- <h4>سجل الحضور الكامل</h4>
- <div style="text-align: right; margin: 20px 0;">
- <p><strong>إجمالي الجلسات:</strong> ${totalSessions}</p>
- <p><strong>الحضور:</strong> ${presentCount} (${attendanceRate}%)</p>
- <p><strong>الغياب:</strong> ${absentCount}</p>
- <p><strong>التأخير:</strong> ${lateCount}</p>
- </div>
- 
- <div style="margin: 20px 0;">
- <table style="width: 100%; border-collapse: collapse; text-align: right;">
- <thead>
- <tr style="background-color: #f0f0f0;">
- <th style="border: 1px solid #ddd; padding: 8px;">التاريخ</th>
- <th style="border: 1px solid #ddd; padding: 8px;">الحالة</th>
- <th style="border: 1px solid #ddd; padding: 8px;">ملاحظات</th>
- </tr>
- </thead>
- <tbody>
- ${attendanceTableRows}
- </tbody>
- </table>
- </div>
- 
- <hr>
- <p>شكراً لحضوركم</p>
- </div>
- `;
-
- const modal = document.getElementById('attendanceReceiptModal');
- if (modal) {
- modal.style.display = 'flex';
- } else {
- console.error('نافذة attendanceReceiptModal غير موجودة');
- showStatus('خطأ: نافذة الإيصال غير موجودة', 'error');
- }
- } catch (error) {
- console.error('Error showing attendance receipt:', error);
- showStatus('خطأ في عرض الإيصال: ' + (error.message || 'خطأ غير معروف'), 'error');
- }
-}
-
-// دالة لطباعة إيصال الحضور
-function printAttendanceReceipt() {
- const printContent = document.getElementById('attendanceReceiptContent').innerHTML
- const originalContent = document.body.innerHTML
- 
- document.body.innerHTML = printContent
- window.print()
- document.body.innerHTML = originalContent
- // إعادة فتح النافذة بعد الطباعة
- document.getElementById('attendanceReceiptModal').style.display = 'flex'
-}
-
- // Show status message
- function showStatus(message, type = 'success') {
- const statusEl = document.getElementById('status')
- statusEl.textContent = message
- statusEl.className = ''
- statusEl.classList.add('show', type)
- 
- setTimeout(() => {
- statusEl.classList.remove('show')
- }, 3000)
- }
-
- // Close modal
- function closeModal(modalId) {
- const modal = document.getElementById(modalId)
- if (modal) {
- modal.style.display = 'none'
- }
- }
-
-// (Canonical formatDate and formatCurrency are defined above.)
-
- // Close modals when clicking outside
- window.onclick = function(event) {
- if (event.target.classList.contains('modal')) {
- event.target.style.display = 'none'
- }
- }
-// تفعيل زر التوجل للسايد بار
-document.getElementById('menuToggle').addEventListener('click', function() {
- const sidebar = document.querySelector('.sidebar');
- sidebar.classList.toggle('active');
+// ✅ ربط الأحداث بعد تحميل الصفحة
+document.addEventListener('DOMContentLoaded', () => {
+  document.getElementById('secCheckIn')?.addEventListener('click', checkInSecretary);
+  document.getElementById('secCheckOut')?.addEventListener('click', checkOutSecretary);
+  loadCurrentUser();
 });
 
-// ===== Hide Sidebar on Mobile When Clicking a Tab =====
-document.querySelectorAll('.tab-link').forEach(link => {
-  link.addEventListener('click', () => {
-    if (window.innerWidth <= 768) {
-      document.getElementById('sidebar').classList.remove('active');
-    }
-  });
-});
 
-// ===== Load User Avatar from avatar_url =====
-async function loadUserAvatar() {
-  try {
-    const user = supabaseClient.auth.user();
-    if (!user) return;
-    const { data, error } = await supabaseClient
-      .from('users')
-      .select('avatar_url')
-      .eq('id', user.id)
-      .single();
-    if (error) throw error;
-
-    const avatarUrl = data?.avatar_url || '/assets/img/default-avatar.png';
-    const avatarImg = document.querySelector('#user-avatar');
-    if (avatarImg) avatarImg.src = avatarUrl;
-  } catch (err) {
-    console.error('Error loading avatar:', err);
-  }
-}
-
-// ===== Update User Avatar =====
-async function updateAvatarUrl() {
-  try {
-    const user = supabaseClient.auth.user();
-    const newUrl = document.getElementById('avatar-url-input').value.trim();
-    if (!user || !newUrl) return;
-    const { error } = await supabaseClient
-      .from('users')
-      .update({ avatar_url: newUrl })
-      .eq('id', user.id);
-    if (error) throw error;
-    showStatus('تم تحديث صورة البروفايل بنجاح');
-    loadUserAvatar();
-  } catch (err) {
-    console.error('Error updating avatar:', err);
-    showStatus('خطأ في تحديث الصورة', 'error');
-  }
-}
-
-// ===== Load Current User Profile =====
-async function loadUserProfile() {
-  try {
-    const user = supabaseClient.auth.user();
-    if (!user) return;
-    const { data, error } = await supabaseClient
-      .from('users')
-      .select('full_name, email, phone, avatar_url')
-      .eq('id', user.id)
-      .single();
-    if (error) throw error;
-
-    document.getElementById('profile-name').textContent = data.full_name || '';
-    document.getElementById('profile-email').textContent = data.email || '';
-    document.getElementById('profile-phone').textContent = data.phone || '';
-    document.getElementById('avatar-url-input').value = data.avatar_url || '';
-  } catch (err) {
-    console.error('Error loading profile:', err);
-  }
-}
-
-// ===== Secretary Attendance =====
-async function handleSecretaryAttendance() {
-  try {
-    const user = supabaseClient.auth.user();
-    if (!user) return;
-
-    const today = new Date().toISOString().split('T')[0];
-    const { data, error } = await supabaseClient
-      .from('attendance_secretary')
-      .select('*')
-      .eq('user_id', user.id)
-      .eq('date', today)
-      .single();
-
-    const btn = document.getElementById('attendance-btn');
-
-    if (error && error.code === 'PGRST116') {
-      btn.textContent = 'تسجيل حضور';
-      btn.onclick = async () => {
-        await supabaseClient.from('attendance_secretary').insert([{
-          user_id: user.id,
-          date: today,
-          check_in: new Date().toISOString()
-        }]);
-        handleSecretaryAttendance();
-      };
-    } else if (data && !data.check_out) {
-      btn.textContent = 'تسجيل انصراف';
-      btn.onclick = async () => {
-        await supabaseClient.from('attendance_secretary')
-          .update({ check_out: new Date().toISOString() })
-          .eq('id', data.id);
-        handleSecretaryAttendance();
-      };
-    } else {
-      btn.textContent = 'تم تسجيل الحضور والانصراف';
-      btn.disabled = true;
-    }
-  } catch (err) {
-    console.error('Error handling secretary attendance:', err);
-  }
-}
-
-
-
-// ====== Performance Patch: Caching + Polling + Disable Realtime ======
+// ====== Performance Patch: Polling only (No cache, No realtime) ======
 (function(){
-  const CACHE_TTL = 60000; // 1 minute
-  const __callCache = new Map();
-
-  function wrapWithTTL(fnName){
-    try {
-      const orig = window[fnName];
-      if (typeof orig !== 'function') return;
-
-      let lastTime = 0;
-      let pending = null;
-      window[fnName] = async function(...args){
-        const force = args[0] === true || args[0]?.force === true;
-        const now = Date.now();
-        if (!force && (now - lastTime) < CACHE_TTL) {
-          // Return pending promise if exists to dedupe bursts
-          if (pending) return pending;
-          const cacheKey = fnName + '::result';
-          if (__callCache.has(cacheKey)) return __callCache.get(cacheKey);
-        }
-        pending = orig.apply(this, args);
-        const result = await pending;
-        __callCache.set(fnName + '::result', result);
-        lastTime = Date.now();
-        pending = null;
-        return result;
-      };
-    } catch(e){ console.warn('wrapWithTTL failed for', fnName, e); }
-  }
-
-  // Wrap common loaders
+  // Wrap common loaders without caching
   [
     'loadStudents',
     'loadCourses',
@@ -2430,9 +1869,19 @@ async function handleSecretaryAttendance() {
     'loadUserProfile',
     'loadUserAvatar',
     'loadSecretaryStatus'
-  ].forEach(wrapWithTTL);
+  ].forEach(fnName => {
+    try {
+      const orig = window[fnName];
+      if (typeof orig !== 'function') return;
 
-  // Disable realtime by monkey-patching channel subscription (no-op)
+      // مجرد wrapper يرجع نفس الدالة بدون cache
+      window[fnName] = async function(...args){
+        return await orig.apply(this, args);
+      };
+    } catch(e){ console.warn('wrap failed for', fnName, e); }
+  });
+
+  // تعطيل Realtime بالكامل
   try {
     if (typeof supabaseClient?.channel === 'function') {
       const noopChannel = function(){ 
@@ -2447,7 +1896,7 @@ async function handleSecretaryAttendance() {
     }
   } catch(e){ console.warn('Failed to override realtime', e); }
 
-  // Lightweight polling of the visible tab only
+  // Polling للتبويب الحالي فقط
   if (typeof window.updateCurrentTab === 'function') {
     setInterval(() => {
       try { window.updateCurrentTab(); } catch(e){}
@@ -2469,19 +1918,21 @@ function openModal(id) {
   }
 }
 
-
 // ====== Populate Course Dropdown for Unified Modal ======
 function populateCourseDropdown(courses) {
-  const select = document.getElementById("courseSelect");
+  const select = document.getElementById('courseSelect');
   if (!select) return;
 
+  // امسح القديم
   select.innerHTML = '<option value="">اختر كورساً</option>';
 
+  if (!courses || courses.length === 0) return;
+
   courses.forEach(course => {
-    const option = document.createElement("option");
+    const option = document.createElement('option');
     option.value = course.id;
     option.textContent = course.name;
-    option.setAttribute("data-price", course.price || 0); // 👈 السعر في option
+    option.dataset.price = course.price; // علشان نجيب السعر بعدين
     select.appendChild(option);
   });
 }
@@ -2537,13 +1988,11 @@ const paymentData = {
   status: paid >= price ? "paid" : "partial"  // لو دفع كله تبقى مدفوع، غير كده جزئي
 };
 
-
     const { error: paymentError } = await supabaseClient
       .from("payments")
       .insert([paymentData]);
 
     if (paymentError) throw paymentError;
-
 
     // ✅ تحديث التبويبات
     await loadStudents(true);
@@ -2611,8 +2060,6 @@ function calculateRemaining() {
   document.getElementById("remainingAmount").value = remaining >= 0 ? remaining : 0;
 }
 
-
-
 // ربط الأحداث (مرة واحدة بعد تحميل الصفحة)
 document.addEventListener("DOMContentLoaded", () => {
   const courseSelect = document.getElementById("courseSelect");
@@ -2643,7 +2090,6 @@ function broadcastDashboardUpdate(detail = {}) {
 }
 window.broadcastDashboardUpdate = broadcastDashboardUpdate;
 // === end broadcaster ===
-
 
 // Ensure showStatus is available globally
 try { if (typeof showStatus === 'function') window.showStatus = showStatus; } catch (_) {}

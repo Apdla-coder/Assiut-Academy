@@ -976,12 +976,6 @@ async function loadAllData(){
   await loadWithPermissionCheck(loadTeacherAttendance, 'teacher_attendance');
   await loadWithPermissionCheck(loadSecretaryAttendance, 'secretary_attendance');
   await loadWithPermissionCheck(loadExamScores, 'exam_scores');
-  await loadWithPermissionCheck(loadTeacherAttendance, 'teacher_attendance');
-await loadWithPermissionCheck(loadSecretaryAttendance, 'secretary_attendance');
-
-// ✅ تحديث العرض
-renderTeacherAttendance();
-renderSecretaryAttendance();
 
   console.log("All data loading completed");
 }
@@ -1077,20 +1071,47 @@ async function loadTeacherAttendance(){
   if(error) throw error;
   teacherAttendanceData=data;
   console.log("Teacher attendance loaded:", data.length);
+  renderTeacherAttendance();
 }
 
 async function loadSecretaryAttendance(){
   console.log("Loading secretary attendance...");
-  const {data,error}=await supabase
-    .from('secretary_attendance')
-    .select(`
-      id, date, check_in, check_out,
-      users!secretary_id ( full_name )
-    `)
-    .order('date', { ascending: false });
-  if(error) throw error;
-  secretaryAttendanceData=data;
-  console.log("Secretary attendance loaded:", data.length, data);
+  try {
+    // استرجاع بيانات الحضور أولاً
+    const {data: attendanceData, error: attendanceError} = await supabase
+      .from('secretary_attendance')
+      .select('*')
+      .order('date', { ascending: false });
+
+    if(attendanceError) throw attendanceError;
+    
+    // استرجاع أسماء السكرتارية
+    const secretaryIds = [...new Set(attendanceData.map(record => record.secretary_id).filter(id => id))];
+    let usersInfo = [];
+    
+    if(secretaryIds.length > 0) {
+      const {data: usersData, error: usersError} = await supabase
+        .from('users')
+        .select('id, full_name')
+        .in('id', secretaryIds);
+      
+      if(usersError) throw usersError;
+      usersInfo = usersData;
+    }
+    
+    // دمج البيانات
+    secretaryAttendanceData = attendanceData.map(record => ({
+      ...record,
+      user: usersInfo.find(user => user.id === record.secretary_id)
+    }));
+    
+    console.log("Secretary attendance loaded:", secretaryAttendanceData.length, secretaryAttendanceData);
+    renderSecretaryAttendance();
+  } catch (error) {
+    console.error("Error loading secretary attendance:", error);
+    secretaryAttendanceData = [];
+    renderSecretaryAttendance();
+  }
 }
 
 async function loadExamScores(){
@@ -1218,17 +1239,14 @@ function logout(){
 }
 
 // =============================
-// 🎓 عرض حضور المعلمين
+// 🎓 تحميل وعرض حضور المعلمين
 // =============================
 function renderTeacherAttendance() {
   const container = document.getElementById("teacherAttendanceList");
   if (!container) return;
 
-  // استخراج التواريخ الفعلية من السجلات
   const dates = [...new Set(
-    teacherAttendanceData
-      .map(r => getRecordDate(r.check_in_time, r.check_out_time, true))
-      .filter(Boolean)
+    teacherAttendanceData.map(r => getRecordDate(r.check_in_time, r.check_out_time, true)).filter(Boolean)
   )];
 
   let filterHtml = `
@@ -1267,7 +1285,6 @@ function updateTeacherAttendanceDisplay(data) {
   }
 
   let html = '<div class="attendance-cards">';
-
   data.forEach(r => {
     const checkInTime = r.check_in_time ? new Date(r.check_in_time).toLocaleTimeString('ar-EG', { hour: '2-digit', minute: '2-digit' }) : '-';
     const checkOutTime = r.check_out_time ? new Date(r.check_out_time).toLocaleTimeString('ar-EG', { hour: '2-digit', minute: '2-digit' }) : '-';
@@ -1285,7 +1302,7 @@ function updateTeacherAttendanceDisplay(data) {
     html += `
       <div class="attendance-card">
         <div class="card-header">
-          <h3>${r.users ? r.users.full_name : "-"}</h3>
+          <h3>${r.users?.full_name || "-"}</h3>
           <span class="status ${statusClass}">${status}</span>
         </div>
         <div class="card-body">
@@ -1297,24 +1314,20 @@ function updateTeacherAttendanceDisplay(data) {
         </div>
       </div>`;
   });
-
   html += "</div>";
   container.innerHTML += html;
 }
 
 function filterTeacherAttendance() {
   const dateFilter = document.getElementById('teacherDateFilter').value;
-
   if (!dateFilter) {
     updateTeacherAttendanceDisplay(teacherAttendanceData);
     return;
   }
-
   const filteredData = teacherAttendanceData.filter(record => {
     const actualDate = getRecordDate(record.check_in_time, record.check_out_time, true);
     return actualDate === dateFilter;
   });
-
   updateTeacherAttendanceDisplay(filteredData);
 }
 
@@ -1324,16 +1337,24 @@ function clearTeacherFilters() {
 }
 
 // =============================
-// 🗂️ عرض حضور السكرتارية
+// 🗂️ تحميل وعرض حضور السكرتارية
 // =============================
 function renderSecretaryAttendance() {
   const container = document.getElementById("secretaryAttendanceList");
   if (!container) return;
 
+  // استخراج التواريخ من البيانات
   const dates = [...new Set(
-    secretaryAttendanceData
-      .map(r => getRecordDate(r.check_in, r.check_out, true))
-      .filter(Boolean)
+    secretaryAttendanceData.map(r => {
+      if (r.date) {
+        return r.date;
+      }
+      const sourceDate = r.check_in || r.check_out;
+      if (sourceDate) {
+        return new Date(sourceDate).toISOString().split("T")[0];
+      }
+      return null;
+    }).filter(Boolean)
   )];
 
   let filterHtml = `
@@ -1372,7 +1393,6 @@ function updateSecretaryAttendanceDisplay(data) {
   }
 
   let html = '<div class="attendance-cards">';
-
   data.forEach(r => {
     const checkInTime = r.check_in ? new Date(r.check_in).toLocaleTimeString('ar-EG', { hour: '2-digit', minute: '2-digit' }) : '-';
     const checkOutTime = r.check_out ? new Date(r.check_out).toLocaleTimeString('ar-EG', { hour: '2-digit', minute: '2-digit' }) : '-';
@@ -1390,36 +1410,32 @@ function updateSecretaryAttendanceDisplay(data) {
     html += `
       <div class="attendance-card">
         <div class="card-header">
-          <h3>${r.users?.full_name || '-'}</h3>
+          <h3>${r.user?.full_name || 'غير محدد'}</h3>
           <span class="status ${statusClass}">${status}</span>
         </div>
         <div class="card-body">
           <div class="info-row"><span class="label">التاريخ:</span>
-            <span class="value">${getRecordDate(r.check_in, r.check_out)}</span>
+            <span class="value">${r.date || getRecordDate(r.check_in, r.check_out)}</span>
           </div>
           <div class="info-row"><span class="label">الحضور:</span><span class="value">${checkInTime}</span></div>
           <div class="info-row"><span class="label">الانصراف:</span><span class="value">${checkOutTime}</span></div>
         </div>
       </div>`;
   });
-
   html += "</div>";
   container.innerHTML += html;
 }
 
 function filterSecretaryAttendance() {
   const dateFilter = document.getElementById('secretaryDateFilter').value;
-
   if (!dateFilter) {
     updateSecretaryAttendanceDisplay(secretaryAttendanceData);
     return;
   }
-
   const filteredData = secretaryAttendanceData.filter(record => {
-    const actualDate = getRecordDate(record.check_in, record.check_out, true);
-    return actualDate === dateFilter;
+    const recordDate = record.date || getRecordDate(record.check_in, record.check_out, true);
+    return recordDate === dateFilter;
   });
-
   updateSecretaryAttendanceDisplay(filteredData);
 }
 
@@ -1442,7 +1458,6 @@ function formatDate(dateStr) {
   const d = new Date(dateStr);
   return d.toLocaleDateString("ar-EG");
 }
-
 
 </script>
 </body>
