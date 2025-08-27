@@ -1717,27 +1717,30 @@ function updateStudentListDisplay(students) {
 }
 
 // تعديل دالة setAllAttendance لتتناسب مع التصميم الجديد
-            function setAllAttendance(status) {
-                document.querySelectorAll('.student-status-select').forEach(select => {
-                    select.value = status;
-                });
-                document.querySelectorAll('.student-checkbox').forEach(checkbox => {
-                    checkbox.checked = true;
-                });
-                showStatus(`تم تحديد الحضور "${getStatusText(status)}" للجميع.`, 'success');
-            }
-            
-            // تعديل دالة clearAllAttendance
-            function clearAllAttendance() {
-                document.querySelectorAll('.student-checkbox').forEach(checkbox => {
-                    checkbox.checked = false;
-                });
-                document.querySelectorAll('.student-status-select').forEach(select => {
-                    select.selectedIndex = 0;
-                });
-                showStatus('تم مسح جميع الاختيارات.', 'success');
-            }
-            
+function setAllAttendance(status) {
+    document.querySelectorAll('.student-status-select').forEach(select => {
+        select.value = status;
+    });
+    document.querySelectorAll('.student-checkbox').forEach(checkbox => {
+        checkbox.checked = true;
+    });
+    showStatus(`تم تحديد الحضور "${getStatusText(status)}" للجميع.`, 'success');
+}            
+
+
+// تعديل دالة clearAllAttendance
+
+function clearAllAttendance() {
+    document.querySelectorAll('.student-checkbox').forEach(checkbox => {
+        checkbox.checked = false;
+    });
+    document.querySelectorAll('.student-status-select').forEach(select => {
+        // ✅ إعادة تعيين الحالة إلى "غائب" (القيمة الافتراضية الجديدة)
+        select.value = 'absent';
+    });
+    showStatus('تم مسح جميع الاختيارات.', 'success');
+}            
+
             // دالة لتحديد/إلغاء تحديد جميع الطلاب
             function toggleAllStudents(isChecked) {
                 document.querySelectorAll('.student-checkbox').forEach(checkbox => {
