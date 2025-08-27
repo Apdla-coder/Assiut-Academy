@@ -16,6 +16,7 @@
             let lessonsByCourse = {};
             let exams = []; // لتخزين بيانات الاختبارات
             let qrScanner = null;
+let scannedStudents = new Set();
 
             // DOM Elements
             const sidebar = document.getElementById('sidebar');
@@ -1852,6 +1853,8 @@ async function loadProfileAttendanceRecords() {
 
 
 
+// مصفوفة لتخزين الطلاب اللي اتسجلوا
+
 // زر تشغيل الكاميرا
 document.getElementById("startQrScan").addEventListener("click", () => {
   const qrReader = document.getElementById("qr-reader");
@@ -1876,6 +1879,15 @@ document.getElementById("startQrScan").addEventListener("click", () => {
           return;
         }
 
+        // لو الطالب اتسجل قبل كده متسجلش تاني
+        if (scannedStudents.has(studentData.student_id)) {
+          console.log(`⚠️ الطالب ${studentData.student_id} اتسجل بالفعل.`);
+          return;
+        }
+
+        // إضافة الطالب للمصفوفة علشان ميكررهوش
+        scannedStudents.add(studentData.student_id);
+
         // إدخال الحضور في جدول attendances
         const { error } = await supabaseClient
           .from("attendances")
@@ -1889,9 +1901,13 @@ document.getElementById("startQrScan").addEventListener("click", () => {
 
         if (error) {
           alert("❌ خطأ: " + error.message);
+          scannedStudents.delete(studentData.student_id); // رجع الطالب عشان ممكن نجرب تاني
         } else {
           alert("✅ تم تسجيل حضور الطالب عبر QR");
           loadTeacherAttendances(); // تحديث الجدول
+
+          // بعد 5 ثواني نسمح لنفس الطالب يتسجل تاني لو لزم
+          setTimeout(() => scannedStudents.delete(studentData.student_id), 5000);
         }
       } catch (e) {
         alert("⚠️ QR غير صالح");
@@ -1911,6 +1927,7 @@ document.getElementById("stopQrScan").addEventListener("click", () => {
       document.getElementById("qr-reader").style.display = "none";
       document.getElementById("startQrScan").style.display = "inline-block";
       document.getElementById("stopQrScan").style.display = "none";
+      scannedStudents.clear(); // تصفير عند إغلاق الكاميرا
     });
   }
 });
