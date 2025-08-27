@@ -35,7 +35,6 @@ async function loadStudents() {
   }
 }
 
-// دالة توليد جدول الطلاب (قابلة لإعادة الاستخدام)
 function renderStudentsTable(data) {
   return `
     <div class="table-container">
@@ -62,9 +61,19 @@ function renderStudentsTable(data) {
               <td>${student.parent_phone || '-'}</td>
               <td>${formatDate(student.created_at)}</td>
               <td class="action-buttons">
-                <button class="action-btn view-btn" onclick="showStudentFullDetails('${student.id}')"><i class="fas fa-eye"></i></button>
-                <button class="action-btn edit-btn" onclick="showEditStudentModal('${student.id}')"><i class="fas fa-edit"></i></button>
-                <button class="action-btn delete-btn" onclick="deleteStudent('${student.id}')"><i class="fas fa-trash"></i></button>
+                <button class="action-btn view-btn" onclick="showStudentFullDetails('${student.id}')">
+                  <i class="fas fa-eye"></i>
+                </button>
+                <button class="action-btn edit-btn" onclick="showEditStudentModal('${student.id}')">
+                  <i class="fas fa-edit"></i>
+                </button>
+                <button class="action-btn delete-btn" onclick="deleteStudent('${student.id}')">
+                  <i class="fas fa-trash"></i>
+                </button>
+                <!-- ✅ زر استخراج QR -->
+                <button class="action-btn qr-btn" onclick="generateStudentQR('${student.id}', '${student.full_name}')">
+                  <i class="fas fa-qrcode"></i>
+                </button>
               </td>
             </tr>
           `).join('')}
@@ -584,6 +593,36 @@ async function fetchStudentExams(studentId) {
 
   return data;
 }
+
+// ✅ توليد QR وعرضه في المودال الثابت
+function generateStudentQR(studentId, studentName) {
+  // فتح المودال
+  const modal = document.getElementById("studentQrModal");
+  modal.style.display = "flex";
+
+  // تحديث البيانات
+  document.getElementById("qrStudentName").textContent = studentName;
+
+  // مسح أي QR قديم
+  document.getElementById("qrCanvas").innerHTML = "";
+
+  // توليد QR جديد
+  QRCode.toCanvas(
+    document.createElement("canvas"),
+    JSON.stringify({ student_id: studentId }),
+    { width: 200 },
+    (error, canvas) => {
+      if (error) {
+        console.error(error);
+        showStatus("❌ فشل في توليد QR", "error");
+      } else {
+        document.getElementById("qrCanvas").appendChild(canvas);
+      }
+    }
+  );
+}
+
+
 
 // =============================================================================
 // 📁 parents-tab.js

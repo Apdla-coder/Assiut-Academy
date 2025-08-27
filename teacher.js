@@ -15,7 +15,8 @@
             let lessonsPerCourseChart = null;
             let lessonsByCourse = {};
             let exams = []; // لتخزين بيانات الاختبارات
-            
+            let qrScanner = null;
+
             // DOM Elements
             const sidebar = document.getElementById('sidebar');
             const mainContent = document.getElementById('mainContent');
@@ -1848,6 +1849,72 @@ async function loadProfileAttendanceRecords() {
         container.innerHTML = `<p class="no-data error">خطأ في تحميل سجل الحضور: ${error.message}</p>`;
     }
 }
+
+
+
+// زر تشغيل الكاميرا
+document.getElementById("startQrScan").addEventListener("click", () => {
+  const qrReader = document.getElementById("qr-reader");
+  qrReader.style.display = "block";
+  document.getElementById("stopQrScan").style.display = "inline-block";
+  document.getElementById("startQrScan").style.display = "none";
+
+  // إعداد الماسح
+  qrScanner = new Html5Qrcode("qr-reader");
+  qrScanner.start(
+    { facingMode: "environment" }, // الكاميرا الخلفية
+    { fps: 10, qrbox: 250 },
+    async (decodedText) => {
+      try {
+        const studentData = JSON.parse(decodedText); // QR فيه {"student_id":"123"}
+        const lessonId = document.getElementById("attendanceLesson").value;
+        const courseId = document.getElementById("attendanceCourseFilter").value;
+        const date = document.getElementById("attendanceDate").value;
+
+        if (!lessonId || !courseId || !date) {
+          alert("⚠️ من فضلك اختر الكورس والدرس قبل استخدام QR");
+          return;
+        }
+
+        // إدخال الحضور في جدول attendances
+        const { error } = await supabaseClient
+          .from("attendances")
+          .insert([{
+            student_id: studentData.student_id,
+            lesson_id: lessonId,
+            course_id: courseId,
+            date: date,
+            status: "present"
+          }]);
+
+        if (error) {
+          alert("❌ خطأ: " + error.message);
+        } else {
+          alert("✅ تم تسجيل حضور الطالب عبر QR");
+          loadTeacherAttendances(); // تحديث الجدول
+        }
+      } catch (e) {
+        alert("⚠️ QR غير صالح");
+      }
+    },
+    (err) => {
+      console.warn("خطأ في قراءة QR:", err);
+    }
+  );
+});
+
+// زر إيقاف الكاميرا
+document.getElementById("stopQrScan").addEventListener("click", () => {
+  if (qrScanner) {
+    qrScanner.stop().then(() => {
+      qrScanner.clear();
+      document.getElementById("qr-reader").style.display = "none";
+      document.getElementById("startQrScan").style.display = "inline-block";
+      document.getElementById("stopQrScan").style.display = "none";
+    });
+  }
+});
+
 
 // ✅ عرض رسالة حالة
 function showStatus(message, type = 'info') {

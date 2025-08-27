@@ -11,6 +11,8 @@
   <link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@300;400;700&display=swap" rel="stylesheet">
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <script src="https://unpkg.com/html5-qrcode" type="text/javascript"></script>
+
   <!-- PWA manifest and theme color -->
   <link rel="manifest" href="./manifest.json">
   <meta name="theme-color" content="#f97316">
@@ -1816,73 +1818,89 @@
       </div>
     </div>
     
-    <!-- Add Attendance Modal -->
-    <div id="attendanceModal" class="modal">
-      <div class="modal-content">
-        <div class="modal-header">
-          <h2 class="modal-title" id="attendanceModalTitle">تسجيل حضور الدرس</h2>
-          <span class="close" onclick="closeModal('attendanceModal')">&times;</span>
-        </div>
-        <form id="attendanceForm">
-          <div class="modal-body">
-            <div class="attendance-form-group">
-              <label for="attendanceCourseFilter">اختر الكورس:</label>
-              <select id="attendanceCourseFilter" required>
-                <option value="">جاري التحميل...</option>
-              </select>
-            </div>
-            <div class="attendance-form-group">
-              <label for="attendanceLesson">اختر الدرس:</label>
-              <select id="attendanceLesson" disabled required>
-                <option value="">اختر كورسًا أولاً</option>
-              </select>
-            </div>
-            <div class="attendance-form-group">
-              <label for="attendanceDate">تاريخ الحضور:</label>
-              <input type="date" id="attendanceDate" disabled required>
-            </div>
-            <div class="attendance-form-group">
-              <label>إجراءات جماعية:</label>
-              <div class="student-attendance-actions">
-                <button type="button" class="btn btn-success btn-sm" onclick="setAllAttendance('present')">
-                  <i class="fas fa-user-check"></i> الجميع حاضر
-                </button>
-                <button type="button" class="btn btn-danger btn-sm" onclick="setAllAttendance('absent')">
-                  <i class="fas fa-user-times"></i> الجميع غائب
-                </button>
-                <button type="button" class="btn btn-warning btn-sm" onclick="setAllAttendance('late')">
-                  <i class="fas fa-user-clock"></i> الجميع متأخر
-                </button>
-                <button type="button" class="btn btn-secondary btn-sm" onclick="clearAllAttendance()">
-                  <i class="fas fa-eraser"></i> مسح الكل
-                </button>
-              </div>
-            </div>
-            <div class="attendance-form-group">
-              <label>الطلاب:</label>
-              <div class="student-search-container">
-                <input type="text" id="studentSearchInModal" class="search-box" placeholder="بحث في أسماء الطلاب...">
-              </div>
-              <div id="studentAttendanceList" class="student-list-container">
-                <p class="no-data" style="text-align: center; margin: 20px 0;">اختر درسًا أولاً</p>
-              </div>
-            </div>
-            <div class="attendance-form-group">
-              <label for="attendanceNotes">ملاحظات:</label>
-              <textarea id="attendanceNotes" placeholder="ملاحظات عامة..."></textarea>
-            </div>
-          </div>
-          <div class="modal-footer">
-            <button type="submit" class="btn btn-primary">
-              <i class="fas fa-save"></i> تسجيل الحضور
-            </button>
-            <button type="button" class="btn btn-secondary" onclick="closeModal('attendanceModal')">
-              <i class="fas fa-times"></i> إلغاء
-            </button>
-          </div>
-        </form>
-      </div>
+<!-- Add Attendance Modal -->
+<div id="attendanceModal" class="modal">
+  <div class="modal-content">
+    <div class="modal-header">
+      <h2 class="modal-title" id="attendanceModalTitle">تسجيل حضور الدرس</h2>
+      <span class="close" onclick="closeModal('attendanceModal')">&times;</span>
     </div>
+    <form id="attendanceForm">
+      <div class="modal-body">
+        <div class="attendance-form-group">
+          <label for="attendanceCourseFilter">اختر الكورس:</label>
+          <select id="attendanceCourseFilter" required>
+            <option value="">جاري التحميل...</option>
+          </select>
+        </div>
+        <div class="attendance-form-group">
+          <label for="attendanceLesson">اختر الدرس:</label>
+          <select id="attendanceLesson" disabled required>
+            <option value="">اختر كورسًا أولاً</option>
+          </select>
+        </div>
+        <div class="attendance-form-group">
+          <label for="attendanceDate">تاريخ الحضور:</label>
+          <input type="date" id="attendanceDate" disabled required>
+        </div>
+        <div class="attendance-form-group">
+          <label>إجراءات جماعية:</label>
+          <div class="student-attendance-actions">
+            <button type="button" class="btn btn-success btn-sm" onclick="setAllAttendance('present')">
+              <i class="fas fa-user-check"></i> الجميع حاضر
+            </button>
+            <button type="button" class="btn btn-danger btn-sm" onclick="setAllAttendance('absent')">
+              <i class="fas fa-user-times"></i> الجميع غائب
+            </button>
+            <button type="button" class="btn btn-warning btn-sm" onclick="setAllAttendance('late')">
+              <i class="fas fa-user-clock"></i> الجميع متأخر
+            </button>
+            <button type="button" class="btn btn-secondary btn-sm" onclick="clearAllAttendance()">
+              <i class="fas fa-eraser"></i> مسح الكل
+            </button>
+          </div>
+        </div>
+        <div class="attendance-form-group">
+          <label>الطلاب:</label>
+          <div class="student-search-container">
+            <input type="text" id="studentSearchInModal" class="search-box" placeholder="بحث في أسماء الطلاب...">
+          </div>
+          <div id="studentAttendanceList" class="student-list-container">
+            <p class="no-data" style="text-align: center; margin: 20px 0;">اختر درسًا أولاً</p>
+          </div>
+        </div>
+
+        <!-- ✅ زر تفعيل الكاميرا للـ QR -->
+        <div class="attendance-form-group">
+          <label>تسجيل حضور بالـ QR:</label>
+          <div style="margin-bottom: 10px;">
+            <button type="button" id="startQrScan" class="btn btn-secondary btn-sm">
+              <i class="fas fa-qrcode"></i> تشغيل الكاميرا
+            </button>
+            <button type="button" id="stopQrScan" class="btn btn-danger btn-sm" style="display:none;">
+              <i class="fas fa-stop"></i> إيقاف الكاميرا
+            </button>
+          </div>
+          <!-- ✅ مكان ظهور الكاميرا -->
+          <div id="qr-reader" style="width:300px; margin:auto; display:none;"></div>
+        </div>
+
+        <div class="attendance-form-group">
+          <label for="attendanceNotes">ملاحظات:</label>
+          <textarea id="attendanceNotes" placeholder="ملاحظات عامة..."></textarea>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="submit" class="btn btn-primary">
+          <i class="fas fa-save"></i> تسجيل الحضور
+        </button>
+        <button type="button" class="btn btn-secondary" onclick="closeModal('attendanceModal')">
+          <i class="fas fa-times"></i> إلغاء
+        </button>
+      </div>
+    </form>
+  </div>
+</div>
     
     <!-- Exam Detail Modal -->
     <div id="examDetailModal" class="modal">
