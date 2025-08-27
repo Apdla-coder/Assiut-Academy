@@ -1506,6 +1506,8 @@ document.getElementById("startQrScan").addEventListener("click", () => {
         // ✅ لو الطالب اتسجل قبل كده متسجلش تاني (بناءً على حالة الـ Select)
         if (studentSelectElement.value === 'present') {
           console.log(`⚠️ الطالب ${studentData.student_id} مسجل بالفعل كحاضر.`);
+          // يمكنك إزالة هذا التنبيه إذا كنت لا تريد إزعاج المستخدم
+          // alert(`⚠️ الطالب ${studentData.student_id} مسجل بالفعل كحاضر.`);
           return;
         }
 
@@ -1518,6 +1520,9 @@ document.getElementById("startQrScan").addEventListener("click", () => {
         }
 
         alert(`✅ تم تحديث حالة الطالب إلى حاضر: ${studentData.student_id}`);
+        // أو استخدم showStatus إذا كنت تفضل الرسائل في أعلى الصفحة
+        // showStatus(`✅ تم تحديث حالة الطالب إلى حاضر: ${studentData.student_id}`, 'success');
+
         // ✅ إزالة scannedStudents وتحققه لأنه لم يعد ضروريًا للسلوك الجديد
         // scannedStudents.delete(studentData.student_id); // أو اتركه فارغًا
 
@@ -1544,8 +1549,6 @@ document.getElementById("stopQrScan").addEventListener("click", () => {
     });
   }
 });
-
-
             // دالة لعرض سجل حضور طالب محدد في كورس محدد داخل نافذة منبثقة
             async function showStudentAttendanceRecords(studentId, courseId) {
                 if (!studentId || !courseId) {
@@ -1724,7 +1727,6 @@ function setAllAttendance(status) {
 
 
 // تعديل دالة clearAllAttendance
-
 function clearAllAttendance() {
     document.querySelectorAll('.student-checkbox').forEach(checkbox => {
         checkbox.checked = false;
@@ -1734,7 +1736,7 @@ function clearAllAttendance() {
         select.value = 'absent';
     });
     showStatus('تم مسح جميع الاختيارات.', 'success');
-}            
+}
 
             // دالة لتحديد/إلغاء تحديد جميع الطلاب
             function toggleAllStudents(isChecked) {
@@ -1754,74 +1756,6 @@ function clearAllAttendance() {
             }
             
 
-// زر تشغيل الكاميرا
-document.getElementById("startQrScan").addEventListener("click", () => {
-  const qrReader = document.getElementById("qr-reader");
-  qrReader.style.display = "block";
-  document.getElementById("stopQrScan").style.display = "inline-block";
-  document.getElementById("startQrScan").style.display = "none";
-  // إعداد الماسح
-  qrScanner = new Html5Qrcode("qr-reader");
-  qrScanner.start(
-    { facingMode: "environment" }, // الكاميرا الخلفية
-    { fps: 10, qrbox: 250 },
-    async (decodedText) => {
-      try {
-        const studentData = JSON.parse(decodedText); // QR فيه {"student_id":"123"}
-        const lessonId = document.getElementById("attendanceLesson").value;
-        const courseId = document.getElementById("attendanceCourseFilter").value;
-        const date = document.getElementById("attendanceDate").value;
-        if (!lessonId || !courseId || !date) {
-          alert("⚠️ من فضلك اختر الكورس والدرس قبل استخدام QR");
-          return;
-        }
-        // ✅ تحقق مما إذا كان الطالب موجودًا في القائمة المعروضة
-        const studentSelectElement = document.querySelector(`.student-status-select[data-student-id="${studentData.student_id}"]`);
-        if (!studentSelectElement) {
-           alert("⚠️ الطالب غير موجود في قائمة الطلاب لهذا الدرس.");
-           return;
-        }
-
-        // ✅ لو الطالب اتسجل قبل كده متسجلش تاني (بناءً على حالة الـ Select)
-        if (studentSelectElement.value === 'present') {
-          console.log(`⚠️ الطالب ${studentData.student_id} مسجل بالفعل كحاضر.`);
-          return;
-        }
-
-        // ✅ تحديث حالة الطالب في الـ Select إلى "حاضر"
-        studentSelectElement.value = 'present';
-        // ✅ التأكد من أن مربع الاختيار مفعل
-        const studentCheckboxElement = document.querySelector(`.student-checkbox[data-student-id="${studentData.student_id}"]`);
-        if (studentCheckboxElement && !studentCheckboxElement.checked) {
-            studentCheckboxElement.checked = true;
-        }
-
-        alert(`✅ تم تحديث حالة الطالب إلى حاضر: ${studentData.student_id}`);
-        // ✅ إزالة scannedStudents وتحققه لأنه لم يعد ضروريًا للسلوك الجديد
-        // scannedStudents.delete(studentData.student_id); // أو اتركه فارغًا
-
-      } catch (e) {
-        alert("⚠️ QR غير صالح");
-        console.error("خطأ في معالجة QR:", e);
-      }
-    },
-    (err) => {
-      console.warn("خطأ في قراءة QR:", err);
-    }
-  );
-});
-// زر إيقاف الكاميرا يدوي
-document.getElementById("stopQrScan").addEventListener("click", () => {
-  if (qrScanner) {
-    qrScanner.stop().then(() => {
-      qrScanner.clear();
-      document.getElementById("qr-reader").style.display = "none";
-      document.getElementById("startQrScan").style.display = "inline-block";
-      document.getElementById("stopQrScan").style.display = "none";
-      // scannedStudents.clear(); // ✅ إزالة أو تركها فارغة
-    });
-  }
-});
 
 // ✅ التحقق من حضور اليوم
 async function checkTodayStatus() {
