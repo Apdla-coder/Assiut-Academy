@@ -1481,7 +1481,6 @@ document.getElementById("startQrScan").addEventListener("click", () => {
   qrReader.style.display = "block";
   document.getElementById("stopQrScan").style.display = "inline-block";
   document.getElementById("startQrScan").style.display = "none";
-
   // إعداد الماسح
   qrScanner = new Html5Qrcode("qr-reader");
   qrScanner.start(
@@ -1493,41 +1492,38 @@ document.getElementById("startQrScan").addEventListener("click", () => {
         const lessonId = document.getElementById("attendanceLesson").value;
         const courseId = document.getElementById("attendanceCourseFilter").value;
         const date = document.getElementById("attendanceDate").value;
-
         if (!lessonId || !courseId || !date) {
           alert("⚠️ من فضلك اختر الكورس والدرس قبل استخدام QR");
           return;
         }
+        // ✅ تحقق مما إذا كان الطالب موجودًا في القائمة المعروضة
+        const studentSelectElement = document.querySelector(`.student-status-select[data-student-id="${studentData.student_id}"]`);
+        if (!studentSelectElement) {
+           alert("⚠️ الطالب غير موجود في قائمة الطلاب لهذا الدرس.");
+           return;
+        }
 
-        // ✅ لو الطالب اتسجل قبل كده متسجلش تاني
-        if (scannedStudents.has(studentData.student_id)) {
-          console.log(`⚠️ الطالب ${studentData.student_id} اتسجل بالفعل.`);
+        // ✅ لو الطالب اتسجل قبل كده متسجلش تاني (بناءً على حالة الـ Select)
+        if (studentSelectElement.value === 'present') {
+          console.log(`⚠️ الطالب ${studentData.student_id} مسجل بالفعل كحاضر.`);
           return;
         }
 
-        // إضافة الطالب للمجموعة
-        scannedStudents.add(studentData.student_id);
-
-        // إدخال الحضور في جدول attendances
-        const { error } = await supabaseClient
-          .from("attendances")
-          .insert([{
-            student_id: studentData.student_id,
-            lesson_id: lessonId,
-            course_id: courseId,
-            date: date,
-            status: "present"
-          }]);
-
-        if (error) {
-          alert("❌ خطأ: " + error.message);
-          scannedStudents.delete(studentData.student_id); // رجعه تاني لو حصل خطأ
-        } else {
-          alert("✅ تم تسجيل حضور الطالب عبر QR");
-          loadTeacherAttendances(); // تحديث الجدول
+        // ✅ تحديث حالة الطالب في الـ Select إلى "حاضر"
+        studentSelectElement.value = 'present';
+        // ✅ التأكد من أن مربع الاختيار مفعل
+        const studentCheckboxElement = document.querySelector(`.student-checkbox[data-student-id="${studentData.student_id}"]`);
+        if (studentCheckboxElement && !studentCheckboxElement.checked) {
+            studentCheckboxElement.checked = true;
         }
+
+        alert(`✅ تم تحديث حالة الطالب إلى حاضر: ${studentData.student_id}`);
+        // ✅ إزالة scannedStudents وتحققه لأنه لم يعد ضروريًا للسلوك الجديد
+        // scannedStudents.delete(studentData.student_id); // أو اتركه فارغًا
+
       } catch (e) {
         alert("⚠️ QR غير صالح");
+        console.error("خطأ في معالجة QR:", e);
       }
     },
     (err) => {
@@ -1544,11 +1540,10 @@ document.getElementById("stopQrScan").addEventListener("click", () => {
       document.getElementById("qr-reader").style.display = "none";
       document.getElementById("startQrScan").style.display = "inline-block";
       document.getElementById("stopQrScan").style.display = "none";
-      scannedStudents.clear(); // ✅ تصفير القائمة عند إغلاق الكاميرا
+      // scannedStudents.clear(); // ✅ إزالة أو تركها فارغة
     });
   }
 });
-
 
 
             // دالة لعرض سجل حضور طالب محدد في كورس محدد داخل نافذة منبثقة
