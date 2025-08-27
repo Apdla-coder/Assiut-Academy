@@ -1855,6 +1855,8 @@ async function loadProfileAttendanceRecords() {
 
 // مصفوفة لتخزين الطلاب اللي اتسجلوا
 
+// مصفوفة الطلاب اللي اتسجلوا
+
 // زر تشغيل الكاميرا
 document.getElementById("startQrScan").addEventListener("click", () => {
   const qrReader = document.getElementById("qr-reader");
@@ -1879,13 +1881,13 @@ document.getElementById("startQrScan").addEventListener("click", () => {
           return;
         }
 
-        // لو الطالب اتسجل قبل كده متسجلش تاني
+        // ✅ لو الطالب اتسجل قبل كده متسجلش تاني
         if (scannedStudents.has(studentData.student_id)) {
           console.log(`⚠️ الطالب ${studentData.student_id} اتسجل بالفعل.`);
           return;
         }
 
-        // إضافة الطالب للمصفوفة علشان ميكررهوش
+        // إضافة الطالب للمجموعة
         scannedStudents.add(studentData.student_id);
 
         // إدخال الحضور في جدول attendances
@@ -1901,13 +1903,10 @@ document.getElementById("startQrScan").addEventListener("click", () => {
 
         if (error) {
           alert("❌ خطأ: " + error.message);
-          scannedStudents.delete(studentData.student_id); // رجع الطالب عشان ممكن نجرب تاني
+          scannedStudents.delete(studentData.student_id); // رجعه تاني لو حصل خطأ
         } else {
           alert("✅ تم تسجيل حضور الطالب عبر QR");
           loadTeacherAttendances(); // تحديث الجدول
-
-          // بعد 5 ثواني نسمح لنفس الطالب يتسجل تاني لو لزم
-          setTimeout(() => scannedStudents.delete(studentData.student_id), 5000);
         }
       } catch (e) {
         alert("⚠️ QR غير صالح");
@@ -1919,7 +1918,7 @@ document.getElementById("startQrScan").addEventListener("click", () => {
   );
 });
 
-// زر إيقاف الكاميرا
+// زر إيقاف الكاميرا يدوي
 document.getElementById("stopQrScan").addEventListener("click", () => {
   if (qrScanner) {
     qrScanner.stop().then(() => {
@@ -1927,7 +1926,7 @@ document.getElementById("stopQrScan").addEventListener("click", () => {
       document.getElementById("qr-reader").style.display = "none";
       document.getElementById("startQrScan").style.display = "inline-block";
       document.getElementById("stopQrScan").style.display = "none";
-      scannedStudents.clear(); // تصفير عند إغلاق الكاميرا
+      scannedStudents.clear(); // ✅ تصفير القائمة عند إغلاق الكاميرا
     });
   }
 });
