@@ -1356,7 +1356,7 @@ async function loadStudentsForCourse(courseId) {
 
 
 
-                    
+
                     console.error('Error showing add attendance modal:', error);
                     showStatus('خطأ في فتح نافذة الحضور', 'error');
                 }
@@ -1679,46 +1679,44 @@ document.getElementById("stopQrScan").addEventListener("click", () => {
                 }
             }
             
-        // دالة لتحديث عرض قائمة الطلاب في نافذة الحضور
-        function updateStudentListDisplay(students) {
-            const listContainer = document.getElementById('studentAttendanceList');
-            const searchTermElement = document.getElementById('studentSearchInModal');
-            const searchTerm = searchTermElement ? searchTermElement.value.toLowerCase() : '';
-            let html = '';
-            students.forEach(student => {
-                // تطبيق الفلترة
-                if (searchTerm && !student.full_name.toLowerCase().includes(searchTerm)) {
-                    return; // تخطي هذا الطالب إذا لم يتطابق مع البحث
-                }
-                html += `
-        <div class="student-item">
-            <div class="student-header">
-                <label class="student-name">
-                    <input type="checkbox" class="student-checkbox" data-student-id="${student.id}" checked>
-                    ${student.full_name}
-                </label>
-            </div>
-            <select class="student-status-select" data-student-id="${student.id}">
-                <option value="present" selected>حاضر</option>
-                <option value="absent">غائب</option>
-                <option value="late">متأخر</option>
-            </select>
+// دالة لتحديث عرض قائمة الطلاب في نافذة الحضور
+function updateStudentListDisplay(students) {
+    const listContainer = document.getElementById('studentAttendanceList');
+    const searchTermElement = document.getElementById('studentSearchInModal');
+    const searchTerm = searchTermElement ? searchTermElement.value.toLowerCase() : '';
+    let html = '';
+    students.forEach(student => {
+        // تطبيق الفلترة
+        if (searchTerm && !student.full_name.toLowerCase().includes(searchTerm)) {
+            return; // تخطي هذا الطالب إذا لم يتطابق مع البحث
+        }
+        // ✅ تغيير الحالة الافتراضية إلى 'absent'
+        html += `
+    <div class="student-item">
+        <div class="student-header">
+            <label class="student-name">
+                <input type="checkbox" class="student-checkbox" data-student-id="${student.id}" checked> <!-- مربع الاختيار مفعل افتراضياً -->
+                ${student.full_name}
+            </label>
         </div>
-        `;
-            });
-            if (html === '') {
-                html = '<p class="no-data" style="text-align: center; margin: 20px 0; color: #666;">لا توجد نتائج للبحث.</p>';
-            }
-            if (listContainer) {
-                listContainer.innerHTML = html;
-            }
-            
-            // إعادة ربط الأحداث - لا حاجة لإعادة ربطها هنا لأننا نربطها مرة واحدة في loadStudentsForCourse
-            // document.querySelectorAll('.student-checkbox').forEach(checkbox => {
-            //     checkbox.addEventListener('change', updateSelectAllCheckbox);
-            // });
-        }        
-    // تعديل دالة setAllAttendance لتتناسب مع التصميم الجديد
+        <!-- ✅ تغيير القيمة الافتراضية للـ select إلى 'absent' -->
+        <select class="student-status-select" data-student-id="${student.id}">
+            <option value="present">حاضر</option>
+            <option value="absent" selected>غائب</option> <!-- ✅ 'غائب' محدد افتراضيًا -->
+            <option value="late">متأخر</option>
+        </select>
+    </div>
+    `;
+    });
+    if (html === '') {
+        html = '<p class="no-data" style="text-align: center; margin: 20px 0; color: #666;">لا توجد نتائج للبحث.</p>';
+    }
+    if (listContainer) {
+        listContainer.innerHTML = html;
+    }
+}
+
+// تعديل دالة setAllAttendance لتتناسب مع التصميم الجديد
             function setAllAttendance(status) {
                 document.querySelectorAll('.student-status-select').forEach(select => {
                     select.value = status;
@@ -1764,7 +1762,6 @@ document.getElementById("startQrScan").addEventListener("click", () => {
   qrReader.style.display = "block";
   document.getElementById("stopQrScan").style.display = "inline-block";
   document.getElementById("startQrScan").style.display = "none";
-
   // إعداد الماسح
   qrScanner = new Html5Qrcode("qr-reader");
   qrScanner.start(
@@ -1776,41 +1773,38 @@ document.getElementById("startQrScan").addEventListener("click", () => {
         const lessonId = document.getElementById("attendanceLesson").value;
         const courseId = document.getElementById("attendanceCourseFilter").value;
         const date = document.getElementById("attendanceDate").value;
-
         if (!lessonId || !courseId || !date) {
           alert("⚠️ من فضلك اختر الكورس والدرس قبل استخدام QR");
           return;
         }
+        // ✅ تحقق مما إذا كان الطالب موجودًا في القائمة المعروضة
+        const studentSelectElement = document.querySelector(`.student-status-select[data-student-id="${studentData.student_id}"]`);
+        if (!studentSelectElement) {
+           alert("⚠️ الطالب غير موجود في قائمة الطلاب لهذا الدرس.");
+           return;
+        }
 
-        // ✅ لو الطالب اتسجل قبل كده متسجلش تاني
-        if (scannedStudents.has(studentData.student_id)) {
-          console.log(`⚠️ الطالب ${studentData.student_id} اتسجل بالفعل.`);
+        // ✅ لو الطالب اتسجل قبل كده متسجلش تاني (بناءً على حالة الـ Select)
+        if (studentSelectElement.value === 'present') {
+          console.log(`⚠️ الطالب ${studentData.student_id} مسجل بالفعل كحاضر.`);
           return;
         }
 
-        // إضافة الطالب للمجموعة
-        scannedStudents.add(studentData.student_id);
-
-        // إدخال الحضور في جدول attendances
-        const { error } = await supabaseClient
-          .from("attendances")
-          .insert([{
-            student_id: studentData.student_id,
-            lesson_id: lessonId,
-            course_id: courseId,
-            date: date,
-            status: "present"
-          }]);
-
-        if (error) {
-          alert("❌ خطأ: " + error.message);
-          scannedStudents.delete(studentData.student_id); // رجعه تاني لو حصل خطأ
-        } else {
-          alert("✅ تم تسجيل حضور الطالب عبر QR");
-          loadTeacherAttendances(); // تحديث الجدول
+        // ✅ تحديث حالة الطالب في الـ Select إلى "حاضر"
+        studentSelectElement.value = 'present';
+        // ✅ التأكد من أن مربع الاختيار مفعل
+        const studentCheckboxElement = document.querySelector(`.student-checkbox[data-student-id="${studentData.student_id}"]`);
+        if (studentCheckboxElement && !studentCheckboxElement.checked) {
+            studentCheckboxElement.checked = true;
         }
+
+        alert(`✅ تم تحديث حالة الطالب إلى حاضر: ${studentData.student_id}`);
+        // ✅ إزالة scannedStudents وتحققه لأنه لم يعد ضروريًا للسلوك الجديد
+        // scannedStudents.delete(studentData.student_id); // أو اتركه فارغًا
+
       } catch (e) {
         alert("⚠️ QR غير صالح");
+        console.error("خطأ في معالجة QR:", e);
       }
     },
     (err) => {
@@ -1818,7 +1812,6 @@ document.getElementById("startQrScan").addEventListener("click", () => {
     }
   );
 });
-
 // زر إيقاف الكاميرا يدوي
 document.getElementById("stopQrScan").addEventListener("click", () => {
   if (qrScanner) {
@@ -1827,11 +1820,10 @@ document.getElementById("stopQrScan").addEventListener("click", () => {
       document.getElementById("qr-reader").style.display = "none";
       document.getElementById("startQrScan").style.display = "inline-block";
       document.getElementById("stopQrScan").style.display = "none";
-      scannedStudents.clear(); // ✅ تصفير القائمة عند إغلاق الكاميرا
+      // scannedStudents.clear(); // ✅ إزالة أو تركها فارغة
     });
   }
 });
-
 
 // ✅ التحقق من حضور اليوم
 async function checkTodayStatus() {
