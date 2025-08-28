@@ -22,7 +22,7 @@ async function loadStudents() {
       .order('created_at', { ascending: false });
 
     if (error) throw error;
-    students = data;
+    window.students = data; // تخزين في متغير عالمي للاستخدام في البحث
 
     container.innerHTML = renderStudentsTable(data);
     console.log("✅ تم تحميل بيانات الطلاب بنجاح");
@@ -44,6 +44,7 @@ function renderStudentsTable(data) {
       <table>
         <thead>
           <tr>
+            <th>الصورة</th>
             <th>الاسم</th>
             <th>البريد الإلكتروني</th>
             <th>رقم هاتف الطالب</th>
@@ -55,10 +56,18 @@ function renderStudentsTable(data) {
         <tbody>
           ${data.map(student => `
             <tr>
-              <td>${student.full_name}</td>
-              <td>${student.email || '-'}</td>
-              <td>${student.phone || '-'}</td>
-              <td>${student.parent_phone || '-'}</td>
+              <td>
+                <img 
+src="${student.avatar_url || './images/placeholder.jpg'}"
+                  alt="صورة الطالب" 
+                  style="width: 50px; height: 50px; border-radius: 50%; object-fit: cover; "
+                  onerror="this.src='./images/placeholder.jpg';"
+                >
+              </td>
+              <td>${escapeHtml(student.full_name)}</td>
+              <td>${escapeHtml(student.email || '-')}</td>
+              <td>${escapeHtml(student.phone || '-')}</td>
+              <td>${escapeHtml(student.parent_phone || '-')}</td>
               <td>${formatDate(student.created_at)}</td>
               <td class="action-buttons">
                 <button class="action-btn view-btn" onclick="showStudentFullDetails('${student.id}')">
@@ -70,8 +79,7 @@ function renderStudentsTable(data) {
                 <button class="action-btn delete-btn" onclick="deleteStudent('${student.id}')">
                   <i class="fas fa-trash"></i>
                 </button>
-                <!-- ✅ زر استخراج QR -->
-                <button class="action-btn qr-btn" onclick="generateStudentQR('${student.id}', '${student.full_name}')">
+                <button class="action-btn qr-btn" onclick="generateStudentQR('${student.id}', '${escapeHtml(student.full_name)}')">
                   <i class="fas fa-qrcode"></i>
                 </button>
               </td>
@@ -88,7 +96,7 @@ function renderStudentsTable(data) {
 // =============================================================================
 function filterStudents() {
   const searchTerm = document.getElementById('studentSearch').value.toLowerCase();
-  const filtered = students.filter(student =>
+  const filtered = window.students.filter(student =>
     student.full_name.toLowerCase().includes(searchTerm) ||
     (student.email && student.email.toLowerCase().includes(searchTerm)) ||
     (student.phone && student.phone.includes(searchTerm)) ||
@@ -101,7 +109,7 @@ function filterStudents() {
 // 3. تعديل بيانات الطالب
 // =============================================================================
 function showEditStudentModal(studentId) {
-  const student = students.find(s => s.id === studentId);
+  const student = window.students.find(s => s.id === studentId);
   if (!student) return;
 
   const modal = document.getElementById('studentModal');
@@ -113,6 +121,19 @@ function showEditStudentModal(studentId) {
   document.getElementById('email').value = student.email || '';
   document.getElementById('phone').value = student.phone || '';
   document.getElementById('parentPhone').value = student.parent_phone || '';
+  
+  // إضافة حقل رفع صورة في نموذج التعديل (تأكد من وجوده في HTML)
+  const avatarInput = document.getElementById('editStudentAvatar');
+  const avatarPreview = document.getElementById('editAvatarPreview');
+  if (avatarInput && avatarPreview) {
+      avatarInput.value = ''; // مسح أي ملف مختار سابق
+      if (student.avatar_url) {
+          avatarPreview.src = student.avatar_url;
+          avatarPreview.style.display = 'block';
+      } else {
+          avatarPreview.style.display = 'none';
+      }
+  }
 
   document.getElementById('studentForm').onsubmit = async function (e) {
     e.preventDefault();
@@ -127,9 +148,34 @@ async function updateStudent(studentId) {
     const phone = document.getElementById('phone').value;
     const parentPhone = document.getElementById('parentPhone').value;
 
+    // جمع بيانات التحديث
+    let updateData = { full_name: fullName, email, phone, parent_phone: parentPhone };
+
+    // التحقق من وجود حقل رفع صورة جديد
+    const avatarFileInput = document.getElementById('editStudentAvatar');
+    if (avatarFileInput && avatarFileInput.files.length > 0) {
+        const file = avatarFileInput.files[0];
+        const fileName = `${studentId}_${Date.now()}_${file.name}`;
+        const { data, error: uploadError } = await supabaseClient
+            .storage
+            .from('picstudent')
+            .upload(fileName, file);
+
+        if (uploadError) {
+            console.error('خطأ في رفع الصورة:', uploadError.message);
+            showStatus('خطأ في رفع الصورة', 'error');
+        } else {
+            const { data: publicUrlData } = supabaseClient
+                .storage
+                .from('picstudent')
+                .getPublicUrl(fileName);
+            updateData.avatar_url = publicUrlData.publicUrl;
+        }
+    }
+
     const { data, error } = await supabaseClient
       .from('students')
-      .update({ full_name: fullName, email, phone, parent_phone: parentPhone })
+      .update(updateData)
       .eq('id', studentId);
 
     if (error) throw error;
@@ -274,31 +320,50 @@ async function showStudentFullDetails(studentId) {
       fetchStudentExams(studentId)
     ]);
 
-    content.innerHTML = `
-      <div class="student-detail">
-        <div class="header-section" style="text-align:center;margin-bottom:20px;">
-          <img src="logo.png" alt="شعار" style="max-width:150px;height:auto;" onerror="this.style.display='none'">
-          <h3>${student.full_name}</h3>
-        </div>
-        <div class="detail-section">
-          <h4>معلومات أساسية</h4>
-          <p><strong>البريد الإلكتروني:</strong> ${student.email || '-'}</p>
-          <p><strong>رقم الهاتف:</strong> ${student.phone || '-'}</p>
-          <p><strong>رقم ولي الأمر:</strong> ${student.parent_phone || '-'}</p>
-          <p><strong>تاريخ التسجيل:</strong> ${formatDate(student.created_at)}</p>
-        </div>
-        ${generateSection('الاشتراكات', subscriptions, generateSubscriptionsList)}
-        ${generateSection('المدفوعات', payments, generatePaymentsList)}
-        ${generateSection('سجل الحضور', attendances, generateAttendanceTable)}
-        ${generateSection('الاختبارات', exams, generateExamsTable)}
-        <div style="text-align:center; margin-top:20px;">
-          <button class="btn btn-primary" onclick="printStudentDetails('${escapeHtml(student.full_name)}')">طباعة التقرير</button>
-        </div>
+content.innerHTML = `
+  <div class="student-detail">
+    <!-- قسم رأس الصفحة: الصورة والشعار والاسم -->
+    <div class="header-section" style="display: flex; justify-content: space-between;     flex-direction: row-reverse;
+ align-items: center; margin-bottom: 20px; flex-wrap: wrap; gap: 15px;">
+      <div style="flex: 1; min-width: 150px;">
+        <img src="logo.png" alt="شعار" style="max-width: 150px; height: auto;" onerror="this.style.display='none'">
       </div>
-    `;
+      <div style="flex: 2; text-align: center;">
+        <h3 style="margin: 0;">${escapeHtml(student.full_name)}</h3>
+      </div>
+      <div style="flex: 1; min-width: 100px; text-align: end;">
+        <!-- عرض صورة الطالب على اليمين -->
+        <img src="${student.avatar_url || './images/placeholder.jpg'}" alt="صورة الطالب" style="    width: 150px;
+    height: 150px;
+    border-radius: 50%;
+    object-fit: cover;
+    border: solid 5px;">
+      </div>
+    </div>
+    <div class="detail-section">
+      <h4>معلومات أساسية</h4>
+      <p><strong>البريد الإلكتروني:</strong> ${escapeHtml(student.email || '-')}</p>
+      <p><strong>رقم الهاتف:</strong> ${escapeHtml(student.phone || '-')}</p>
+      <p><strong>رقم ولي الأمر:</strong> ${escapeHtml(student.parent_phone || '-')}</p>
+      <p><strong>تاريخ التسجيل:</strong> ${formatDate(student.created_at)}</p>
+    </div>
+    ${generateSection('الاشتراكات', subscriptions, generateSubscriptionsList)}
+    ${generateSection('المدفوعات', payments, generatePaymentsList)}
+    ${generateSection('سجل الحضور', attendances, generateAttendanceTable)}
+    ${generateSection('الاختبارات', exams, generateExamsTable)}
+    <div style="text-align:center; margin-top:20px;">
+      <button class="btn btn-primary" onclick="printStudentDetails('${escapeHtml(student.full_name)}')">طباعة التقرير</button>
+    </div>
+  </div>
+`;
+// ...
   } catch (err) {
-    content.innerHTML = '<div class="error">حدث خطأ أثناء تحميل بيانات الطالب.</div>';
+    const content = document.getElementById('studentDetailContent');
+    if (content) {
+        content.innerHTML = '<div class="error">حدث خطأ أثناء تحميل بيانات الطالب.</div>';
+    }
     console.error('Error in showStudentFullDetails:', err);
+    showStatus('حدث خطأ أثناء تحميل تفاصيل الطالب', 'error');
   }
 }
 
@@ -317,7 +382,7 @@ function generateSection(title, data, renderer) {
 function generateSubscriptionsList(data) {
   return `<ul>${data.map(s => `
     <li>
-      ${s.course?.name || '---'} 
+      ${escapeHtml(s.course?.name || '---')} 
       - ${formatDate(s.subscribed_at)} 
       - (${s.status === 'active' ? 'نشط' : s.status === 'inactive' ? 'غير نشط' : s.status})
     </li>
@@ -342,12 +407,12 @@ function generatePaymentsList(data) {
           const paid = parseFloat(p.amount) || 0;
           const total = parseFloat(p.total_amount) || 0;
           const remaining = Math.max(0, total - paid).toFixed(2);
-          const courseName = p.course?.name || '---';
+          const courseName = escapeHtml(p.course?.name || '---');
           const coursePrice = p.course?.price ? parseFloat(p.course.price).toFixed(2) : '---';
 
           return `
             <tr style="text-align: center;">
-              <td style="border: 1px solid #ccc; padding: 8px;">${escapeHtml(courseName)}</td>
+              <td style="border: 1px solid #ccc; padding: 8px;">${courseName}</td>
               <td style="border: 1px solid #ccc; padding: 8px; font-weight: bold; color: #1a73e8;">${coursePrice} ج.م</td>
               <td style="border: 1px solid #ccc; padding: 8px; color: #0a7e8c;">${paid.toFixed(2)} ج.م</td>
               <td style="border: 1px solid #ccc; padding: 8px; color: #d9534f;">${remaining} ج.م</td>
@@ -365,11 +430,11 @@ function generateAttendanceTable(data) {
   const statusMap = { present: 'حاضر', absent: 'غائب', late: 'متأخر' };
   const rows = data.map(a => `
     <tr>
-      <td>${a.course?.name || '---'}</td>
+      <td>${escapeHtml(a.course?.name || '---')}</td>
       <td>${formatDate(a.date)}</td>
       <td>${statusMap[a.status] || a.status}</td>
-      <td>${a.lesson?.title || '---'}</td>
-      <td>${a.notes || '-'}</td>
+      <td>${escapeHtml(a.lesson?.title || '---')}</td>
+      <td>${escapeHtml(a.notes || '-')}</td>
     </tr>
   `).join('');
   return `<table style="width:100%; border-collapse:collapse;">
@@ -380,12 +445,10 @@ function generateAttendanceTable(data) {
 
 function generateExamsTable(data) {
   const rows = data.map(exam => {
-    // ✅ الوصول الصحيح للبيانات المتداخلة
-    const examTitle = exam.exams?.title || '---';
+    const examTitle = escapeHtml(exam.exams?.title || '---');
     const maxScore = exam.exams?.max_score || 0;
-    const courseName = exam.exams?.courses?.name || '---';
+    const courseName = escapeHtml(exam.exams?.courses?.name || '---');
 
-    // ✅ عرض اسم الكورس في الملاحظات أو كعمود منفصل (اختياري)
     return `
       <tr>
         <td>${examTitle}</td>
@@ -448,7 +511,6 @@ async function generateAndSendReport(studentId) {
       return;
     }
 
-    // تنسيق رقم الهاتف (مثال: 01012345678 → +201012345678)
     phone = phone.replace(/\s+/g, '').replace(/-/g, '');
     if (phone.startsWith('0')) phone = '+2' + phone;
     else if (phone.startsWith('20')) phone = '+' + phone;
@@ -459,10 +521,8 @@ async function generateAndSendReport(studentId) {
       return;
     }
 
-    const message = `*تقرير الطالب: ${student.full_name}*\n\n`;
-    // يمكنك توسعة الرسالة كما في النسخ السابقة
-
-    showWhatsAppPreview(phone, message, student.full_name);
+    const message = `*تقرير الطالب: ${escapeHtml(student.full_name)}*\n\n`;
+    showWhatsAppPreview(phone, message, escapeHtml(student.full_name));
   } catch (err) {
     console.error('Error generating report:', err);
     showStatus('فشل في إنشاء التقرير.', 'error');
@@ -471,7 +531,7 @@ async function generateAndSendReport(studentId) {
 
 function showWhatsAppPreview(phone, message, studentName) {
   const modal = document.getElementById('waPreviewModal');
-  if (!modal) return window.open(`https://wa.me/  ${encodeURIComponent(phone)}?text=${encodeURIComponent(message)}`, '_blank');
+  if (!modal) return window.open(`https://wa.me/${encodeURIComponent(phone)}?text=${encodeURIComponent(message)}`, '_blank');
 
   document.getElementById('waPreviewPhone').textContent = `الرقم: ${phone}`;
   document.getElementById('waPreviewMessage').value = message;
@@ -490,13 +550,13 @@ function showWhatsAppPreview(phone, message, studentName) {
   };
 
   document.getElementById('waOpenBtn').onclick = () => {
-    const url = `https://wa.me/  ${encodeURIComponent(phone)}?text=${encodeURIComponent(message)}`;
+    const url = `https://wa.me/${encodeURIComponent(phone)}?text=${encodeURIComponent(message)}`;
     window.open(url, '_blank');
     showStatus(`جاري فتح واتساب لـ ${studentName}...`, 'success');
-    modal.style.display = 'none';
+    closeModal('waPreviewModal');
   };
 
-  document.getElementById('waCloseBtn').onclick = () => modal.style.display = 'none';
+  document.getElementById('waCloseBtn').onclick = () => closeModal('waPreviewModal');
 }
 
 // =============================================================================
@@ -505,13 +565,19 @@ function showWhatsAppPreview(phone, message, studentName) {
 function printStudentDetails(studentName) {
   const printWindow = window.open('', '_blank');
   const logoSrc = document.getElementById('institutionLogo')?.src || './logo2.jpg';
+  const detailContent = document.getElementById('studentDetailContent');
+
+  if (!detailContent) {
+      showStatus('لا توجد بيانات للطباعة', 'error');
+      return;
+  }
 
   printWindow.document.write(`
     <!DOCTYPE html>
     <html lang="ar" dir="rtl">
     <head>
       <meta charset="UTF-8">
-      <title>تقرير الطالب - ${studentName}</title>
+      <title>تقرير الطالب - ${escapeHtml(studentName)}</title>
       <style>
         body { font-family: 'Tajawal', sans-serif; margin: 20px; }
         table { width: 100%; border-collapse: collapse; margin: 15px 0; }
@@ -521,8 +587,7 @@ function printStudentDetails(studentName) {
       </style>
     </head>
     <body>
-
-      ${document.getElementById('studentDetailContent').innerHTML}
+      ${detailContent.innerHTML}
     </body>
     </html>
   `);
@@ -535,7 +600,7 @@ function printStudentDetails(studentName) {
 }
 
 // =============================================================================
-// 11. دوال جلب البيانات
+// 11. دوال جلب البيانات (موحّدة)
 // =============================================================================
 
 async function fetchSubscriptions(studentId) {
@@ -567,7 +632,7 @@ async function fetchAttendances(studentId) {
     .eq('student_id', studentId);
   return error ? [] : data;
 }
-// ✅ دالة جديدة: جلب اختبارات الطالب من جدول exam_scores
+
 async function fetchStudentExams(studentId) {
   const { data, error } = await supabaseClient
     .from('exam_scores')
@@ -587,26 +652,20 @@ async function fetchStudentExams(studentId) {
     console.error('Error fetching student exams:', error);
     return [];
   }
-
-  // ✅ تنظيف البيانات وطباعة تجريبية للتحقق
-  console.log("Fetched exams data:", data);
-
   return data;
 }
 
-// ✅ توليد QR وعرضه في المودال الثابت
+// =============================================================================
+// 12. توليد QR وعرضه في المودال الثابت
+// =============================================================================
 function generateStudentQR(studentId, studentName) {
-  // فتح المودال
   const modal = document.getElementById("studentQrModal");
+  if (!modal) return;
   modal.style.display = "flex";
 
-  // تحديث البيانات
-  document.getElementById("qrStudentName").textContent = studentName;
-
-  // مسح أي QR قديم
+  document.getElementById("qrStudentName").textContent = escapeHtml(studentName);
   document.getElementById("qrCanvas").innerHTML = "";
 
-  // توليد QR جديد
   QRCode.toCanvas(
     document.createElement("canvas"),
     JSON.stringify({ student_id: studentId }),
@@ -622,7 +681,58 @@ function generateStudentQR(studentId, studentName) {
   );
 }
 
+// =============================================================================
+// 13. معاينة الصورة قبل الرفع (لنموذج الإضافة والتعديل)
+// =============================================================================
+document.addEventListener('DOMContentLoaded', function() {
+    // معاينة صورة إضافة الطالب (من نموذج الاشتراك الشامل)
+    const avatarInput = document.getElementById('studentAvatar');
+    const previewImg = document.getElementById('avatarPreview');
+    if (avatarInput && previewImg) {
+        avatarInput.addEventListener('change', function(e) {
+            const file = e.target.files[0];
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    previewImg.src = e.target.result;
+                    previewImg.style.display = 'block';
+                }
+                reader.readAsDataURL(file);
+            } else {
+                 previewImg.style.display = 'none';
+                 previewImg.src = '';
+            }
+        });
+    }
 
+    // معاينة صورة تعديل الطالب
+    const editAvatarInput = document.getElementById('editStudentAvatar');
+    const editPreviewImg = document.getElementById('editAvatarPreview');
+    if (editAvatarInput && editPreviewImg) {
+        editAvatarInput.addEventListener('change', function(e) {
+            const file = e.target.files[0];
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    editPreviewImg.src = e.target.result;
+                    editPreviewImg.style.display = 'block';
+                }
+                reader.readAsDataURL(file);
+            } else {
+                 editPreviewImg.style.display = 'none';
+                 editPreviewImg.src = '';
+            }
+        });
+    }
+});
+
+// دالة لتفعيل الرابط النشط في القائمة
+function setActiveLink(element) {
+  // إزالة الكلاس 'active' من جميع الروابط
+  document.querySelectorAll('.nav-link').forEach(link => link.classList.remove('active'));
+  // إضافة الكلاس 'active' للرابط اللي اتكمل عليه
+  element.classList.add('active');
+}
 
 // =============================================================================
 // 📁 parents-tab.js

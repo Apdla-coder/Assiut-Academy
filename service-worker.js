@@ -20,22 +20,41 @@ self.addEventListener('install', (event) => {
 
 // Fetch event
 self.addEventListener('fetch', (event) => {
+  // ✅ تحسين: تجاهل طلبات non-GET أو ملفات خاصة
+  if (event.request.method !== 'GET') {
+    return;
+  }
+
   event.respondWith(
     fetch(event.request)
       .then(response => {
+        // ✅ تحسين: خزن في الكاش بس لو الطلب شغال و response.ok
         if (response.ok) {
-          caches.open(CACHE_NAME).then(cache => {
-            cache.put(event.request, response.clone());
-          });
+          const responseToCache = response.clone();
+          caches.open(CACHE_NAME)
+            .then(cache => cache.put(event.request, responseToCache));
         }
         return response;
       })
-      .catch(() => caches.match(event.request).then(cachedResponse => {
-        return cachedResponse || caches.match('./index.html');
-      }))
+      .catch(async () => {
+        // ✅ تحسين: لو في خطأ، نرجع الكاش لو موجود
+        const cachedResponse = await caches.match(event.request);
+        if (cachedResponse) {
+          return cachedResponse;
+        }
+
+        // ✅ تحسين: fallback للصفحات HTML بس (مش للصور أو APIs)
+        const acceptHeader = event.request.headers.get('Accept');
+        if (acceptHeader && acceptHeader.includes('text/html')) {
+          return caches.match('./index.html');
+        }
+
+        // ❌ لو مش HTML ولا محفوظ في الكاش، نسيب الطلب يفشل طبيعي
+        // علشان ما يحصلش خطأ "Failed to convert..."
+        return new Response('Not Found', { status: 404 });
+      })
   );
 });
-
 // Activate event
 self.addEventListener('activate', (event) => {
   event.waitUntil(
