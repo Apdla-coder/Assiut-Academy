@@ -237,7 +237,29 @@ async function exportStudentsExcel() {
 
     const workbook = new ExcelJS.Workbook();
 
+    // ✅ دالة لتنسيق الهيدر
+    function styleHeader(row) {
+      row.eachCell((cell) => {
+        cell.font = { bold: true, size: 12, color: { argb: "FFFFFFFF" } };
+        cell.alignment = { vertical: "middle", horizontal: "center" };
+        cell.fill = {
+          type: "pattern",
+          pattern: "solid",
+          fgColor: { argb: "4472C4" } // أزرق غامق
+        };
+      });
+    }
+
+    // ✅ دالة لتنسيق الصفوف (مثال بسيط)
+    function styleRow(row) {
+      row.eachCell((cell) => {
+        cell.alignment = { vertical: "middle", horizontal: "center" };
+      });
+    }
+
+    // ----------------------------
     // شيت: الطلاب
+    // ----------------------------
     const wsStudents = workbook.addWorksheet("الطلاب");
     wsStudents.columns = [
       { header: "اسم الطالب", key: "name", width: 25 },
@@ -259,7 +281,9 @@ async function exportStudentsExcel() {
       styleRow(row);
     });
 
+    // ----------------------------
     // شيت: نتائج الاختبارات
+    // ----------------------------
     const wsExams = workbook.addWorksheet("نتائج الاختبارات");
     wsExams.columns = [
       { header: "اسم الطالب", key: "student", width: 25 },
@@ -273,17 +297,21 @@ async function exportStudentsExcel() {
     data.forEach(st => {
       if (st.exam_scores && st.exam_scores.length > 0) {
         st.exam_scores.forEach(es => {
-          wsExams.addRow({
+          const row = wsExams.addRow({
             student: st.full_name,
             exam: es.exams?.title || "امتحان",
             score: es.score || 0,
             max: es.exams?.max_score || 0,
             date: es.exam_date ? new Date(es.exam_date).toLocaleDateString("ar-EG") : "-"
           });
+          styleRow(row);
         });
       }
     });
 
+    // ----------------------------
+    // حفظ الملف
+    // ----------------------------
     const buffer = await workbook.xlsx.writeBuffer();
     const filename = `students_${new Date().toISOString().split('T')[0]}.xlsx`;
     saveAs(new Blob([buffer]), filename);

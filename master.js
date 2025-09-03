@@ -705,53 +705,78 @@
   loadSubscriptions(filteredSubscriptions);
   }
 
-  async function exportSubscriptionsExcel() {
-    try {
-      const { data, error } = await supabaseClient
-        .from('subscriptions')
-        .select(`
-          status,
-          notes,
-          subscribed_at,
-          students(full_name),
-          courses(name)
-        `)
-        .order('subscribed_at', { ascending: false });
+async function exportSubscriptionsExcel() {
+  try {
+    const { data, error } = await supabaseClient
+      .from('subscriptions')
+      .select(`
+        status,
+        notes,
+        subscribed_at,
+        students(full_name),
+        courses(name)
+      `)
+      .order('subscribed_at', { ascending: false });
 
-      if (error) throw error;
+    if (error) throw error;
 
-      const workbook = new ExcelJS.Workbook();
-      const ws = workbook.addWorksheet("الاشتراكات");
+    const workbook = new ExcelJS.Workbook();
+    const ws = workbook.addWorksheet("الاشتراكات");
 
-      ws.columns = [
-        { header: "اسم الطالب", key: "student", width: 25 },
-        { header: "اسم الدورة", key: "course", width: 25 },
-        { header: "الحالة", key: "status", width: 15 },
-        { header: "تاريخ الاشتراك", key: "date", width: 20 },
-        { header: "ملاحظات", key: "notes", width: 30 }
-      ];
-
-      styleHeader(ws.getRow(1));
-
-      data.forEach(sub => {
-        const row = ws.addRow({
-          student: sub.students?.full_name || "-",
-          course: sub.courses?.name || "-",
-          status: sub.status === "active" ? "نشط" : sub.status === "cancelled" ? "ملغي" : sub.status || "-",
-          date: sub.subscribed_at ? new Date(sub.subscribed_at).toLocaleDateString("ar-EG") : "-",
-          notes: sub.notes || "-"
-        });
-        styleRow(row);
+    // ✅ دالة لتنسيق الهيدر
+    function styleHeader(row) {
+      row.eachCell((cell) => {
+        cell.font = { bold: true, size: 12, color: { argb: "FFFFFFFF" } };
+        cell.alignment = { vertical: "middle", horizontal: "center" };
+        cell.fill = {
+          type: "pattern",
+          pattern: "solid",
+          fgColor: { argb: "4472C4" } // أزرق غامق
+        };
       });
-
-      const buffer = await workbook.xlsx.writeBuffer();
-      saveAs(new Blob([buffer]), `subscriptions_${new Date().toISOString().split('T')[0]}.xlsx`);
-      showStatus("✅ تم استخراج بيانات الاشتراكات", "success");
-    } catch (err) {
-      console.error(err);
-      showStatus("❌ خطأ في استخراج بيانات الاشتراكات", "error");
     }
+
+    // ✅ دالة لتنسيق الصفوف
+    function styleRow(row) {
+      row.eachCell((cell) => {
+        cell.alignment = { vertical: "middle", horizontal: "center" };
+      });
+    }
+
+    // الأعمدة
+    ws.columns = [
+      { header: "اسم الطالب", key: "student", width: 25 },
+      { header: "اسم الدورة", key: "course", width: 25 },
+      { header: "الحالة", key: "status", width: 15 },
+      { header: "تاريخ الاشتراك", key: "date", width: 20 },
+      { header: "ملاحظات", key: "notes", width: 30 }
+    ];
+
+    // تنسيق الهيدر
+    styleHeader(ws.getRow(1));
+
+    // إدخال البيانات
+    data.forEach(sub => {
+      const row = ws.addRow({
+        student: sub.students?.full_name || "-",
+        course: sub.courses?.name || "-",
+        status: sub.status === "active" ? "نشط" : sub.status === "cancelled" ? "ملغي" : sub.status || "-",
+        date: sub.subscribed_at ? new Date(sub.subscribed_at).toLocaleDateString("ar-EG") : "-",
+        notes: sub.notes || "-"
+      });
+      styleRow(row);
+    });
+
+    // حفظ الملف
+    const buffer = await workbook.xlsx.writeBuffer();
+    saveAs(new Blob([buffer]), `subscriptions_${new Date().toISOString().split('T')[0]}.xlsx`);
+    showStatus("✅ تم استخراج بيانات الاشتراكات", "success");
+
+  } catch (err) {
+    console.error(err);
+    showStatus("❌ خطأ في استخراج بيانات الاشتراكات", "error");
   }
+}
 
   // Show add subscription modal
   async function showAddSubscriptionModal() {
@@ -1087,82 +1112,121 @@
     }
   }
 
-  async function exportPaymentsExcel() {
-    try {
-      const { data, error } = await supabaseClient
-        .from('payments')
-        .select(`
-          amount,
-          total_amount,
-          status,
-          method,
-          notes,
-          paid_at,
-          students(full_name),
-          courses(name)
-        `)
-        .order('paid_at', { ascending: false });
+async function exportPaymentsExcel() {
+  try {
+    const { data, error } = await supabaseClient
+      .from('payments')
+      .select(`
+        amount,
+        total_amount,
+        status,
+        method,
+        notes,
+        paid_at,
+        students(full_name),
+        courses(name)
+      `)
+      .order('paid_at', { ascending: false });
 
-      if (error) throw error;
+    if (error) throw error;
 
-      const workbook = new ExcelJS.Workbook();
-      const ws = workbook.addWorksheet("المدفوعات");
+    const workbook = new ExcelJS.Workbook();
+    const ws = workbook.addWorksheet("المدفوعات");
 
-      ws.columns = [
-        { header: "اسم الطالب", key: "student", width: 25 },
-        { header: "اسم الدورة", key: "course", width: 25 },
-        { header: "المبلغ المدفوع", key: "paid", width: 18 },
-        { header: "إجمالي المبلغ", key: "total", width: 18 },
-        { header: "المبلغ المتبقي", key: "remaining", width: 18 },
-        { header: "الحالة", key: "status", width: 15 },
-        { header: "طريقة الدفع", key: "method", width: 18 },
-        { header: "تاريخ الدفع", key: "date", width: 20 },
-        { header: "ملاحظات", key: "notes", width: 30 }
-      ];
-
-      styleHeader(ws.getRow(1));
-
-      let totalPaid = 0;
-      let totalAmount = 0;
-
-      data.forEach(pay => {
-        const remaining = (pay.total_amount || 0) - (pay.amount || 0);
-        totalPaid += pay.amount || 0;
-        totalAmount += pay.total_amount || 0;
-
-        const row = ws.addRow({
-          student: pay.students?.full_name || "-",
-          course: pay.courses?.name || "-",
-          paid: pay.amount || 0,
-          total: pay.total_amount || 0,
-          remaining: remaining >= 0 ? remaining : 0,
-          status: translatePaymentStatus(pay.status),
-          method: translatePaymentMethod(pay.method),
-          date: pay.paid_at ? new Date(pay.paid_at).toLocaleDateString("ar-EG") : "-",
-          notes: pay.notes || "-"
-        });
-
-        styleRow(row);
+    // ✅ دالة لتنسيق الهيدر
+    function styleHeader(row) {
+      row.eachCell((cell) => {
+        cell.font = { bold: true, size: 12, color: { argb: "FFFFFFFF" } };
+        cell.alignment = { vertical: "middle", horizontal: "center" };
+        cell.fill = {
+          type: "pattern",
+          pattern: "solid",
+          fgColor: { argb: "4472C4" }
+        };
       });
-
-      const totalRemaining = totalAmount - totalPaid;
-      const totalRow = ws.addRow({
-        student: "الإجماليات:",
-        paid: totalPaid,
-        total: totalAmount,
-        remaining: totalRemaining
-      });
-
-      styleTotalRow(totalRow);
-
-      const buffer = await workbook.xlsx.writeBuffer();
-      saveAs(new Blob([buffer]), `payments_${new Date().toISOString().split('T')[0]}.xlsx`);
-      showStatus("✅ تم استخراج بيانات المدفوعات بنجاح", "success");
-    } catch (err) {
-      console.error(err);
-      showStatus("❌ خطأ في استخراج بيانات المدفوعات", "error");
     }
+
+    // ✅ دالة لتنسيق الصفوف
+    function styleRow(row) {
+      row.eachCell((cell) => {
+        cell.alignment = { vertical: "middle", horizontal: "center" };
+      });
+    }
+
+    // ✅ دالة لتنسيق صف الإجماليات
+    function styleTotalRow(row) {
+      row.eachCell((cell) => {
+        cell.font = { bold: true, size: 12, color: { argb: "FF0000" } }; // أحمر
+        cell.alignment = { vertical: "middle", horizontal: "center" };
+        cell.fill = {
+          type: "pattern",
+          pattern: "solid",
+          fgColor: { argb: "FFF2CC" } // أصفر فاتح
+        };
+      });
+    }
+
+    // الأعمدة
+    ws.columns = [
+      { header: "اسم الطالب", key: "student", width: 25 },
+      { header: "اسم الدورة", key: "course", width: 25 },
+      { header: "المبلغ المدفوع", key: "paid", width: 18 },
+      { header: "إجمالي المبلغ", key: "total", width: 18 },
+      { header: "المبلغ المتبقي", key: "remaining", width: 18 },
+      { header: "الحالة", key: "status", width: 15 },
+      { header: "طريقة الدفع", key: "method", width: 18 },
+      { header: "تاريخ الدفع", key: "date", width: 20 },
+      { header: "ملاحظات", key: "notes", width: 30 }
+    ];
+
+    // تنسيق الهيدر
+    styleHeader(ws.getRow(1));
+
+    let totalPaid = 0;
+    let totalAmount = 0;
+
+    // الصفوف العادية
+    data.forEach(pay => {
+      const remaining = (pay.total_amount || 0) - (pay.amount || 0);
+      totalPaid += pay.amount || 0;
+      totalAmount += pay.total_amount || 0;
+
+      const row = ws.addRow({
+        student: pay.students?.full_name || "-",
+        course: pay.courses?.name || "-",
+        paid: pay.amount || 0,
+        total: pay.total_amount || 0,
+        remaining: remaining >= 0 ? remaining : 0,
+        status: translatePaymentStatus(pay.status),
+        method: translatePaymentMethod(pay.method),
+        date: pay.paid_at ? new Date(pay.paid_at).toLocaleDateString("ar-EG") : "-",
+        notes: pay.notes || "-"
+      });
+
+      styleRow(row);
+    });
+
+    // صف الإجماليات
+    const totalRemaining = totalAmount - totalPaid;
+    const totalRow = ws.addRow({
+      student: "الإجماليات:",
+      paid: totalPaid,
+      total: totalAmount,
+      remaining: totalRemaining
+    });
+
+    styleTotalRow(totalRow);
+
+    // حفظ الملف
+    const buffer = await workbook.xlsx.writeBuffer();
+    saveAs(new Blob([buffer]), `payments_${new Date().toISOString().split('T')[0]}.xlsx`);
+    showStatus("✅ تم استخراج بيانات المدفوعات بنجاح", "success");
+
+  } catch (err) {
+    console.error(err);
+    showStatus("❌ خطأ في استخراج بيانات المدفوعات", "error");
   }
+}
 
   // Show edit payment modal
   function showEditPaymentModal(paymentId) {
@@ -1572,64 +1636,103 @@
   modal.document.write(content);
   modal.document.close();
   }
-  async function exportAttendancesExcel() {
-    try {
-  const { data, error } = await supabaseClient
-    .from('attendances')
-    .select(`
-      date,
-      status,
-      students(full_name),
-      courses(name)
-    `)
-    .order('date', { ascending: false });
+  
+async function exportAttendancesExcel() {
+  try {
+    const { data, error } = await supabaseClient
+      .from('attendances')
+      .select(`
+        date,
+        status,
+        students(full_name),
+        courses(name)
+      `)
+      .order('date', { ascending: false });
 
-      if (error) throw error;
+    if (error) throw error;
 
-      const workbook = new ExcelJS.Workbook();
-      const ws = workbook.addWorksheet("الحضور");
+    const workbook = new ExcelJS.Workbook();
+    const ws = workbook.addWorksheet("الحضور");
 
-      ws.columns = [
-        { header: "اسم الطالب", key: "student", width: 25 },
-        { header: "اسم الدورة", key: "course", width: 25 },
-        { header: "الحالة", key: "status", width: 15 },
-        { header: "تاريخ الحضور", key: "date", width: 20 }
-      ];
-
-      styleHeader(ws.getRow(1));
-
-      let totalPresent = 0;
-      let totalAbsent = 0;
-
-      data.forEach(rec => {
-        if (rec.status === "present") totalPresent++;
-        if (rec.status === "absent") totalAbsent++;
-
-        const row = ws.addRow({
-          student: rec.students?.full_name || "-",
-          course: rec.courses?.name || "-",
-          status: rec.status === "present" ? "حاضر" : rec.status === "absent" ? "غائب" : rec.status || "-",
-  date: rec.date ? new Date(rec.date).toLocaleDateString("ar-EG") : "-"
-        });
-        styleRow(row);
+    // ✅ دالة لتنسيق الهيدر
+    function styleHeader(row) {
+      row.eachCell((cell) => {
+        cell.font = { bold: true, size: 12, color: { argb: "FFFFFFFF" } };
+        cell.alignment = { vertical: "middle", horizontal: "center" };
+        cell.fill = {
+          type: "pattern",
+          pattern: "solid",
+          fgColor: { argb: "4472C4" }
+        };
       });
-
-      // صف إجمالي الحضور
-      const totalRow = ws.addRow({
-        student: "الإجماليات:",
-        course: "-",
-        status: `حاضر: ${totalPresent} / غائب: ${totalAbsent}`
-      });
-      styleTotalRow(totalRow);
-
-      const buffer = await workbook.xlsx.writeBuffer();
-      saveAs(new Blob([buffer]), `attendance_${new Date().toISOString().split('T')[0]}.xlsx`);
-      showStatus("✅ تم استخراج بيانات الحضور", "success");
-    } catch (err) {
-      console.error(err);
-      showStatus("❌ خطأ في استخراج بيانات الحضور", "error");
     }
+
+    // ✅ دالة لتنسيق الصفوف
+    function styleRow(row) {
+      row.eachCell((cell) => {
+        cell.alignment = { vertical: "middle", horizontal: "center" };
+      });
+    }
+
+    // ✅ دالة لتنسيق صف الإجماليات
+    function styleTotalRow(row) {
+      row.eachCell((cell) => {
+        cell.font = { bold: true, size: 12, color: { argb: "FF0000" } }; // أحمر
+        cell.alignment = { vertical: "middle", horizontal: "center" };
+        cell.fill = {
+          type: "pattern",
+          pattern: "solid",
+          fgColor: { argb: "FFF2CC" } // أصفر فاتح
+        };
+      });
+    }
+
+    // الأعمدة
+    ws.columns = [
+      { header: "اسم الطالب", key: "student", width: 25 },
+      { header: "اسم الدورة", key: "course", width: 25 },
+      { header: "الحالة", key: "status", width: 15 },
+      { header: "تاريخ الحضور", key: "date", width: 20 }
+    ];
+
+    // تنسيق الهيدر
+    styleHeader(ws.getRow(1));
+
+    let totalPresent = 0;
+    let totalAbsent = 0;
+
+    // الصفوف العادية
+    data.forEach(rec => {
+      if (rec.status === "present") totalPresent++;
+      if (rec.status === "absent") totalAbsent++;
+
+      const row = ws.addRow({
+        student: rec.students?.full_name || "-",
+        course: rec.courses?.name || "-",
+        status: rec.status === "present" ? "حاضر" : rec.status === "absent" ? "غائب" : rec.status || "-",
+        date: rec.date ? new Date(rec.date).toLocaleDateString("ar-EG") : "-"
+      });
+      styleRow(row);
+    });
+
+    // صف إجمالي الحضور
+    const totalRow = ws.addRow({
+      student: "الإجماليات:",
+      course: "-",
+      status: `حاضر: ${totalPresent} / غائب: ${totalAbsent}`
+    });
+    styleTotalRow(totalRow);
+
+    // حفظ الملف
+    const buffer = await workbook.xlsx.writeBuffer();
+    saveAs(new Blob([buffer]), `attendance_${new Date().toISOString().split('T')[0]}.xlsx`);
+    showStatus("✅ تم استخراج بيانات الحضور", "success");
+
+  } catch (err) {
+    console.error(err);
+    showStatus("❌ خطأ في استخراج بيانات الحضور", "error");
   }
+}
 
   // دالة طباعة سجل الحضور للطالب
   function printStudentAttendance(studentId) {
@@ -1690,151 +1793,151 @@
     }
   }
 
-  // ✅ تحميل حالة السكرتير
-  async function loadSecretaryStatus() {
-    if (!window.userId) return;
+// ✅ تحميل حالة السكرتير
+async function loadSecretaryStatus() {
+  if (!window.userId) return;
 
-    const today = new Date().toISOString().split('T')[0];
-    const { data, error } = await supabaseClient
+  const today = new Date().toISOString().split('T')[0];
+  const { data, error } = await supabaseClient
+    .from('secretary_attendance')
+    .select('*')
+    .eq('secretary_id', window.userId)
+    .eq('attendance_date', today)
+    .single(); // single() لأن التاريخ فريد
+
+  const statusEl = document.getElementById('secretaryStatus');
+  const checkInBtn = document.getElementById('secCheckIn');
+  const checkOutBtn = document.getElementById('secCheckOut');
+
+  if (error) {
+    if (error.code !== 'PGRST116') {
+      console.error("❌ خطأ في جلب الحالة:", error);
+    }
+    // لا يوجد سجل
+    statusEl.textContent = "⏳ لم يتم تسجيل الحضور بعد";
+    checkInBtn.disabled = false;
+    checkOutBtn.disabled = true;
+    return;
+  }
+
+  if (!data.check_in) {
+    statusEl.textContent = "⏳ لم يتم تسجيل الحضور بعد";
+    checkInBtn.disabled = false;
+    checkOutBtn.disabled = true;
+  } else if (data.check_in && !data.check_out) {
+    statusEl.textContent = "✅ تم الحضور (في انتظار الانصراف)";
+    checkInBtn.disabled = true;
+    checkOutBtn.disabled = false;
+  } else {
+    statusEl.textContent = "👋 تم الحضور والانصراف";
+    checkInBtn.disabled = true;
+    checkOutBtn.disabled = true;
+  }
+}
+
+// ✅ تسجيل الحضور
+async function checkInSecretary() {
+  if (!window.userId) return;
+
+  const today = new Date().toISOString().split('T')[0];
+  const now = new Date().toISOString();
+
+  try {
+    const { data: existing, error: fetchError } = await supabaseClient
       .from('secretary_attendance')
-      .select('*')
+      .select('id, check_in')
       .eq('secretary_id', window.userId)
-      .eq('date', today)
-      .single(); // single() لأن التاريخ فريد
+      .eq('attendance_date', today)
+      .single();
 
-    const statusEl = document.getElementById('secretaryStatus');
-    const checkInBtn = document.getElementById('secCheckIn');
-    const checkOutBtn = document.getElementById('secCheckOut');
-
-    if (error) {
-      if (error.code !== 'PGRST116') {
-        console.error("❌ خطأ في جلب الحالة:", error);
-      }
-      // لا يوجد سجل
-      statusEl.textContent = "⏳ لم يتم تسجيل الحضور بعد";
-      checkInBtn.disabled = false;
-      checkOutBtn.disabled = true;
+    if (!fetchError && existing?.check_in) {
+      showStatus('✅ الحضور مسجل بالفعل', 'info');
       return;
     }
 
-    if (!data.check_in) {
-      statusEl.textContent = "⏳ لم يتم تسجيل الحضور بعد";
-      checkInBtn.disabled = false;
-      checkOutBtn.disabled = true;
-    } else if (data.check_in && !data.check_out) {
-      statusEl.textContent = "✅ تم الحضور (في انتظار الانصراف)";
-      checkInBtn.disabled = true;
-      checkOutBtn.disabled = false;
-    } else {
-      statusEl.textContent = "👋 تم الحضور والانصراف";
-      checkInBtn.disabled = true;
-      checkOutBtn.disabled = true;
-    }
-  }
-
-  // ✅ تسجيل الحضور
-  async function checkInSecretary() {
-    if (!window.userId) return;
-
-    const today = new Date().toISOString().split('T')[0];
-    const now = new Date().toISOString();
-
-    try {
-      const { data: existing, error: fetchError } = await supabaseClient
+    if (existing) {
+      const { error } = await supabaseClient
         .from('secretary_attendance')
-        .select('id, check_in')
-        .eq('secretary_id', window.userId)
-        .eq('date', today)
-        .single();
-
-      if (!fetchError && existing.check_in) {
-        showStatus('✅ الحضور مسجل بالفعل', 'info');
-        return;
-      }
-
-      if (existing) {
-        const { error } = await supabaseClient
-          .from('secretary_attendance')
-          .update({ check_in: now })
-          .eq('id', existing.id);
-        if (error) throw error;
-      } else {
-        const { error } = await supabaseClient
-          .from('secretary_attendance')
-          .insert({
-            secretary_id: window.userId,
-            date: today,
-            check_in: now
-          });
-        if (error) throw error;
-      }
-
-      showStatus('✅ تم تسجيل الحضور', 'success');
-      window.loadSecretaryStatus();
-    } catch (error) {
-      console.error('❌ خطأ في تسجيل الحضور:', error);
-      showStatus('خطأ في تسجيل الحضور', 'error');
-    }
-  }
-
-  // ✅ تسجيل الانصراف
-  async function checkOutSecretary() {
-    if (!window.userId) {
-      showStatus('❌ لم يتم تحميل المستخدم', 'error');
-      return;
-    }
-
-    const today = new Date().toISOString().split('T')[0];
-    const now = new Date().toISOString();
-
-    try {
-      const { data: existing, error: fetchError } = await supabaseClient
-        .from('secretary_attendance')
-        .select('id, check_in, check_out')
-        .eq('secretary_id', window.userId)
-        .eq('date', today)
-        .single();
-
-      if (fetchError) {
-        if (fetchError.code === 'PGRST116') {
-          showStatus('⚠️ لم يتم تسجيل الحضور بعد', 'warning');
-        } else {
-          console.error('❌ خطأ في جلب السجل:', fetchError);
-          showStatus('خطأ في الاتصال', 'error');
-        }
-        return;
-      }
-
-      if (!existing.check_in) {
-        showStatus('⚠️ لا يمكن الانصراف بدون حضور', 'warning');
-        return;
-      }
-
-      if (existing.check_out) {
-        showStatus('ℹ️ تم الانصراف مسبقًا', 'info');
-        return;
-      }
-
-      // تحديث الانصراف
-      const { error: updateError } = await supabaseClient
-        .from('secretary_attendance')
-        .update({ check_out: now })
+        .update({ check_in: now })
         .eq('id', existing.id);
-
-      if (updateError) {
-        console.error('❌ خطأ في التحديث:', updateError);
-        showStatus('فشل في تسجيل الانصراف', 'error');
-        return;
-      }
-
-      console.log('✅ تم تسجيل الانصراف بنجاح:', now);
-      showStatus('👋 تم تسجيل الانصراف', 'success');
-      window.loadSecretaryStatus();
-    } catch (error) {
-      console.error('❌ خطأ غير متوقع:', error);
-      showStatus('حدث خطأ', 'error');
+      if (error) throw error;
+    } else {
+      const { error } = await supabaseClient
+        .from('secretary_attendance')
+        .insert({
+          secretary_id: window.userId,
+          attendance_date: today,
+          check_in: now
+        });
+      if (error) throw error;
     }
+
+    showStatus('✅ تم تسجيل الحضور', 'success');
+    window.loadSecretaryStatus();
+  } catch (error) {
+    console.error('❌ خطأ في تسجيل الحضور:', error);
+    showStatus('خطأ في تسجيل الحضور', 'error');
   }
+}
+
+// ✅ تسجيل الانصراف
+async function checkOutSecretary() {
+  if (!window.userId) {
+    showStatus('❌ لم يتم تحميل المستخدم', 'error');
+    return;
+  }
+
+  const today = new Date().toISOString().split('T')[0];
+  const now = new Date().toISOString();
+
+  try {
+    const { data: existing, error: fetchError } = await supabaseClient
+      .from('secretary_attendance')
+      .select('id, check_in, check_out')
+      .eq('secretary_id', window.userId)
+      .eq('attendance_date', today)
+      .single();
+
+    if (fetchError) {
+      if (fetchError.code === 'PGRST116') {
+        showStatus('⚠️ لم يتم تسجيل الحضور بعد', 'warning');
+      } else {
+        console.error('❌ خطأ في جلب السجل:', fetchError);
+        showStatus('خطأ في الاتصال', 'error');
+      }
+      return;
+    }
+
+    if (!existing.check_in) {
+      showStatus('⚠️ لا يمكن الانصراف بدون حضور', 'warning');
+      return;
+    }
+
+    if (existing.check_out) {
+      showStatus('ℹ️ تم الانصراف مسبقًا', 'info');
+      return;
+    }
+
+    // تحديث الانصراف
+    const { error: updateError } = await supabaseClient
+      .from('secretary_attendance')
+      .update({ check_out: now })
+      .eq('id', existing.id);
+
+    if (updateError) {
+      console.error('❌ خطأ في التحديث:', updateError);
+      showStatus('فشل في تسجيل الانصراف', 'error');
+      return;
+    }
+
+    console.log('✅ تم تسجيل الانصراف بنجاح:', now);
+    showStatus('👋 تم تسجيل الانصراف', 'success');
+    window.loadSecretaryStatus();
+  } catch (error) {
+    console.error('❌ خطأ غير متوقع:', error);
+    showStatus('حدث خطأ', 'error');
+  }
+}
 
   // ✅ جعل الدوال عالمية
   window.loadCurrentUser = loadCurrentUser;
