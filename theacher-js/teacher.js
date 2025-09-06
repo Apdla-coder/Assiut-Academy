@@ -1767,202 +1767,214 @@
                 
 
 
-    // ✅ التحقق من حضور اليوم
-    async function checkTodayStatus() {
-        const today = new Date().toISOString().split('T')[0];
+// 🎯 دالة مساعدة لتحويل الوقت لـ ISO مع توقيت مصر
+function getEgyptTimeISO() {
+    const now = new Date();
+    // فرق التوقيت المحلي - توقيت مصر (UTC+3)
+    const utc = now.getTime() + (now.getTimezoneOffset() * 60000);
+    const egyptOffset = 3 * 60 * 60000; // +3 ساعات
+    const egyptTime = new Date(utc + egyptOffset);
+    return egyptTime.toISOString(); // ISO مضبوط على مصر
+}
+
+// ✅ التحقق من حضور اليوم
+async function checkTodayStatus() {
+    const today = new Date().toISOString().split('T')[0];
+    const { data, error } = await supabaseClient
+        .from('teacher_attendance')
+        .select('*')
+        .eq('teacher_id', currentUserId)
+        .eq('date', today)
+        .maybeSingle();
+
+    if (error) {
+        console.error("checkTodayStatus error:", error);
+        return;
+    }
+
+    if (data) {
+        document.getElementById('checkInBtn').disabled = !!data.check_in_time;
+        document.getElementById('checkOutBtn').disabled = !!data.check_out_time;
+    }
+}
+
+// ✅ تسجيل الحضور
+async function recordCheckIn() {
+    const today = new Date().toISOString().split('T')[0];
+
+    const { data: exists, error: checkError } = await supabaseClient
+        .from('teacher_attendance')
+        .select('*')
+        .eq('teacher_id', currentUserId)
+        .eq('date', today)
+        .maybeSingle();
+
+    if (checkError && checkError.code !== 'PGRST116') {
+        console.error("Error checking attendance:", checkError);
+        showStatus(`خطأ في التحقق من الحضور: ${checkError.message}`, 'error');
+        return;
+    }
+    if (exists) {
+        showStatus(
+            `سجلت حضورك بالفعل في ${new Date(exists.check_in_time).toLocaleTimeString('ar-EG', { hour: '2-digit', minute: '2-digit' })}`,
+            'error'
+        );
+        return;
+    }
+
+    const now = getEgyptTimeISO(); // ✅ توقيت مصر
+    const { error: insertError } = await supabaseClient
+        .from('teacher_attendance')
+        .insert([{
+            teacher_id: currentUserId,
+            date: today,
+            check_in_time: now
+        }]);
+
+    if (insertError) {
+        console.error("Error recording check-in:", insertError);
+        showStatus(`خطأ في تسجيل الحضور: ${insertError.message}`, 'error');
+    } else {
+        showStatus(
+            `تم تسجيل حضورك ${new Date(now).toLocaleTimeString('ar-EG', { hour: '2-digit', minute: '2-digit' })}`
+        );
+        document.getElementById('checkInBtn').disabled = true;
+        checkTodayStatus();
+        loadProfileAttendanceRecords();
+    }
+}
+
+// ✅ تسجيل الانصراف
+async function recordCheckOut() {
+    const today = new Date().toISOString().split('T')[0];
+
+    const { data: row, error: fetchError } = await supabaseClient
+        .from('teacher_attendance')
+        .select('id, check_in_time, check_out_time')
+        .eq('teacher_id', currentUserId)
+        .eq('date', today)
+        .maybeSingle();
+
+    console.log("📌 Attendance row fetched:", row);
+
+    if (fetchError && fetchError.code !== 'PGRST116') {
+        console.error("Error fetching attendance record:", fetchError);
+        showStatus(`خطأ في جلب سجل الحضور: ${fetchError.message}`, 'error');
+        return;
+    }
+    if (!row) {
+        showStatus('سجل حضورك أولاً', 'error');
+        return;
+    }
+    if (row.check_out_time) {
+        showStatus(
+            `سجلت انصرافك بالفعل ${new Date(row.check_out_time).toLocaleTimeString('ar-EG', { hour: '2-digit', minute: '2-digit' })}`,
+            'error'
+        );
+        return;
+    }
+
+    const now = getEgyptTimeISO(); // ✅ توقيت مصر
+    console.log("📌 Trying to update checkout with:", now, "for row id:", row.id);
+
+    const { data: updated, error: updateError } = await supabaseClient
+        .from('teacher_attendance')
+        .update({ check_out_time: now })
+        .eq('id', row.id)
+        .select();
+
+    if (updateError) {
+        console.error("Error recording check-out:", updateError);
+        showStatus(`خطأ في تسجيل الانصراف: ${updateError.message}`, 'error');
+    } else {
+        console.log("✅ Checkout updated successfully:", updated);
+        showStatus(
+            `تم تسجيل انصرافك ${new Date(now).toLocaleTimeString('ar-EG', { hour: '2-digit', minute: '2-digit' })}`
+        );
+        document.getElementById('checkOutBtn').disabled = true;
+        checkTodayStatus();
+        loadProfileAttendanceRecords();
+    }
+}
+
+// ✅ حساب مدة البقاء (من timestamp لـ timestamp)
+function calcStay(start, end) {
+    const sh = new Date(start);
+    const eh = new Date(end);
+    const mins = Math.floor((eh - sh) / 60000);
+    const h = Math.floor(mins / 60);
+    const m = mins % 60;
+    return `${h}س ${m}د`;
+}
+
+// ✅ تحميل سجل الحضور الشخصي
+async function loadProfileAttendanceRecords() {
+    const containerId = 'profileAttendanceRecords';
+    const container = document.getElementById(containerId);
+
+    if (!container) {
+        console.error(`loadProfileAttendanceRecords: العنصر بـ id="${containerId}" غير موجود في DOM.`);
+        return;
+    }
+
+    try {
+        if (!currentUserId) {
+            throw new Error("لم يتم تعيين معرف المستخدم الحالي (currentUserId).");
+        }
+
         const { data, error } = await supabaseClient
             .from('teacher_attendance')
             .select('*')
             .eq('teacher_id', currentUserId)
-            .eq('date', today)
-            .maybeSingle();
+            .order('date', { ascending: false })
+            .limit(5);
 
-        if (error) {
-            console.error("checkTodayStatus error:", error);
+        if (error) throw error;
+
+        if (!data || data.length === 0) {
+            container.innerHTML = '<p class="no-data">لا توجد سجلات حضور.</p>';
             return;
         }
 
-        if (data) {
-            document.getElementById('checkInBtn').disabled = !!data.check_in_time;
-            document.getElementById('checkOutBtn').disabled = !!data.check_out_time;
-        }
-    }
-
-    // ✅ تسجيل الحضور
-    async function recordCheckIn() {
-        const today = new Date().toISOString().split('T')[0];
-
-        const { data: exists, error: checkError } = await supabaseClient
-            .from('teacher_attendance')
-            .select('*')
-            .eq('teacher_id', currentUserId)
-            .eq('date', today)
-            .maybeSingle();
-
-        if (checkError && checkError.code !== 'PGRST116') {
-            console.error("Error checking attendance:", checkError);
-            showStatus(`خطأ في التحقق من الحضور: ${checkError.message}`, 'error');
-            return;
-        }
-        if (exists) {
-            showStatus(`سجلت حضورك بالفعل في ${new Date(exists.check_in_time).toLocaleTimeString('ar-EG', { hour: '2-digit', minute: '2-digit' })}`, 'error');
-            return;
-        }
-
-        const now = new Date().toISOString(); // datetime كامل
-        const { error: insertError } = await supabaseClient
-            .from('teacher_attendance')
-            .insert([{
-                teacher_id: currentUserId,
-                date: today,
-                check_in_time: now
-            }]);
-
-        if (insertError) {
-            console.error("Error recording check-in:", insertError);
-            showStatus(`خطأ في تسجيل الحضور: ${insertError.message}`, 'error');
-        } else {
-            showStatus(`تم تسجيل حضورك ${new Date(now).toLocaleTimeString('ar-EG', { hour: '2-digit', minute: '2-digit' })}`);
-            document.getElementById('checkInBtn').disabled = true;
-            checkTodayStatus();
-            loadProfileAttendanceRecords(); // تحديث سجل الحضور في الملف الشخصي
-        }
-    }
-
-    // ✅ تسجيل الانصراف
-    async function recordCheckOut() {
-        const today = new Date().toISOString().split('T')[0];
-
-        const { data: row, error: fetchError } = await supabaseClient
-            .from('teacher_attendance')
-            .select('id, check_in_time, check_out_time') // 🎯 نجيب id فقط والحقول المطلوبة
-            .eq('teacher_id', currentUserId)
-            .eq('date', today)
-            .maybeSingle();
-
-        console.log("📌 Attendance row fetched:", row);
-
-        if (fetchError && fetchError.code !== 'PGRST116') {
-            console.error("Error fetching attendance record:", fetchError);
-            showStatus(`خطأ في جلب سجل الحضور: ${fetchError.message}`, 'error');
-            return;
-        }
-        if (!row) {
-            showStatus('سجل حضورك أولاً', 'error');
-            return;
-        }
-        if (row.check_out_time) {
-            showStatus(`سجلت انصرافك بالفعل ${new Date(row.check_out_time).toLocaleTimeString('ar-EG', { hour: '2-digit', minute: '2-digit' })}`, 'error');
-            return;
-        }
-
-        const now = new Date().toISOString(); // datetime كامل
-        console.log("📌 Trying to update checkout with:", now, "for row id:", row.id);
-
-        const { data: updated, error: updateError } = await supabaseClient
-            .from('teacher_attendance')
-            .update({ check_out_time: now })
-            .eq('id', row.id)
-            .select(); // 🎯 عشان يرجع البيانات بعد التحديث
-
-        if (updateError) {
-            console.error("Error recording check-out:", updateError);
-            showStatus(`خطأ في تسجيل الانصراف: ${updateError.message}`, 'error');
-        } else {
-            console.log("✅ Checkout updated successfully:", updated);
-            showStatus(`تم تسجيل انصرافك ${new Date(now).toLocaleTimeString('ar-EG', { hour: '2-digit', minute: '2-digit' })}`);
-            document.getElementById('checkOutBtn').disabled = true;
-            checkTodayStatus();
-            loadProfileAttendanceRecords(); // تحديث سجل الحضور
-        }
-    }
-
-    // ✅ حساب مدة البقاء (من timestamp لـ timestamp)
-    function calcStay(start, end) {
-        const sh = new Date(start);
-        const eh = new Date(end);
-        const mins = Math.floor((eh - sh) / 60000);
-        const h = Math.floor(mins / 60);
-        const m = mins % 60;
-        return `${h}س ${m}د`;
-    }
-
-    // ✅ تحميل سجل الحضور الشخصي
-    async function loadProfileAttendanceRecords() {
-        const containerId = 'profileAttendanceRecords';
-        const container = document.getElementById(containerId);
-
-        if (!container) {
-            console.error(`loadProfileAttendanceRecords: العنصر بـ id="${containerId}" غير موجود في DOM.`);
-            return;
-        }
-
-        try {
-            if (!currentUserId) {
-                throw new Error("لم يتم تعيين معرف المستخدم الحالي (currentUserId).");
+        let attendanceHtml = '';
+        data.forEach(record => {
+            let stay = '-';
+            if (record.check_in_time && record.check_out_time) {
+                stay = calcStay(record.check_in_time, record.check_out_time);
             }
 
-            const { data, error } = await supabaseClient
-                .from('teacher_attendance')
-                .select('*')
-                .eq('teacher_id', currentUserId)
-                .order('date', { ascending: false })
-                .limit(5);
+            attendanceHtml += `
+            <div class="profile-attendance-record">
+                <div class="profile-attendance-date">${record.date || '---'}</div>
+                <div class="profile-attendance-times">
+                    <div class="profile-attendance-time">حضور: ${record.check_in_time ? new Date(record.check_in_time).toLocaleTimeString('ar-EG', { hour: '2-digit', minute: '2-digit' }) : '-'}</div>
+                    <div class="profile-attendance-time">انصراف: ${record.check_out_time ? new Date(record.check_out_time).toLocaleTimeString('ar-EG', { hour: '2-digit', minute: '2-digit' }) : '-'}</div>
+                    <div class="profile-attendance-stay">المدة: ${stay}</div>
+                </div>
+            </div>`;
+        });
 
-            if (error) throw error;
-
-            if (!data || data.length === 0) {
-                container.innerHTML = '<p class="no-data">لا توجد سجلات حضور.</p>';
-                return;
-            }
-
-            let attendanceHtml = '';
-            data.forEach(record => {
-                let stay = '-';
-                if (record.check_in_time && record.check_out_time) {
-                    stay = calcStay(record.check_in_time, record.check_out_time);
-                }
-
-                attendanceHtml += `
-                <div class="profile-attendance-record">
-                    <div class="profile-attendance-date">${record.date || '---'}</div>
-                    <div class="profile-attendance-times">
-                        <div class="profile-attendance-time">حضور: ${record.check_in_time ? new Date(record.check_in_time).toLocaleTimeString('ar-EG', { hour: '2-digit', minute: '2-digit' }) : '-'}</div>
-                        <div class="profile-attendance-time">انصراف: ${record.check_out_time ? new Date(record.check_out_time).toLocaleTimeString('ar-EG', { hour: '2-digit', minute: '2-digit' }) : '-'}</div>
-                        <div class="profile-attendance-stay">المدة: ${stay}</div>
-                    </div>
-                </div>`;
-            });
-
-            container.innerHTML = attendanceHtml;
-        } catch (error) {
-            console.error('loadProfileAttendanceRecords error:', error);
-            container.innerHTML = `<p class="no-data error">خطأ في تحميل سجل الحضور: ${error.message}</p>`;
-        }
+        container.innerHTML = attendanceHtml;
+    } catch (error) {
+        console.error('loadProfileAttendanceRecords error:', error);
+        container.innerHTML = `<p class="no-data error">خطأ في تحميل سجل الحضور: ${error.message}</p>`;
     }
+}
 
-
-
-    // مصفوفة لتخزين الطلاب اللي اتسجلوا
-
-    // مصفوفة الطلاب اللي اتسجلوا
-
-
-
-    // ✅ عرض رسالة حالة
-    function showStatus(message, type = 'info') {
-        const statusElement = document.getElementById('statusMessage');
-        if (statusElement) {
-            statusElement.textContent = message;
-            statusElement.className = `status ${type}`;
-            setTimeout(() => {
-                statusElement.textContent = '';
-                statusElement.className = 'status';
-            }, 3000);
-        } else {
-            console.warn('عنصر statusMessage غير موجود في الصفحة.');
-        }
+// ✅ عرض رسالة حالة
+function showStatus(message, type = 'info') {
+    const statusElement = document.getElementById('statusMessage');
+    if (statusElement) {
+        statusElement.textContent = message;
+        statusElement.className = `status ${type}`;
+        setTimeout(() => {
+            statusElement.textContent = '';
+            statusElement.className = 'status';
+        }, 3000);
+    } else {
+        console.warn('عنصر statusMessage غير موجود في الصفحة.');
     }
+}
 
     // ✅ إعادة تعيين نموذج الملف الشخصي
     function resetProfileForm() {

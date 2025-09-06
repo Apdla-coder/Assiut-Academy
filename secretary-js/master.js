@@ -73,8 +73,7 @@
   .from('users')
   .select('full_name, role')
   .eq('id', session.user.id)
-  .single();
-
+  .maybeSingle();
   if (userError && userError.code !== 'PGRST116') {
   throw userError;
   }
@@ -1771,186 +1770,7 @@ async function exportAttendancesExcel() {
   printWindow.print();
   }
 
-  // === Supabase Client (يجب أن يكون معرّف مسبقًا في الصفحة) ===
-  // تأكد من أن supabaseClient تم تعريفه قبل هذا الكود
-  // ✅ تحميل المستخدم الحالي
-  async function loadCurrentUser() {
-    try {
-      const { data, error } = await supabaseClient.auth.getUser();
-      if (error) throw error;
 
-      if (data?.user) {
-        window.userId = data.user.id;
-        console.log("✅ المستخدم الحالي:", window.userId);
-        window.loadSecretaryStatus(); // تحديث الحالة
-      } else {
-        window.location.href = 'index.html';
-      }
-    } catch (err) {
-      console.error("❌ خطأ في جلب المستخدم:", err);
-      showStatus?.("فشل التحقق من المستخدم", "error");
-      window.location.href = 'index.html';
-    }
-  }
-
-// ✅ تحميل حالة السكرتير
-async function loadSecretaryStatus() {
-  if (!window.userId) return;
-
-  const today = new Date().toISOString().split('T')[0];
-  const { data, error } = await supabaseClient
-    .from('secretary_attendance')
-    .select('*')
-    .eq('secretary_id', window.userId)
-    .eq('attendance_date', today)
-    .single(); // single() لأن التاريخ فريد
-
-  const statusEl = document.getElementById('secretaryStatus');
-  const checkInBtn = document.getElementById('secCheckIn');
-  const checkOutBtn = document.getElementById('secCheckOut');
-
-  if (error) {
-    if (error.code !== 'PGRST116') {
-      console.error("❌ خطأ في جلب الحالة:", error);
-    }
-    // لا يوجد سجل
-    statusEl.textContent = "⏳ لم يتم تسجيل الحضور بعد";
-    checkInBtn.disabled = false;
-    checkOutBtn.disabled = true;
-    return;
-  }
-
-  if (!data.check_in) {
-    statusEl.textContent = "⏳ لم يتم تسجيل الحضور بعد";
-    checkInBtn.disabled = false;
-    checkOutBtn.disabled = true;
-  } else if (data.check_in && !data.check_out) {
-    statusEl.textContent = "✅ تم الحضور (في انتظار الانصراف)";
-    checkInBtn.disabled = true;
-    checkOutBtn.disabled = false;
-  } else {
-    statusEl.textContent = "👋 تم الحضور والانصراف";
-    checkInBtn.disabled = true;
-    checkOutBtn.disabled = true;
-  }
-}
-
-// ✅ تسجيل الحضور
-async function checkInSecretary() {
-  if (!window.userId) return;
-
-  const today = new Date().toISOString().split('T')[0];
-  const now = new Date().toISOString();
-
-  try {
-    const { data: existing, error: fetchError } = await supabaseClient
-      .from('secretary_attendance')
-      .select('id, check_in')
-      .eq('secretary_id', window.userId)
-      .eq('attendance_date', today)
-      .single();
-
-    if (!fetchError && existing?.check_in) {
-      showStatus('✅ الحضور مسجل بالفعل', 'info');
-      return;
-    }
-
-    if (existing) {
-      const { error } = await supabaseClient
-        .from('secretary_attendance')
-        .update({ check_in: now })
-        .eq('id', existing.id);
-      if (error) throw error;
-    } else {
-      const { error } = await supabaseClient
-        .from('secretary_attendance')
-        .insert({
-          secretary_id: window.userId,
-          attendance_date: today,
-          check_in: now
-        });
-      if (error) throw error;
-    }
-
-    showStatus('✅ تم تسجيل الحضور', 'success');
-    window.loadSecretaryStatus();
-  } catch (error) {
-    console.error('❌ خطأ في تسجيل الحضور:', error);
-    showStatus('خطأ في تسجيل الحضور', 'error');
-  }
-}
-
-// ✅ تسجيل الانصراف
-async function checkOutSecretary() {
-  if (!window.userId) {
-    showStatus('❌ لم يتم تحميل المستخدم', 'error');
-    return;
-  }
-
-  const today = new Date().toISOString().split('T')[0];
-  const now = new Date().toISOString();
-
-  try {
-    const { data: existing, error: fetchError } = await supabaseClient
-      .from('secretary_attendance')
-      .select('id, check_in, check_out')
-      .eq('secretary_id', window.userId)
-      .eq('attendance_date', today)
-      .single();
-
-    if (fetchError) {
-      if (fetchError.code === 'PGRST116') {
-        showStatus('⚠️ لم يتم تسجيل الحضور بعد', 'warning');
-      } else {
-        console.error('❌ خطأ في جلب السجل:', fetchError);
-        showStatus('خطأ في الاتصال', 'error');
-      }
-      return;
-    }
-
-    if (!existing.check_in) {
-      showStatus('⚠️ لا يمكن الانصراف بدون حضور', 'warning');
-      return;
-    }
-
-    if (existing.check_out) {
-      showStatus('ℹ️ تم الانصراف مسبقًا', 'info');
-      return;
-    }
-
-    // تحديث الانصراف
-    const { error: updateError } = await supabaseClient
-      .from('secretary_attendance')
-      .update({ check_out: now })
-      .eq('id', existing.id);
-
-    if (updateError) {
-      console.error('❌ خطأ في التحديث:', updateError);
-      showStatus('فشل في تسجيل الانصراف', 'error');
-      return;
-    }
-
-    console.log('✅ تم تسجيل الانصراف بنجاح:', now);
-    showStatus('👋 تم تسجيل الانصراف', 'success');
-    window.loadSecretaryStatus();
-  } catch (error) {
-    console.error('❌ خطأ غير متوقع:', error);
-    showStatus('حدث خطأ', 'error');
-  }
-}
-
-  // ✅ جعل الدوال عالمية
-  window.loadCurrentUser = loadCurrentUser;
-  window.loadSecretaryStatus = loadSecretaryStatus;
-  window.checkInSecretary = checkInSecretary;
-  window.checkOutSecretary = checkOutSecretary;
-
-  // ✅ ربط الأحداث بعد تحميل الصفحة
-  document.addEventListener('DOMContentLoaded', () => {
-    document.getElementById('secCheckIn')?.addEventListener('click', checkInSecretary);
-    document.getElementById('secCheckOut')?.addEventListener('click', checkOutSecretary);
-    loadCurrentUser();
-  });
 
 
   // ====== Performance Patch: Polling only (No cache, No realtime) ======
@@ -2094,8 +1914,7 @@ document.getElementById("subscriptionForm").addEventListener("submit", async (e)
       .from("students")
       .insert([studentData])
       .select()
-      .single();
-
+      .maybeSingle();
     if (studentError) throw studentError;
 
     // 2️⃣ الاشتراك (كما هو)
@@ -2110,8 +1929,7 @@ document.getElementById("subscriptionForm").addEventListener("submit", async (e)
       .from("subscriptions")
       .insert([subscriptionData])
       .select()
-      .single();
-
+      .maybeSingle();
     if (subscriptionError) throw subscriptionError;
 
     // 3️⃣ دفعة (كما هو)
@@ -2188,8 +2006,7 @@ document.addEventListener('DOMContentLoaded', function() {
         .from("courses")
         .select("price")
         .eq("id", courseId)
-        .single();
-
+        .maybeSingle();
       if (error) throw error;
 
       const price = parseFloat(data?.price) || 0;
