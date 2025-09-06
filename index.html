@@ -251,7 +251,7 @@ button:active {
 <body>
 <div class="container">
 <img alt="Logo" src="./logo2.jpg" style="display:block; margin:0 auto 15px;     width: 100px;
-    height: 100px; border-radius:50%; box-shadow: var(--shadow-medium);"/><h2>🔐 تسجيل الدخول</h2>
+    height: 100px; border-radius:50%; box-shadow: var(--shadow-medium);"/><h2> تسجيل الدخول</h2>
 <form id="loginForm">
 <label>📧 البريد الإلكتروني:
         <input autocomplete="email" id="email" placeholder="أدخل بريدك الإلكتروني" required="" type="email"/>
@@ -517,6 +517,16 @@ button:active {
       }
     });
 
+// check if user came from supabase auth link
+window.addEventListener("load", () => {
+  const params = new URLSearchParams(window.location.hash.substring(1));
+  if (params.has("access_token")) {
+    // ✅ إعادة التوجيه للصفحة الرئيسية للمشروع
+    window.location.href = "https://apdla-coder.github.io/Assiut-Academy/?" + window.location.hash.substring(1);
+  }
+});
+
+
 // معالج التسجيل الجديد
 document.getElementById('registerForm').addEventListener('submit', async function(e) {
   e.preventDefault();
@@ -570,17 +580,19 @@ document.getElementById('registerForm').addEventListener('submit', async functio
       return;
     }
 
-    // إنشاء الحساب
-    const { data, error } = await supabaseClient.auth.signUp({
-      email,
-      password,
-      options: {
-        data: {
-          full_name: fullName,
-          role: role
-        }
-      }
-    });
+// إنشاء الحساب
+const { data, error } = await supabaseClient.auth.signUp({
+  email,
+  password,
+  options: {
+    emailRedirectTo: 'https://apdla-coder.github.io/Assiut-Academy/',
+    data: {
+      full_name: fullName,
+      role: role
+    }
+  }
+});
+
 
     if (error) {
       console.error("خطأ في التسجيل:", error.message);
