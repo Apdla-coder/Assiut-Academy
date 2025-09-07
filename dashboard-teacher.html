@@ -1945,6 +1945,76 @@
           </div>
         </div>
       </div>
+
+      <!-- 🔔 صندوق التذكير -->
+<div id="reminderBanner"></div>
+
+<style>
+#reminderBanner {
+  position: fixed;
+  top: 70px; /* اضبط حسب الـ Navbar */
+  left: 50%;
+  transform: translateX(-50%);
+  background: linear-gradient(90deg, #ff7b00, #ffb300);
+  color: #fff;
+  font-size: 20px;
+  font-weight: bold;
+  padding: 15px 30px;
+  border-radius: 10px;
+  box-shadow: 0 4px 10px rgba(0,0,0,0.3);
+  z-index: 1000;
+  display: none;
+  white-space: nowrap;
+}
+
+/* حركة الدخول */
+@keyframes slideInDown {
+  from { opacity: 0; transform: translate(-50%, -50px); }
+  to { opacity: 1; transform: translate(-50%, 0); }
+}
+
+/* حركة الخروج */
+@keyframes slideOutRight {
+  from { opacity: 1; transform: translate(-50%, 0); }
+  to { opacity: 0; transform: translateX(200%); }
+}
+</style>
+
+<script>
+// قائمة الرسائل
+const reminders = [
+  "🌹 صلِّ على النبي ﷺ",
+  "🤲 لا إله إلا الله",
+  "✨ استغفر الله العظيم",
+  "💖 سبحان الله وبحمده سبحان الله العظيم"
+];
+
+// دالة لعرض التذكير كبانر
+function showReminderBanner() {
+  const banner = document.getElementById("reminderBanner");
+  const randomIndex = Math.floor(Math.random() * reminders.length);
+  banner.textContent = reminders[randomIndex];
+
+  banner.style.display = "block";
+  banner.style.animation = "slideInDown 0.5s ease forwards";
+
+  // بعد ثانيتين يخرج يمين
+  setTimeout(() => {
+    banner.style.animation = "slideOutRight 1s ease forwards";
+  }, 2000);
+
+  // يخفيه بعد 3 ثواني (إجمالي: دخول + بقاء + خروج)
+  setTimeout(() => {
+    banner.style.display = "none";
+  }, 3000);
+}
+
+// تشغيل أول ما يفتح المستخدم + كل 5 دقايق
+document.addEventListener("DOMContentLoaded", () => {
+  showReminderBanner(); // أول ما يفتح
+  setInterval(showReminderBanner, 300000); // كل 5 دقايق
+});
+</script>
       
   <script src="teacher.js"></script>
   <script>
@@ -1998,6 +2068,9 @@
 
   })();
   </script>
+
+
+
     </body>
 
     

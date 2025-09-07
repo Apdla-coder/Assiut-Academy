@@ -936,6 +936,75 @@
   <div id="secretaryAttendanceList">جاري التحميل...</div>
 </div>
 
+<!-- 🔔 صندوق التذكير -->
+<div id="reminderBanner"></div>
+
+<style>
+#reminderBanner {
+  position: fixed;
+  top: 70px; /* اضبط حسب الـ Navbar */
+  left: 50%;
+  transform: translateX(-50%);
+  background: linear-gradient(90deg, #ff7b00, #ffb300);
+  color: #fff;
+  font-size: 20px;
+  font-weight: bold;
+  padding: 15px 30px;
+  border-radius: 10px;
+  box-shadow: 0 4px 10px rgba(0,0,0,0.3);
+  z-index: 1000;
+  display: none;
+  white-space: nowrap;
+}
+
+/* حركة الدخول */
+@keyframes slideInDown {
+  from { opacity: 0; transform: translate(-50%, -50px); }
+  to { opacity: 1; transform: translate(-50%, 0); }
+}
+
+/* حركة الخروج */
+@keyframes slideOutRight {
+  from { opacity: 1; transform: translate(-50%, 0); }
+  to { opacity: 0; transform: translateX(200%); }
+}
+</style>
+
+<script>
+// قائمة الرسائل
+const reminders = [
+  "🌹 صلِّ على النبي ﷺ",
+  "🤲 لا إله إلا الله",
+  "✨ استغفر الله العظيم",
+  "💖 سبحان الله وبحمده سبحان الله العظيم"
+];
+
+// دالة لعرض التذكير كبانر
+function showReminderBanner() {
+  const banner = document.getElementById("reminderBanner");
+  const randomIndex = Math.floor(Math.random() * reminders.length);
+  banner.textContent = reminders[randomIndex];
+
+  banner.style.display = "block";
+  banner.style.animation = "slideInDown 0.5s ease forwards";
+
+  // بعد ثانيتين يخرج يمين
+  setTimeout(() => {
+    banner.style.animation = "slideOutRight 1s ease forwards";
+  }, 2000);
+
+  // يخفيه بعد 3 ثواني (إجمالي: دخول + بقاء + خروج)
+  setTimeout(() => {
+    banner.style.display = "none";
+  }, 3000);
+}
+
+// تشغيل أول ما يفتح المستخدم + كل 5 دقايق
+document.addEventListener("DOMContentLoaded", () => {
+  showReminderBanner(); // أول ما يفتح
+  setInterval(showReminderBanner, 300000); // كل 5 دقايق
+});
+</script>
 
 <script>
 const supabaseUrl = "https://zefsmckaihzfiqqbdake.supabase.co";
@@ -1077,15 +1146,13 @@ async function loadTeacherAttendance(){
 async function loadSecretaryAttendance(){
   console.log("Loading secretary attendance...");
   try {
-    // استرجاع بيانات الحضور أولاً
     const {data: attendanceData, error: attendanceError} = await supabase
       .from('secretary_attendance')
       .select('*')
-      .order('date', { ascending: false });
+      .order('attendance_date', { ascending: false }); // ✅ تعديل
 
     if(attendanceError) throw attendanceError;
     
-    // استرجاع أسماء السكرتارية
     const secretaryIds = [...new Set(attendanceData.map(record => record.secretary_id).filter(id => id))];
     let usersInfo = [];
     
@@ -1099,7 +1166,6 @@ async function loadSecretaryAttendance(){
       usersInfo = usersData;
     }
     
-    // دمج البيانات
     secretaryAttendanceData = attendanceData.map(record => ({
       ...record,
       user: usersInfo.find(user => user.id === record.secretary_id)
@@ -1112,6 +1178,103 @@ async function loadSecretaryAttendance(){
     secretaryAttendanceData = [];
     renderSecretaryAttendance();
   }
+}
+
+function renderSecretaryAttendance() {
+  const container = document.getElementById("secretaryAttendanceList");
+  if (!container) return;
+
+  const dates = [...new Set(
+    secretaryAttendanceData.map(r => {
+      if (r.attendance_date) return r.attendance_date; // ✅ تعديل
+      const sourceDate = r.check_in || r.check_out;
+      if (sourceDate) {
+        return new Date(sourceDate).toISOString().split("T")[0];
+      }
+      return null;
+    }).filter(Boolean)
+  )];
+
+  let filterHtml = `
+    <div class="attendance-filters">
+      <div class="filter-group">
+        <label for="secretaryDateFilter">بحث بالتاريخ:</label>
+        <select id="secretaryDateFilter" onchange="filterSecretaryAttendance()">
+          <option value="">كل التواريخ</option>
+          ${dates.map(d => `<option value="${d}">${formatDate(d)}</option>`).join("")}
+        </select>
+      </div>
+      <button class="clear-btn" onclick="clearSecretaryFilters()">مسح الفلتر</button>
+    </div>
+  `;
+
+  if (!secretaryAttendanceData.length) {
+    container.innerHTML = filterHtml + "<p class='no-data'>لا توجد سجلات حضور للسكرتارية.</p>";
+    return;
+  }
+
+  container.innerHTML = filterHtml;
+  updateSecretaryAttendanceDisplay(secretaryAttendanceData);
+}
+
+function updateSecretaryAttendanceDisplay(data) {
+  const container = document.getElementById("secretaryAttendanceList");
+  if (!container) return;
+
+  const filters = container.querySelector('.attendance-filters');
+  container.innerHTML = '';
+  if (filters) container.appendChild(filters);
+
+  if (!data.length) {
+    container.innerHTML += "<p class='no-data'>لا توجد سجلات حضور لهذا التاريخ.</p>";
+    return;
+  }
+
+  let html = '<div class="attendance-cards">';
+  data.forEach(r => {
+    const checkInTime = r.check_in ? new Date(r.check_in).toLocaleTimeString('ar-EG', { hour: '2-digit', minute: '2-digit' }) : '-';
+    const checkOutTime = r.check_out ? new Date(r.check_out).toLocaleTimeString('ar-EG', { hour: '2-digit', minute: '2-digit' }) : '-';
+
+    let status = 'غائب';
+    let statusClass = 'absent';
+    if (r.check_in && r.check_out) {
+      status = 'حاضر';
+      statusClass = 'present';
+    } else if (r.check_in) {
+      status = 'حضور جزئي';
+      statusClass = 'partial';
+    }
+
+    html += `
+      <div class="attendance-card">
+        <div class="card-header">
+          <h3>${r.user?.full_name || 'غير محدد'}</h3>
+          <span class="status ${statusClass}">${status}</span>
+        </div>
+        <div class="card-body">
+          <div class="info-row"><span class="label">التاريخ:</span>
+            <span class="value">${r.attendance_date || getRecordDate(r.check_in, r.check_out)}</span>
+          </div>
+          <div class="info-row"><span class="label">الحضور:</span><span class="value">${checkInTime}</span></div>
+          <div class="info-row"><span class="label">الانصراف:</span><span class="value">${checkOutTime}</span></div>
+        </div>
+      </div>`;
+  });
+  html += "</div>";
+  container.innerHTML += html;
+}
+
+function filterSecretaryAttendance() {
+  const dateFilter = document.getElementById('secretaryDateFilter').value;
+  if (!dateFilter) {
+    updateSecretaryAttendanceDisplay(secretaryAttendanceData);
+    return;
+  }
+  const filteredData = secretaryAttendanceData.filter(r => {
+    const recordDate = r.attendance_date || getRecordDate(r.check_in, r.check_out, true);
+    return recordDate === dateFilter;
+  });
+  updateSecretaryAttendanceDisplay(filteredData);
 }
 
 async function loadExamScores(){
@@ -1460,5 +1623,8 @@ function formatDate(dateStr) {
 }
 
 </script>
+
+
+
 </body>
 </html>
