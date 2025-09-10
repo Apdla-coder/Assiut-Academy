@@ -1869,7 +1869,9 @@ document.getElementById("subscriptionForm").addEventListener("submit", async (e)
       full_name: document.getElementById("studentName").value,
       phone: document.getElementById("studentPhone").value,
       email: document.getElementById("studentEmail").value,
-      parent_phone: document.getElementById("studentParentPhone").value
+      parent_phone: document.getElementById("studentParentPhone").value,
+      age: document.getElementById("studentAge").value,       // ✅ جديد
+      address: document.getElementById("studentAddress").value // ✅ جديد
       // avatar_url هنضيفه بعدين
     };
 

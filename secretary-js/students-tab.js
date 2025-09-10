@@ -48,6 +48,9 @@ function renderStudentsTable(data) {
             <th>الاسم</th>
             <th>البريد الإلكتروني</th>
             <th>رقم هاتف الطالب</th>
+            <th>العمر</th>
+<th>العنوان</th>
+
             <th>رقم ولي الأمر</th>
             <th>تاريخ التسجيل</th>
             <th>الإجراءات</th>
@@ -67,6 +70,9 @@ src="${student.avatar_url || './images/placeholder.jpg'}"
               <td>${escapeHtml(student.full_name)}</td>
               <td>${escapeHtml(student.email || '-')}</td>
               <td>${escapeHtml(student.phone || '-')}</td>
+              <td>${escapeHtml(student.age || '-')}</td>
+<td>${escapeHtml(student.address || '-')}</td>
+
               <td>${escapeHtml(student.parent_phone || '-')}</td>
               <td>${formatDate(student.created_at)}</td>
               <td class="action-buttons">
@@ -118,6 +124,9 @@ function showEditStudentModal(studentId) {
   document.getElementById('studentModalTitle').textContent = 'تعديل بيانات الطالب';
   document.getElementById('studentId').value = student.id;
   document.getElementById('fullName').value = student.full_name;
+  document.getElementById('age').value = student.age || '';
+document.getElementById('address').value = student.address || '';
+
   document.getElementById('email').value = student.email || '';
   document.getElementById('phone').value = student.phone || '';
   document.getElementById('parentPhone').value = student.parent_phone || '';
@@ -149,8 +158,14 @@ async function updateStudent(studentId) {
     const parentPhone = document.getElementById('parentPhone').value;
 
     // جمع بيانات التحديث
-    let updateData = { full_name: fullName, email, phone, parent_phone: parentPhone };
-
+let updateData = { 
+  full_name: fullName, 
+  email, 
+  phone, 
+  parent_phone: parentPhone,
+  age: document.getElementById('age').value,
+  address: document.getElementById('address').value
+};
     // التحقق من وجود حقل رفع صورة جديد
     const avatarFileInput = document.getElementById('editStudentAvatar');
     if (avatarFileInput && avatarFileInput.files.length > 0) {
@@ -372,6 +387,9 @@ content.innerHTML = `
       <h4>معلومات أساسية</h4>
       <p><strong>البريد الإلكتروني:</strong> ${escapeHtml(student.email || '-')}</p>
       <p><strong>رقم الهاتف:</strong> ${escapeHtml(student.phone || '-')}</p>
+      <p><strong>العمر:</strong> ${escapeHtml(student.age || '-')}</p>
+<p><strong>العنوان:</strong> ${escapeHtml(student.address || '-')}</p>
+
       <p><strong>رقم ولي الأمر:</strong> ${escapeHtml(student.parent_phone || '-')}</p>
       <p><strong>تاريخ التسجيل:</strong> ${formatDate(student.created_at)}</p>
     </div>
