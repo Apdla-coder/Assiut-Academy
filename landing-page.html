@@ -1453,37 +1453,65 @@ function closeRegistrationModal() {
     }
 }
 
-// دالة لمعالجة إرسال نموذج التسجيل (مثال بسيط)
-function handleRegistrationFormSubmit(event) {
+
+// دالة لمعالجة إرسال نموذج التسجيل
+async function handleRegistrationFormSubmit(event) {
     event.preventDefault();
+
     const name = document.getElementById('regName').value;
     const phone = document.getElementById('regPhone').value;
     const email = document.getElementById('regEmail').value;
     const course = document.getElementById('regCourse').value;
 
     if (name && phone && email && course) {
-         // إغلاق المودال
+        // إغلاق المودال
         closeRegistrationModal();
 
         // عرض رسالة نجاح مؤقتة
         const successMsg = document.getElementById('whatsappSuccess');
         if (successMsg) {
-             successMsg.style.display = 'block';
-             setTimeout(() => {
-                 successMsg.style.display = 'none';
-             }, 3000); // إخفاء الرسالة بعد 3 ثواني
+            successMsg.style.display = 'block';
+            setTimeout(() => {
+                successMsg.style.display = 'none';
+            }, 3000); // إخفاء الرسالة بعد 3 ثواني
         }
 
-        // إنشاء رابط WhatsApp مع البيانات
-        // استبدل YOUR_PHONE_NUMBER بـ 201234567890 كما في HTML
-        const message = `مرحبًا، أرغب في التسجيل في دورة ${course}.%0Aالاسم: ${name}%0Aرقم الهاتف: ${phone}%0Aالبريد الإلكتروني: ${email}`;
-        const whatsappUrl = `https://wa.me/201234567890?text=${message}`;
+        try {
+            // جلب JSON كامل من جدول landing_content
+            const { data, error } = await supabaseClient
+                .from('landing_content')
+                .select('content_data')
+                .single();
 
-        // فتح رابط WhatsApp في علامة تبويب جديدة
-        window.open(whatsappUrl, '_blank');
+            if (error) {
+                console.error("خطأ أثناء جلب البيانات:", error.message);
+                alert("تعذر جلب رقم الواتساب من النظام.");
+                return;
+            }
 
-        // إعادة تعيين النموذج
-        event.target.reset();
+            // استخراج رقم الهاتف من داخل JSON
+            const contactPhone = data.content_data.contact.phone;
+            console.log("WhatsApp Number:", contactPhone);
+
+            // إنشاء رسالة الواتساب
+            const message = encodeURIComponent(
+                `مرحبًا، أرغب في التسجيل في دورة ${course}.\nالاسم: ${name}\nرقم الهاتف: ${phone}\nالبريد الإلكتروني: ${email}`
+            );
+
+            // إنشاء رابط واتساب
+            const whatsappUrl = `https://wa.me/+20${contactPhone}?text=${message}`;
+
+            // فتح الرابط في تبويب جديد
+            window.open(whatsappUrl, '_blank');
+
+            // إعادة تعيين النموذج
+            event.target.reset();
+
+        } catch (err) {
+            console.error("Unexpected error:", err);
+            alert("حدث خطأ غير متوقع.");
+        }
+
     } else {
         alert('يرجى ملء جميع الحقول المطلوبة.');
     }
