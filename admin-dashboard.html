@@ -47,6 +47,144 @@
             direction: rtl;
             overflow-x: hidden;
         }
+
+        .subscription-modal {
+            display: none;
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%) scale(0.7);
+            background: linear-gradient(to bottom, #fff, #f8f8f8);
+            padding: 2.5rem;
+            border-radius: 15px;
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.15);
+            z-index: 10000;
+            max-width: 90%;
+            width: 450px;
+            text-align: center;
+            border: 3px solid #991b1b;
+            opacity: 0;
+            transition: all 0.3s ease-out;
+        }
+
+        .subscription-modal.show {
+            transform: translate(-50%, -50%) scale(1);
+            opacity: 1;
+        }
+
+        .modal-icon {
+            font-size: 3rem;
+            color: #991b1b;
+            margin-bottom: 1rem;
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.1); }
+            100% { transform: scale(1); }
+        }
+
+        .modal-overlay {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: rgba(0, 0, 0, 0.5);
+            z-index: 9999;
+        }
+
+        .subscription-modal.show,
+        .modal-overlay.show {
+            display: block;
+        }
+
+        .modal-content {
+            margin-bottom: 1.5rem;
+            color: #991b1b;
+            font-size: 1.1rem;
+        }
+
+        .close-modal {
+            background-color: #991b1b;
+            color: white;
+            border: none;
+            padding: 0.5rem 1.5rem;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 1rem;
+            transition: background-color 0.3s;
+        }
+
+        .close-modal:hover {
+            background-color: #7f1d1d;
+        }
+
+        .subscription-modal {
+            display: none;
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background-color: #fff;
+            padding: 2rem;
+            border-radius: 8px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            z-index: 9999;
+            max-width: 90%;
+            width: 400px;
+            text-align: center;
+            border: 2px solid #991b1b;
+        }
+
+        .modal-overlay {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: rgba(0, 0, 0, 0.5);
+            z-index: 9998;
+        }
+
+        .subscription-modal.show,
+        .modal-overlay.show {
+            display: block;
+        }
+
+        .modal-content {
+            margin-bottom: 1.5rem;
+            color: #991b1b;
+            font-size: 1.1rem;
+        }
+
+        .close-modal {
+            background-color: #991b1b;
+            color: white;
+            border: none;
+            padding: 0.5rem 1.5rem;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 1rem;
+            transition: background-color 0.3s;
+        }
+
+        .close-modal:hover {
+            background-color: #7f1d1d;
+        }
+
+        .subscription-alert.show {
+            display: block;
+            animation: slideDown 0.5s ease-in-out;
+        }
+
+        @keyframes slideDown {
+            from { transform: translateY(-100%); }
+            to { transform: translateY(0); }
+        }
         
         /* Header Styles */
         .header {
@@ -1227,6 +1365,12 @@
     
   </head>
 <body>
+    <div class="modal-overlay" id="modalOverlay"></div>
+    <div id="subscriptionModal" class="subscription-modal" style="display:none;">
+    </div>
+    <div id="subscriptionAlert" class="subscription-alert" style="display:none;">
+    </div>
+
 <header class="header">
     <h1>لوحة تحكم المدير</h1>
     <div class="user-info">
@@ -1705,7 +1849,7 @@ async function deleteUser(userId) {
                 throw new Error(`فشل حذف المستخدم من قاعدة البيانات: ${dbError.message}`);
             }
 
-            console.log('Successfully deleted user from database');
+            console.log('Successfully deleted user from database'); 
 
             // حذف المستخدم من المصفوفة المحلية
             usersData = usersData.filter(u => u.id !== userId);
@@ -2481,6 +2625,73 @@ function clearSecretaryFilters() {
   updateSecretaryAttendanceDisplay(secretaryAttendanceData);
 }
 
+// كود التحكم في Modal التنبيه
+function showSubscriptionModal() {
+    document.getElementById('subscriptionModal').classList.add('show');
+    document.getElementById('modalOverlay').classList.add('show');
+}
+
+function closeSubscriptionModal() {
+    document.getElementById('subscriptionModal').classList.remove('show');
+    document.getElementById('modalOverlay').classList.remove('show');
+    
+    // حفظ تاريخ آخر إغلاق في localStorage
+    localStorage.setItem('lastModalClose', new Date().toISOString());
+}
+
+function shouldShowModal() {
+    const today = new Date();
+    const dayOfMonth = today.getDate();
+    
+    // التحقق من أن اليوم هو من 1 إلى 5
+    if (dayOfMonth <= 5) {
+        // التحقق من آخر مرة تم فيها إغلاق التنبيه
+        const lastClose = localStorage.getItem('lastModalClose');
+        if (lastClose) {
+            const lastCloseDate = new Date(lastClose);
+            // إذا تم الإغلاق في نفس اليوم، لا تظهر التنبيه مرة أخرى
+            if (lastCloseDate.getDate() === today.getDate() && 
+                lastCloseDate.getMonth() === today.getMonth() && 
+                lastCloseDate.getFullYear() === today.getFullYear()) {
+                return false;
+            }
+        }
+        return true;
+    }
+    return false;
+}
+
+// تشغيل التحقق عند تحميل الصفحة
+document.addEventListener('DOMContentLoaded', function() {
+    const today = new Date();
+    const dayOfMonth = today.getDate();
+    console.log('Current day of month:', dayOfMonth); // للتأكد من اليوم الحالي
+    
+    // يظهر فقط في اليوم الأول من كل شهر
+    if (dayOfMonth === 1) {
+        const lastClose = localStorage.getItem('lastModalClose');
+        const lastCloseDate = lastClose ? new Date(lastClose) : null;
+        
+        // عرض التنبيه فقط إذا:
+        // 1. لم يتم إغلاقه من قبل
+        // 2. أو تم إغلاقه في شهر سابق
+        if (!lastClose || lastCloseDate.getMonth() !== today.getMonth() || lastCloseDate.getFullYear() !== today.getFullYear()) {
+            setTimeout(showSubscriptionModal, 1000);
+        }
+    }
+});
+
+// دالة للتحقق مما إذا كان اليوم جديداً
+function isNewDay(lastCloseDate) {
+    const today = new Date();
+    return lastCloseDate.getDate() !== today.getDate() ||
+           lastCloseDate.getMonth() !== today.getMonth() ||
+           lastCloseDate.getFullYear() !== today.getFullYear();
+}
+
+// إغلاق Modal عند النقر على الـ overlay
+document.getElementById('modalOverlay').addEventListener('click', closeSubscriptionModal);
+
 // =============================
 // 📌 أدوات مشتركة
 // =============================
@@ -2496,9 +2707,32 @@ function formatDate(dateStr) {
   return d.toLocaleDateString("ar-EG");
 }
 
+
+
+
+// تم إزالة عرض نافذة الاشتراك
+
 </script>
 
-
-
 </body>
+<script>
+// كود التحقق من تاريخ الاشتراك
+function checkSubscriptionDate() {
+    const today = new Date();
+    const day = today.getDate();
+    
+    // التحقق ما إذا كان اليوم في أول 3 أيام من الشهر
+    if (day <= 3) {
+        document.getElementById('subscriptionAlert').classList.add('show');
+    } else {
+        document.getElementById('subscriptionAlert').classList.remove('show');
+    }
+}
+
+// تشغيل الفحص عند تحميل الصفحة
+document.addEventListener('DOMContentLoaded', checkSubscriptionDate);
+
+// فحص كل يوم في منتصف الليل
+// تم إزالة كود فحص الاشتراك
+</script>
 </html>
