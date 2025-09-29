@@ -1806,6 +1806,82 @@ function toggleAccordion(header) {
       }
     }
     
+// جلب الكورسات وتخزينها في المصفوفة courses
+async function fetchCourses() {
+  try {
+    const { data, error } = await supabaseClient
+      .from('courses')
+      .select('*')
+      .eq('teacher_id', currentUserId);
+
+    if (error) throw error;
+    courses = data || [];
+  } catch (err) {
+    console.error("Error fetching courses:", err);
+    courses = [];
+  }
+}
+
+// تحميل الكورسات والدروس الخاصة بكل كورس
+async function loadCoursesForAttendance() {
+  try {
+    // نجيب الكورسات من قاعدة البيانات
+    await fetchCourses();
+    
+    const courseSelect = document.getElementById('attendanceCourseFilter');
+    courseSelect.innerHTML = '<option value="">اختر كورساً</option>';
+
+    // نضيف الكورسات للـ select
+    courses.forEach(course => {
+      const option = document.createElement('option');
+      option.value = course.id;
+      option.textContent = course.name;
+      courseSelect.appendChild(option);
+    });
+
+    // نحضر الدروس لكل كورس ونخزنها في lessonsByCourse
+    lessonsByCourse = {};
+    for (const course of courses) {
+      const { data: lessonsData, error } = await supabaseClient
+        .from('lessons')
+        .select('id, title, date')
+        .eq('course_id', course.id)
+        .order('date', { ascending: true });
+
+      if (error) console.error(error);
+      lessonsByCourse[course.id] = lessonsData || [];
+    }
+  } catch (error) {
+    console.error('Error loading courses for attendance:', error);
+  }
+}
+
+// عند اختيار كورس → نعرض دروسه
+document.getElementById('attendanceCourseFilter').addEventListener('change', function() {
+  const courseId = this.value;
+  const lessonSelect = document.getElementById('attendanceLesson');
+  const dateInput = document.getElementById('attendanceDate');
+
+  if (courseId && lessonsByCourse[courseId]) {
+    lessonSelect.innerHTML = '<option value="">اختر درساً</option>';
+    lessonsByCourse[courseId].forEach(lesson => {
+      const option = document.createElement('option');
+      option.value = lesson.id;
+      option.textContent = `${lesson.title} (${new Date(lesson.date).toLocaleDateString('ar-EG')})`;
+      lessonSelect.appendChild(option);
+    });
+    lessonSelect.disabled = false;
+  } else {
+    lessonSelect.innerHTML = '<option value="">اختر كورساً أولاً</option>';
+    lessonSelect.disabled = true;
+  }
+
+  dateInput.value = new Date().toISOString().split('T')[0];
+  dateInput.disabled = false;
+  document.getElementById('studentAttendanceList').innerHTML = '<p class="no-data">اختر درساً أولاً</p>';
+});
+
+
     async function showAddAttendanceModal() {
       const modal = document.getElementById('attendanceModal');
       if (!modal) return;
@@ -1814,113 +1890,110 @@ function toggleAccordion(header) {
       modal.style.display = 'flex';
     }
     
-    async function loadCoursesForAttendance() {
-      try {
-        if (courses.length === 0) await loadCourses();
-        
-        const courseSelect = document.getElementById('attendanceCourseFilter');
-        courseSelect.innerHTML = '<option value="">اختر كورساً</option>';
-        courses.forEach(course => {
-          const option = document.createElement('option');
-          option.value = course.id;
-          option.textContent = course.name;
-          courseSelect.appendChild(option);
-        });
-        
-        lessonsByCourse = {};
-        for (const course of courses) {
-          const { data: lessonsData } = await supabaseClient
-            .from('lessons')
-            .select('id, title, date')
-            .eq('course_id', course.id)
-            .order('date', { ascending: true });
-          
-          lessonsByCourse[course.id] = lessonsData || [];
-        }
-      } catch (error) {
-        console.error('Error loading courses for attendance:', error);
-      }
-    }
+async function loadCoursesForAttendance() {
+  try {
+    // نجيب الكورسات من قاعدة البيانات
+    await fetchCourses();
     
-    document.getElementById('attendanceCourseFilter').addEventListener('change', function() {
-      const courseId = this.value;
-      const lessonSelect = document.getElementById('attendanceLesson');
-      const dateInput = document.getElementById('attendanceDate');
-      
-      if (courseId && lessonsByCourse[courseId]) {
-        lessonSelect.innerHTML = '<option value="">اختر درساً</option>';
-        lessonsByCourse[courseId].forEach(lesson => {
-          const option = document.createElement('option');
-          option.value = lesson.id;
-          option.textContent = `${lesson.title} (${new Date(lesson.date).toLocaleDateString('ar-EG')})`;
-          lessonSelect.appendChild(option);
-        });
-        lessonSelect.disabled = false;
-      } else {
-        lessonSelect.innerHTML = '<option value="">اختر كورساً أولاً</option>';
-        lessonSelect.disabled = true;
-      }
-      
-      dateInput.value = new Date().toISOString().split('T')[0];
-      dateInput.disabled = false;
-      document.getElementById('studentAttendanceList').innerHTML = '<p class="no-data">اختر درساً أولاً</p>';
+    const courseSelect = document.getElementById('attendanceCourseFilter');
+    courseSelect.innerHTML = '<option value="">اختر كورساً</option>';
+
+    courses.forEach(course => {
+      const option = document.createElement('option');
+      option.value = course.id;
+      option.textContent = course.name;
+      courseSelect.appendChild(option);
     });
-    
-    document.getElementById('attendanceLesson').addEventListener('change', async function() {
-      const lessonId = this.value;
-      const courseId = document.getElementById('attendanceCourseFilter').value;
-      
-      if (lessonId && courseId) {
-        await loadStudentsForCourse(courseId);
-      } else {
-        document.getElementById('studentAttendanceList').innerHTML = '<p class="no-data">اختر درساً أولاً</p>';
-      }
-    });
-    
-    async function loadStudentsForCourse(courseId) {
-      const listContainer = document.getElementById('studentAttendanceList');
-      listContainer.innerHTML = '<p class="no-data">جاري التحميل...</p>';
-      
-      try {
-        const { data: subscriptions } = await supabaseClient
-          .from('subscriptions')
-          .select('student_id')
-          .eq('course_id', courseId);
-        
-        if (!subscriptions || subscriptions.length === 0) {
-          listContainer.innerHTML = '<p class="no-data">لا يوجد طلاب</p>';
-          return;
-        }
-        
-        const studentIds = subscriptions.map(sub => sub.student_id);
-        
-        const { data: students } = await supabaseClient
-          .from('students')
-          .select('id, full_name')
-          .in('id', studentIds)
-          .order('full_name');
-        
-        if (!students || students.length === 0) {
-          listContainer.innerHTML = '<p class="no-data">لا توجد بيانات طلاب</p>';
-          return;
-        }
-        
-        const searchInput = document.getElementById('studentSearchInModal');
-        if (searchInput) {
-          searchInput.style.display = 'block';
-          searchInput.value = '';
-        }
-        
-        updateStudentListDisplay(students);
-        
-        if (searchInput) {
-          searchInput.oninput = () => updateStudentListDisplay(students);
-        }
-      } catch (error) {
-        console.error('Error loading students:', error);
-        listContainer.innerHTML = '<p class="no-data">خطأ في التحميل</p>';
-      }
+
+    // تحميل الدروس الخاصة بكل كورس
+    lessonsByCourse = {};
+    for (const course of courses) {
+      const { data: lessonsData } = await supabaseClient
+        .from('lessons')
+        .select('id, title, date')
+        .eq('course_id', course.id)
+        .order('date', { ascending: true });
+
+      lessonsByCourse[course.id] = lessonsData || [];
     }
+  } catch (error) {
+    console.error('Error loading courses for attendance:', error);
+  }
+}
+    
+// عند اختيار درس → حمّل الطلاب بتوع الكورس
+document.getElementById('attendanceLesson').addEventListener('change', async function() {
+  const lessonId = this.value;
+  const courseId = document.getElementById('attendanceCourseFilter').value;
+
+  if (lessonId && courseId) {
+    await loadStudentsForCourse(courseId);
+  } else {
+    document.getElementById('studentAttendanceList').innerHTML = '<p class="no-data">اختر درساً أولاً</p>';
+  }
+});
+
+// دالة تجيب الطلاب من جدول subscriptions + students
+async function loadStudentsForCourse(courseId) {
+  const listContainer = document.getElementById('studentAttendanceList');
+  listContainer.innerHTML = '<p class="no-data">جاري التحميل...</p>';
+
+  try {
+    // نجيب اشتراكات الطلاب في الكورس
+    const { data: subscriptions, error: subsError } = await supabaseClient
+      .from('subscriptions')
+      .select('student_id')
+      .eq('course_id', courseId);
+
+    if (subsError) throw subsError;
+
+    if (!subscriptions || subscriptions.length === 0) {
+      listContainer.innerHTML = '<p class="no-data">لا يوجد طلاب مشتركين في هذا الكورس</p>';
+      return;
+    }
+
+    const studentIds = subscriptions.map(sub => sub.student_id);
+
+    // نجيب بيانات الطلاب
+    const { data: students, error: studentsError } = await supabaseClient
+      .from('students')
+      .select('id, full_name')
+      .in('id', studentIds)
+      .order('full_name', { ascending: true });
+
+    if (studentsError) throw studentsError;
+
+    if (!students || students.length === 0) {
+      listContainer.innerHTML = '<p class="no-data">لا توجد بيانات طلاب</p>';
+      return;
+    }
+
+    // نعرض الطلاب
+    let html = '';
+    students.forEach(student => {
+      html += `
+        <div class="student-item">
+          <div class="student-header">
+            <label class="student-name">
+              <input type="checkbox" class="student-checkbox" data-student-id="${student.id}" checked>
+              ${student.full_name}
+            </label>
+          </div>
+          <select class="student-status-select" data-student-id="${student.id}">
+            <option value="present">حاضر</option>
+            <option value="absent" selected>غائب</option>
+            <option value="late">متأخر</option>
+          </select>
+        </div>
+      `;
+    });
+
+    listContainer.innerHTML = html;
+  } catch (error) {
+    console.error("Error loading students:", error);
+    listContainer.innerHTML = '<p class="no-data">خطأ في تحميل الطلاب</p>';
+  }
+}
     
     function updateStudentListDisplay(students) {
       const listContainer = document.getElementById('studentAttendanceList');
@@ -1954,6 +2027,8 @@ function toggleAccordion(header) {
       
       listContainer.innerHTML = html;
     }
+    
+
     
     function setAllAttendance(status) {
       document.querySelectorAll('.student-status-select').forEach(select => {
