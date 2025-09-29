@@ -6,12 +6,13 @@
     <title>لوحة تحكم المدير</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-  <style>
-    :root {
-        --primary: #f97316;
-        --primary-dark: #ea580c;
-        --primary-light: #fed7aa;
-        --secondary: #059669;
+    <style>
+        /* ============ CSS Variables ============ */
+        :root {
+            --primary: #f97316;
+            --primary-dark: #ea580c;
+            --primary-light: #fed7aa;
+            --secondary: #059669;
             --secondary-light: #d1fae5;
             --dark: #1f2937;
             --light: #f9fafb;
@@ -32,14 +33,15 @@
             --radius-md: 12px;
             --radius-lg: 16px;
         }
-        
+
+        /* ============ General Styles ============ */
         * {
             margin: 0;
             padding: 0;
             box-sizing: border-box;
             -webkit-tap-highlight-color: transparent;
         }
-        
+
         body {
             font-family: 'Segoe UI', 'Tahoma', 'Geneva', 'Verdana', sans-serif;
             background: var(--gray-light);
@@ -48,6 +50,7 @@
             overflow-x: hidden;
         }
 
+        /* ============ Subscription Modal ============ */
         .subscription-modal {
             display: none;
             position: fixed;
@@ -68,6 +71,7 @@
         }
 
         .subscription-modal.show {
+            display: block;
             transform: translate(-50%, -50%) scale(1);
             opacity: 1;
         }
@@ -96,12 +100,11 @@
             z-index: 9999;
         }
 
-        .subscription-modal.show,
         .modal-overlay.show {
             display: block;
         }
 
-        .modal-content {
+        .modal-content-text {
             margin-bottom: 1.5rem;
             color: #991b1b;
             font-size: 1.1rem;
@@ -122,71 +125,39 @@
             background-color: #7f1d1d;
         }
 
-        .subscription-modal {
-            display: none;
+        .subscription-alert {
             position: fixed;
-            top: 50%;
+            top: 20px;
             left: 50%;
-            transform: translate(-50%, -50%);
-            background-color: #fff;
-            padding: 2rem;
-            border-radius: 8px;
-            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-            z-index: 9999;
-            max-width: 90%;
-            width: 400px;
-            text-align: center;
-            border: 2px solid #991b1b;
-        }
-
-        .modal-overlay {
-            display: none;
-            position: fixed;
-            top: 0;
-            left: 0;
-            right: 0;
-            bottom: 0;
-            background-color: rgba(0, 0, 0, 0.5);
-            z-index: 9998;
-        }
-
-        .subscription-modal.show,
-        .modal-overlay.show {
-            display: block;
-        }
-
-        .modal-content {
-            margin-bottom: 1.5rem;
-            color: #991b1b;
-            font-size: 1.1rem;
-        }
-
-        .close-modal {
-            background-color: #991b1b;
+            transform: translateX(-50%);
+            background: linear-gradient(45deg, #ff416c, #ff4b2b);
             color: white;
-            border: none;
-            padding: 0.5rem 1.5rem;
-            border-radius: 4px;
-            cursor: pointer;
-            font-size: 1rem;
-            transition: background-color 0.3s;
-        }
-
-        .close-modal:hover {
-            background-color: #7f1d1d;
+            padding: 15px 25px;
+            border-radius: 8px;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+            z-index: 10001;
+            display: none;
+            text-align: center;
+            font-weight: bold;
+            animation: slideIn 0.5s ease-out;
         }
 
         .subscription-alert.show {
             display: block;
-            animation: slideDown 0.5s ease-in-out;
         }
 
-        @keyframes slideDown {
-            from { transform: translateY(-100%); }
-            to { transform: translateY(0); }
+        @keyframes slideIn {
+            from {
+                transform: translate(-50%, -100%);
+                opacity: 0;
+            }
+            to {
+                transform: translate(-50%, 0);
+                opacity: 1;
+            }
         }
-        
-        /* Header Styles */
+
+        /* ============ Header Styles ============ */
         .header {
             background: var(--primary);
             color: white;
@@ -199,19 +170,19 @@
             justify-content: space-between;
             align-items: center;
         }
-        
+
         .header h1 {
             font-size: 1.3rem;
             font-weight: 600;
             margin: 0;
         }
-        
+
         .user-info {
             display: flex;
             align-items: center;
             gap: 10px;
         }
-        
+
         .logout-btn {
             background: rgba(255,255,255,0.2);
             border: 1px solid rgba(255,255,255,0.3);
@@ -225,17 +196,17 @@
             gap: 5px;
             transition: all 0.3s;
         }
-        
+
         .logout-btn:hover {
             background: rgba(255,255,255,0.3);
         }
-        
-        /* Main Container */
+
+        /* ============ Main Container ============ */
         .container {
             padding: 15px;
             max-width: 100%;
         }
-        
+
         .content-section {
             background: white;
             border-radius: var(--radius-md);
@@ -243,7 +214,7 @@
             box-shadow: var(--shadow-light);
             margin-bottom: 20px;
         }
-        
+
         .section-header {
             display: flex;
             justify-content: space-between;
@@ -252,7 +223,7 @@
             padding-bottom: 10px;
             border-bottom: 1px solid var(--border);
         }
-        
+
         .section-header h2 {
             font-size: 1.2rem;
             font-weight: 600;
@@ -262,15 +233,15 @@
             align-items: center;
             gap: 10px;
         }
-        
-        /* Stats Grid */
+
+        /* ============ Stats Grid ============ */
         .stats-grid {
             display: grid;
             grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
             gap: 12px;
             margin-bottom: 25px;
         }
-        
+
         .stat-card {
             background: var(--primary);
             color: white;
@@ -284,72 +255,34 @@
             justify-content: center;
             align-items: center;
         }
-        
+
         .stat-card:hover {
             transform: translateY(-3px);
         }
-        
+
         .stat-card h3 {
             font-size: 1.4rem;
             margin-bottom: 5px;
         }
-        
+
         .stat-card p {
             font-size: 0.85rem;
             margin: 0;
         }
-        
-        .stat-card.financial {
-            background: var(--secondary);
-        }
-        
-        .stat-card.warning {
-            background: var(--warning);
-        }
-        
-        .stat-card.danger {
-            background: var(--danger);
-        }
-        
-        .stat-card.info {
-            background: var(--info);
-        }
-        
-        .attendance-records h3 {
-            margin: 15px 0 10px;
-            color: var(--primary);
-            font-size: 1rem;
-            border-bottom: 1px solid var(--border);
-            padding-bottom: 5px;
-        }
 
-        .attendance-list {
-            margin-bottom: 20px;
-        }
+        .stat-card.financial { background: var(--secondary); }
+        .stat-card.warning { background: var(--warning); }
+        .stat-card.danger { background: var(--danger); }
+        .stat-card.info { background: var(--info); }
 
-        .attendance-item {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            padding: 8px 12px;
-            margin: 6px 0;
-            border: 1px solid var(--border);
-            border-radius: var(--radius-sm);
-            background: var(--gray-light);
-            font-size: 0.9rem;
-        }
-        .attendance-item span {
-            min-width: 100px;
-        }
-
-        /* Financial Summary */
+        /* ============ Financial Summary ============ */
         .financial-summary {
             display: grid;
             grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
             gap: 15px;
             margin-bottom: 25px;
         }
-        
+
         .financial-card {
             background: white;
             border-radius: var(--radius-md);
@@ -358,7 +291,7 @@
             border-left: 4px solid var(--primary);
             text-align: center;
         }
-        
+
         .financial-card h3 {
             margin-bottom: 10px;
             color: var(--dark);
@@ -368,565 +301,171 @@
             justify-content: center;
             gap: 8px;
         }
-        
+
         .financial-card .amount {
             font-size: 1.5rem;
             font-weight: bold;
             margin: 8px 0;
         }
-        
-        .financial-card .amount.paid {
-            color: var(--success);
+
+        .financial-card .amount.paid { color: var(--success); }
+        .financial-card .amount.remaining { color: var(--danger); }
+        .financial-card .amount.total { color: var(--primary); }
+
+        /* ============ Attendance Cards ============ */
+        .attendance-cards {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 15px;
+            margin-top: 15px;
         }
-        
-        .financial-card .amount.remaining {
-            color: var(--danger);
-        }
-        
-        .financial-card .amount.total {
-            color: var(--primary);
-        }
-        
-        /* Loading and Messages */
-        .loading {
-            text-align: center;
-            padding: 20px;
-            font-size: 1rem;
-            color: var(--primary);
-        }
-        
-        .error-message {
-            color: var(--danger);
-            text-align: center;
-            padding: 20px;
-        }
-        
-        .warning-message {
-            color: var(--warning);
-            text-align: center;
-            padding: 20px;
-            background: var(--warning);
-            color: white;
-            border-radius: var(--radius-sm);
-            margin: 10px 0;
-        }
-        
-        .permission-error {
-            background: #ffebee;
-            border: 1px solid var(--danger);
-            border-radius: var(--radius-sm);
-            padding: 15px;
-            margin: 15px 0;
-        }
-        
-        .permission-error h3 {
-            color: var(--danger);
-            margin-top: 0;
-        }
-        
-        /* Attendance Tables */
-        .attendance-table {
-            width: 100%;
-            border-collapse: collapse;
-            margin: 15px 0;
-            font-size: 0.9rem;
-        }
-        
-        .attendance-table th,
-        .attendance-table td {
-            padding: 10px;
-            text-align: center;
+
+        .attendance-card {
+            background: white;
+            border-radius: var(--radius-md);
+            box-shadow: var(--shadow-light);
+            overflow: hidden;
+            transition: transform 0.3s, box-shadow 0.3s;
             border: 1px solid var(--border);
         }
-        
-        .attendance-table th {
-            background-color: var(--primary-light);
+
+        .attendance-card:hover {
+            transform: translateY(-5px);
+            box-shadow: var(--shadow-medium);
+        }
+
+        .card-header {
+            background: var(--primary);
+            color: white;
+            padding: 15px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .card-header h3 {
+            margin: 0;
+            font-size: 1.1rem;
             font-weight: 600;
         }
-        
-        .attendance-table tr:nth-child(even) {
-            background-color: var(--gray-light);
+
+        .card-body {
+            padding: 15px;
         }
-        
 
-/* تحسين تصميم بطاقات الحضور */
-.attendance-cards {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
-    gap: 15px;
-    margin-top: 15px;
-}
-
-.attendance-card {
-    background: white;
-    border-radius: var(--radius-md);
-    box-shadow: var(--shadow-light);
-    overflow: hidden;
-    transition: transform 0.3s, box-shadow 0.3s;
-    border: 1px solid var(--border);
-}
-
-.attendance-card:hover {
-    transform: translateY(-5px);
-    box-shadow: var(--shadow-medium);
-}
-
-.card-header {
-    background: var(--primary);
-    color: white;
-    padding: 15px;
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-}
-
-.card-header h3 {
-    margin: 0;
-    font-size: 1.1rem;
-    font-weight: 600;
-}
-
-.card-body {
-    padding: 15px;
-}
-
-.info-row {
-    display: flex;
-    justify-content: space-between;
-    margin-bottom: 10px;
-    padding-bottom: 10px;
-    border-bottom: 1px solid var(--border-light);
-}
-
-.info-row:last-child {
-    margin-bottom: 0;
-    padding-bottom: 0;
-    border-bottom: none;
-}
-
-.label {
-    font-weight: 600;
-    color: var(--dark);
-}
-
-.value {
-    color: var(--gray);
-}
-
-/* حالات الحضور في البطاقات */
-.status {
-    padding: 5px 12px;
-    border-radius: 20px;
-    font-size: 0.8rem;
-    font-weight: 500;
-}
-
-.status.present {
-    background-color: var(--secondary-light);
-    color: var(--secondary);
-}
-
-.status.partial {
-    background-color: #fff3cd;
-    color: #856404;
-}
-
-.status.absent {
-    background-color: #f8d7da;
-    color: #721c24;
-}
-
-/* رسالة عدم وجود بيانات */
-.no-data {
-    text-align: center;
-    padding: 30px;
-    color: var(--gray);
-    font-style: italic;
-    background: var(--gray-light);
-    border-radius: var(--radius-sm);
-    margin: 15px 0;
-    font-size: 1rem;
-}
-
-/* تحسين للشاشات الصغيرة */
-@media (max-width: 768px) {
-    .attendance-cards {
-        grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-        gap: 12px;
-    }
-    
-    .card-header {
-        padding: 12px;
-    }
-    
-    .card-header h3 {
-        font-size: 1rem;
-    }
-    
-    .card-body {
-        padding: 12px;
-    }
-    
-    .info-row {
-        margin-bottom: 8px;
-        padding-bottom: 8px;
-    }
-    
-    .status {
-        padding: 4px 10px;
-        font-size: 0.75rem;
-    }
-}
-
-@media (max-width: 480px) {
-    .attendance-cards {
-        grid-template-columns: 1fr;
-        gap: 10px;
-    }
-    
-    .card-header {
-        padding: 10px;
-        flex-direction: column;
-        align-items: flex-start;
-        gap: 8px;
-    }
-    
-    .card-header h3 {
-        font-size: 0.95rem;
-    }
-    
-    .card-body {
-        padding: 10px;
-    }
-    
-    .info-row {
-        margin-bottom: 6px;
-        padding-bottom: 6px;
-        font-size: 0.9rem;
-    }
-    
-    .status {
-        padding: 3px 8px;
-        font-size: 0.7rem;
-    }
-    
-    .no-data {
-        padding: 20px;
-        font-size: 0.9rem;
-    }
-}
-        
-/* أنماط فلاتر الحضور */
-.attendance-filters {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 15px;
-    margin-bottom: 20px;
-    padding: 15px;
-    background: var(--gray-light);
-    border-radius: var(--radius-sm);
-    align-items: end;
-}
-
-.filter-group {
-    display: flex;
-    flex-direction: column;
-    flex: 1;
-    min-width: 200px;
-}
-
-.filter-group label {
-    font-weight: 600;
-    margin-bottom: 5px;
-    color: var(--dark);
-}
-
-.filter-group input {
-    padding: 10px;
-    border: 1px solid var(--border);
-    border-radius: var(--radius-sm);
-    font-size: 0.9rem;
-}
-
-.filter-group input:focus {
-    outline: none;
-    border-color: var(--primary);
-    box-shadow: 0 0 0 2px rgba(249, 115, 22, 0.2);
-}
-
-.clear-btn {
-    background: var(--danger);
-    color: white;
-    border: none;
-    padding: 10px 15px;
-    border-radius: var(--radius-sm);
-    cursor: pointer;
-    font-size: 0.9rem;
-    height: fit-content;
-    align-self: flex-end;
-}
-
-.clear-btn:hover {
-    background: #dc2626;
-}
-
-/* تحسين للشاشات الصغيرة */
-@media (max-width: 768px) {
-    .attendance-filters {
-        flex-direction: column;
-        gap: 12px;
-        padding: 12px;
-    }
-    
-    .filter-group {
-        min-width: 100%;
-    }
-    
-    .clear-btn {
-        align-self: stretch;
-        text-align: center;
-    }
-}
-
-@media (max-width: 480px) {
-    .attendance-filters {
-        padding: 10px;
-        gap: 10px;
-    }
-    
-    .filter-group label {
-        font-size: 0.9rem;
-    }
-    
-    .filter-group input {
-        padding: 8px;
-        font-size: 0.85rem;
-    }
-    
-    .clear-btn {
-        padding: 8px 12px;
-        font-size: 0.85rem;
-    }
-}
-
-        /* Mobile Responsive */
-        @media (max-width: 768px) {
-            .header {
-                padding: 12px 15px;
-            }
-            
-            .header h1 {
-                font-size: 1.2rem;
-            }
-            
-            .logout-btn {
-                padding: 6px 10px;
-                font-size: 0.8rem;
-            }
-            
-            .container {
-                padding: 10px;
-            }
-            
-            .content-section {
-                padding: 15px;
-            }
-            
-            .stats-grid {
-                grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
-                gap: 10px;
-            }
-            
-            .stat-card {
-                padding: 12px 8px;
-            }
-            
-            .stat-card h3 {
-                font-size: 1.2rem;
-            }
-            
-            .stat-card p {
-                font-size: 0.75rem;
-            }
-            
-            .financial-summary {
-                grid-template-columns: 1fr;
-                gap: 12px;
-            }
-            
-            .financial-card {
-                padding: 12px;
-            }
-            
-            .financial-card h3 {
-                font-size: 0.9rem;
-            }
-            
-            .financial-card .amount {
-                font-size: 1.3rem;
-            }
-            
-            .section-header h2 {
-                font-size: 1.1rem;
-            }
-            
-            /* Attendance Tables for Mobile */
-            .attendance-table {
-                font-size: 0.8rem;
-            }
-            
-            .attendance-table th,
-            .attendance-table td {
-                padding: 8px 4px;
-            }
+        .info-row {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 10px;
+            padding-bottom: 10px;
+            border-bottom: 1px solid var(--border);
         }
-        
-        @media (max-width: 480px) {
-            .header {
-                flex-direction: column;
-                gap: 10px;
-                text-align: center;
-            }
-            
-            .stats-grid {
-                grid-template-columns: repeat(2, 1fr);
-            }
-            
-            .stat-card {
-                padding: 10px 6px;
-            }
-            
-            .stat-card h3 {
-                font-size: 1.1rem;
-            }
-            
-            .financial-summary {
-                gap: 10px;
-            }
-            
-            .financial-card {
-                padding: 10px;
-            }
-            
-            .financial-card h3 {
-                font-size: 0.85rem;
-            }
-            
-            .financial-card .amount {
-                font-size: 1.2rem;
-            }
-            
-            .section-header {
-                flex-direction: column;
-                align-items: flex-start;
-                gap: 10px;
-            }
-            
-            .section-header h2 {
-                font-size: 1rem;
-            }
-            
-            /* Attendance Tables for Small Mobile */
-            .attendance-table {
-                font-size: 0.7rem;
-            }
-            
-            .attendance-table th,
-            .attendance-table td {
-                padding: 6px 3px;
-            }
+
+        .info-row:last-child {
+            margin-bottom: 0;
+            padding-bottom: 0;
+            border-bottom: none;
         }
-        
-        /* Navigation Menu for Mobile */
-        .mobile-menu-btn {
-            display: none;
-            background: none;
-            border: none;
+
+        .label {
+            font-weight: 600;
+            color: var(--dark);
+        }
+
+        .value {
+            color: var(--gray);
+        }
+
+        .status {
+            padding: 5px 12px;
+            border-radius: 20px;
+            font-size: 0.8rem;
+            font-weight: 500;
+        }
+
+        .status.present {
+            background-color: var(--secondary-light);
+            color: var(--secondary);
+        }
+
+        .status.partial {
+            background-color: #fff3cd;
+            color: #856404;
+        }
+
+        .status.absent {
+            background-color: #f8d7da;
+            color: #721c24;
+        }
+
+        .no-data {
+            text-align: center;
+            padding: 30px;
+            color: var(--gray);
+            font-style: italic;
+            background: var(--gray-light);
+            border-radius: var(--radius-sm);
+            margin: 15px 0;
+            font-size: 1rem;
+        }
+
+        /* ============ Filters ============ */
+        .attendance-filters {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 15px;
+            margin-bottom: 20px;
+            padding: 15px;
+            background: var(--gray-light);
+            border-radius: var(--radius-sm);
+            align-items: end;
+        }
+
+        .filter-group {
+            display: flex;
+            flex-direction: column;
+            flex: 1;
+            min-width: 200px;
+        }
+
+        .filter-group label {
+            font-weight: 600;
+            margin-bottom: 5px;
+            color: var(--dark);
+        }
+
+        .filter-group input,
+        .filter-group select {
+            padding: 10px;
+            border: 1px solid var(--border);
+            border-radius: var(--radius-sm);
+            font-size: 0.9rem;
+        }
+
+        .filter-group input:focus,
+        .filter-group select:focus {
+            outline: none;
+            border-color: var(--primary);
+            box-shadow: 0 0 0 2px rgba(249, 115, 22, 0.2);
+        }
+
+        .clear-btn {
+            background: var(--danger);
             color: white;
-            font-size: 1.5rem;
+            border: none;
+            padding: 10px 15px;
+            border-radius: var(--radius-sm);
             cursor: pointer;
+            font-size: 0.9rem;
+            height: fit-content;
+            align-self: flex-end;
         }
-        
-        @media (max-width: 768px) {
-            .mobile-menu-btn {
-                display: block;
-            }
-            
-            .nav-menu {
-                position: fixed;
-                top: 0;
-                right: -100%;
-                width: 80%;
-                height: 100%;
-                background: white;
-                box-shadow: -2px 0 5px rgba(0,0,0,0.1);
-                transition: right 0.3s ease;
-                z-index: 1000;
-                padding: 20px;
-                overflow-y: auto;
-            }
-            
-            .nav-menu.active {
-                right: 0;
-            }
-            
-            .nav-menu .close-btn {
-                position: absolute;
-                top: 15px;
-                left: 15px;
-                background: none;
-                border: none;
-                font-size: 1.5rem;
-                cursor: pointer;
-                color: var(--dark);
-            }
-            
-            .nav-menu ul {
-                list-style: none;
-                padding: 0;
-                margin-top: 50px;
-            }
-            
-            .nav-menu ul li {
-                margin-bottom: 15px;
-            }
-            
-            .nav-menu ul li a {
-                display: block;
-                padding: 12px 15px;
-                color: var(--dark);
-                text-decoration: none;
-                border-radius: var(--radius-sm);
-                transition: background 0.3s;
-            }
-            
-            .nav-menu ul li a:hover {
-                background: var(--gray-light);
-            }
-            
-            .nav-menu ul li a.active {
-                background: var(--primary-light);
-                color: var(--primary);
-                font-weight: 600;
-            }
-            
-            .overlay {
-                position: fixed;
-                top: 0;
-                left: 0;
-                width: 100%;
-                height: 100%;
-                background: rgba(0,0,0,0.5);
-                z-index: 999;
-                display: none;
-            }
-            
-            .overlay.active {
-                display: block;
-            }
+
+        .clear-btn:hover {
+            background: #dc2626;
         }
-        
-        /* إدارة المستخدمين */
+
+        /* ============ User Management ============ */
         .users-management {
             margin-top: 20px;
             margin-bottom: 30px;
@@ -1037,7 +576,6 @@
             color: var(--danger);
         }
 
-        /* زر إضافة مستخدم */
         .add-user-btn {
             background: var(--primary);
             color: white;
@@ -1055,7 +593,7 @@
             background: var(--primary-dark);
         }
 
-        /* نمط النافذة المنبثقة */
+        /* ============ Modal Styles ============ */
         .modal {
             position: fixed;
             top: 0;
@@ -1174,23 +712,6 @@
             background: var(--border);
         }
 
-        /* مؤشر التحميل */
-        .loader {
-            width: 20px;
-            height: 20px;
-            border: 3px solid #f3f3f3;
-            border-top: 3px solid var(--primary);
-            border-radius: 50%;
-            animation: spin 1s linear infinite;
-            display: inline-block;
-            margin-right: 10px;
-        }
-
-        @keyframes spin {
-            0% { transform: rotate(0deg); }
-            100% { transform: rotate(360deg); }
-        }
-
         .modal-content {
             background: white;
             padding: 20px;
@@ -1199,12 +720,6 @@
             max-width: 500px;
             max-height: 90vh;
             overflow-y: auto;
-        }
-
-        .edit-user-form {
-            display: flex;
-            flex-direction: column;
-            gap: 15px;
         }
 
         .form-group {
@@ -1267,474 +782,926 @@
             background: var(--border);
         }
 
-        /* تحسينات للشاشات الصغيرة */
+        /* ============ Reminder Banner ============ */
+        #reminderBanner {
+            position: fixed;
+            top: 70px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: linear-gradient(90deg, #ff7b00, #ffb300);
+            color: #fff;
+            font-size: 20px;
+            font-weight: bold;
+            padding: 15px 30px;
+            border-radius: 10px;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.3);
+            z-index: 1000;
+            display: none;
+            white-space: nowrap;
+        }
+
+        @keyframes slideInDown {
+            from { opacity: 0; transform: translate(-50%, -50px); }
+            to { opacity: 1; transform: translate(-50%, 0); }
+        }
+
+        @keyframes slideOutRight {
+            from { opacity: 1; transform: translate(-50%, 0); }
+            to { opacity: 0; transform: translateX(200%); }
+        }
+
+        /* ============ Responsive ============ */
         @media (max-width: 768px) {
+            .header {
+                padding: 12px 15px;
+            }
+            .header h1 {
+                font-size: 1.2rem;
+            }
+            .logout-btn {
+                padding: 6px 10px;
+                font-size: 0.8rem;
+            }
+            .container {
+                padding: 10px;
+            }
+            .content-section {
+                padding: 15px;
+            }
+            .stats-grid {
+                grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+                gap: 10px;
+            }
+            .stat-card {
+                padding: 12px 8px;
+            }
+            .stat-card h3 {
+                font-size: 1.2rem;
+            }
+            .stat-card p {
+                font-size: 0.75rem;
+            }
+            .financial-summary {
+                grid-template-columns: 1fr;
+                gap: 12px;
+            }
+            .financial-card {
+                padding: 12px;
+            }
+            .financial-card h3 {
+                font-size: 0.9rem;
+            }
+            .financial-card .amount {
+                font-size: 1.3rem;
+            }
+            .section-header h2 {
+                font-size: 1.1rem;
+            }
+            .attendance-table {
+                font-size: 0.8rem;
+            }
+            .attendance-table th,
+            .attendance-table td {
+                padding: 8px 4px;
+            }
             .users-filters {
                 flex-direction: column;
             }
-
             .role-filter {
                 width: 100%;
             }
-
             .users-table th,
             .users-table td {
                 padding: 8px;
                 font-size: 0.9rem;
             }
-
             .action-btn {
                 padding: 4px 8px;
                 font-size: 0.8rem;
             }
+            .attendance-filters {
+                flex-direction: column;
+                gap: 12px;
+                padding: 12px;
+            }
+            .filter-group {
+                min-width: 100%;
+            }
+            .clear-btn {
+                align-self: stretch;
+                text-align: center;
+            }
+            .attendance-cards {
+                grid-template-columns: repeat(auto-fit, minmin(250px, 1fr));
+                gap: 12px;
+            }
+            .card-header {
+                padding: 12px;
+            }
+            .card-header h3 {
+                font-size: 1rem;
+            }
+            .card-body {
+                padding: 12px;
+            }
+            .info-row {
+                margin-bottom: 8px;
+                padding-bottom: 8px;
+            }
+            .status {
+                padding: 4px 10px;
+                font-size: 0.75rem;
+            }
         }
 
-        /* Cards for Mobile */
-        .card-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
-            gap: 12px;
-        }
-        
-        .card {
-            background: white;
-            border-radius: var(--radius-md);
-            padding: 15px;
-            box-shadow: var(--shadow-light);
-            text-align: center;
-            transition: transform 0.2s;
-        }
-        
-        .card:hover {
-            transform: translateY(-3px);
-        }
-        
-        .card h3 {
-            font-size: 1.2rem;
-            margin-bottom: 8px;
-            color: var(--primary);
-        }
-        
-        .card p {
-            font-size: 0.9rem;
-            color: var(--gray);
-        }
-        
-        .card i {
-            font-size: 1.5rem;
-            margin-bottom: 10px;
-            color: var(--primary);
-        }
-        
-        /* Quick Actions */
-        .quick-actions {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
-            gap: 10px;
-            margin-top: 20px;
-        }
-        
-        .action-btn {
-            background: var(--primary);
-            color: white;
-            border: none;
-            padding: 12px;
-            border-radius: var(--radius-sm);
-            text-align: center;
-            cursor: pointer;
-            transition: background 0.3s;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            gap: 5px;
-        }
-        
-        .action-btn:hover {
-            background: var(--primary-dark);
-        }
-        
-        .action-btn i {
-            font-size: 1.2rem;
-        }
-        
-        .action-btn span {
-            font-size: 0.85rem;
+        @media (max-width: 480px) {
+            .header {
+                flex-direction: column;
+                gap: 10px;
+                text-align: center;
+            }
+            .stats-grid {
+                grid-template-columns: repeat(2, 1fr);
+            }
+            .stat-card {
+                padding: 10px 6px;
+            }
+            .stat-card h3 {
+                font-size: 1.1rem;
+            }
+            .financial-summary {
+                gap: 10px;
+            }
+            .financial-card {
+                padding: 10px;
+            }
+            .financial-card h3 {
+                font-size: 0.85rem;
+            }
+            .financial-card .amount {
+                font-size: 1.2rem;
+            }
+            .section-header {
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 10px;
+            }
+            .section-header h2 {
+                font-size: 1rem;
+            }
+            .attendance-table {
+                font-size: 0.7rem;
+            }
+            .attendance-table th,
+            .attendance-table td {
+                padding: 6px 3px;
+            }
+            .attendance-cards {
+                grid-template-columns: 1fr;
+                gap: 10px;
+            }
+            .card-header {
+                padding: 10px;
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 8px;
+            }
+            .card-header h3 {
+                font-size: 0.95rem;
+            }
+            .card-body {
+                padding: 10px;
+            }
+            .info-row {
+                margin-bottom: 6px;
+                padding-bottom: 6px;
+                font-size: 0.9rem;
+            }
+            .status {
+                padding: 3px 8px;
+                font-size: 0.7rem;
+            }
+            .no-data {
+                padding: 20px;
+                font-size: 0.9rem;
+            }
+            .attendance-filters {
+                padding: 10px;
+                gap: 10px;
+            }
+            .filter-group label {
+                font-size: 0.9rem;
+            }
+            .filter-group input {
+                padding: 8px;
+                font-size: 0.85rem;
+            }
+            .clear-btn {
+                padding: 8px 12px;
+                font-size: 0.85rem;
+            }
         }
     </style>
-    
-  </head>
+</head>
 <body>
+
+    <!-- Overlay -->
     <div class="modal-overlay" id="modalOverlay"></div>
-    <div id="subscriptionModal" class="subscription-modal" style="display:none;">
-    </div>
-    <div id="subscriptionAlert" class="subscription-alert" style="display:none;">
-    </div>
 
-<header class="header">
-    <h1>لوحة تحكم المدير</h1>
-    <div class="user-info">
-        <span id="userName">مدير النظام</span>
-        <button class="logout-btn" onclick="logout()">
-            <i class="fas fa-sign-out-alt"></i> خروج
-        </button>
-    </div>
-</header>
-
-<div class="container">
-    <div id="overview" class="content-section">
-        <!-- الإحصائيات العامة -->
-        <div class="section-header">
-            <h2><i class="fas fa-chart-bar"></i> الإحصائيات العامة</h2>
+    <!-- Subscription Modal -->
+    <div id="subscriptionModal" class="subscription-modal">
+        <div class="modal-icon">
+            <i class="fas fa-exclamation-triangle"></i>
         </div>
-        
-        <div class="stats-grid">
-            <div class="stat-card"><h3 id="totalUsers">0</h3><p>المستخدمين</p></div>
-            <div class="stat-card"><h3 id="totalStudents">0</h3><p>الطلاب</p></div>
-            <div class="stat-card"><h3 id="totalCourses">0</h3><p>الدورات</p></div>
-            <div class="stat-card"><h3 id="totalModules">0</h3><p>الوحدات</p></div>
-            <div class="stat-card"><h3 id="totalExams">0</h3><p>الامتحانات</p></div>
-            <div class="stat-card financial"><h3 id="totalLessons">0</h3><p>الدروس</p></div>
-            <div class="stat-card info"><h3 id="totalTeachers">0</h3><p>المعلمين</p></div>
-            <div class="stat-card warning"><h3 id="totalSecretaries">0</h3><p>السكرتارية</p></div>
+        <div class="modal-content-text">
+            ⚠️ اشتراكك في التطبيق سينتهي قريباً، يرجى تجديده للاستمرار.
         </div>
-        
-        <!-- رسالة الأخطاء -->
-        <div id="errorMessage" style="display: none;"></div>
+        <button class="close-modal" onclick="closeSubscriptionModal()">حسناً</button>
+    </div>
 
-        <!-- إدارة المستخدمين -->
-        <div class="section-header">
-            <h2><i class="fas fa-users-cog"></i> إدارة المستخدمين</h2>
-            <button class="add-user-btn" onclick="showAddUserModal()">
-                <i class="fas fa-user-plus"></i> إضافة مستخدم جديد
+    <!-- Subscription Alert -->
+    <div id="subscriptionAlert" class="subscription-alert">⚠️ اشتراكك في التطبيق سينتهي قريباً</div>
+
+    <!-- Header -->
+    <header class="header">
+        <h1>لوحة تحكم المدير</h1>
+        <div class="user-info">
+            <span id="userName">مدير النظام</span>
+            <button class="logout-btn" onclick="logout()">
+                <i class="fas fa-sign-out-alt"></i> خروج
             </button>
         </div>
+    </header>
 
-        <div class="users-management">
-            <div class="users-filters">
-                <input type="text" id="userSearchInput" placeholder="بحث عن مستخدم..." class="search-input">
-                <select id="userRoleFilter" class="role-filter">
-                    <option value="">كل الأدوار</option>
-                    <option value="admin">مدير</option>
-                    <option value="teacher">معلم</option>
-                    <option value="secretary">سكرتير</option>
-                </select>
+    <!-- Main Content -->
+    <div class="container">
+        <div id="overview" class="content-section">
+            <!-- Stats -->
+            <div class="section-header">
+                <h2><i class="fas fa-chart-bar"></i> الإحصائيات العامة</h2>
+            </div>
+            <div class="stats-grid">
+                <div class="stat-card"><h3 id="totalUsers">0</h3><p>المستخدمين</p></div>
+                <div class="stat-card"><h3 id="totalStudents">0</h3><p>الطلاب</p></div>
+                <div class="stat-card"><h3 id="totalCourses">0</h3><p>الدورات</p></div>
+                <div class="stat-card"><h3 id="totalModules">0</h3><p>الوحدات</p></div>
+                <div class="stat-card"><h3 id="totalExams">0</h3><p>الامتحانات</p></div>
+                <div class="stat-card financial"><h3 id="totalLessons">0</h3><p>الدروس</p></div>
+                <div class="stat-card info"><h3 id="totalTeachers">0</h3><p>المعلمين</p></div>
+                <div class="stat-card warning"><h3 id="totalSecretaries">0</h3><p>السكرتارية</p></div>
             </div>
 
-            <!-- نموذج إضافة مستخدم جديد -->
-            <div id="addUserModal" class="modal">
-                <div class="modal-content">
-                    <div class="modal-header">
-                        <h3>📝 إضافة مستخدم جديد</h3>
-                        <button class="close-btn" onclick="closeAddUserModal()">×</button>
+            <!-- Error Message -->
+            <div id="errorMessage" style="display: none;"></div>
+
+            <!-- Users Management -->
+            <div class="section-header">
+                <h2><i class="fas fa-users-cog"></i> إدارة المستخدمين</h2>
+                <button class="add-user-btn" onclick="showAddUserModal()">
+                    <i class="fas fa-user-plus"></i> إضافة مستخدم جديد
+                </button>
+            </div>
+            <div class="users-management">
+                <div class="users-filters">
+                    <input type="text" id="userSearchInput" placeholder="بحث عن مستخدم..." class="search-input">
+                    <select id="userRoleFilter" class="role-filter">
+                        <option value="">كل الأدوار</option>
+                        <option value="admin">مدير</option>
+                        <option value="teacher">معلم</option>
+                        <option value="secretary">سكرتير</option>
+                    </select>
+                </div>
+
+                <!-- Add User Modal -->
+                <div id="addUserModal" class="modal">
+                    <div class="modal-content">
+                        <div class="modal-header">
+                            <h3>📝 إضافة مستخدم جديد</h3>
+                            <button class="close-btn" onclick="closeAddUserModal()">×</button>
+                        </div>
+                        <form id="addUserForm" class="add-user-form">
+                            <div class="form-group">
+                                <label>👤 الاسم الكامل</label>
+                                <input type="text" id="addFullName" required placeholder="أدخل الاسم الكامل">
+                            </div>
+                            <div class="form-group">
+                                <label>📧 البريد الإلكتروني</label>
+                                <input type="email" id="addEmail" required placeholder="أدخل البريد الإلكتروني">
+                            </div>
+                            <div class="form-group">
+                                <label>🔒 كلمة المرور</label>
+                                <input type="password" id="addPassword" required minlength="6" placeholder="أدخل كلمة مرور قوية">
+                            </div>
+                            <div class="form-group">
+                                <label>📱 رقم الهاتف</label>
+                                <input type="tel" id="addPhone" placeholder="أدخل رقم الهاتف">
+                            </div>
+                            <div class="form-group">
+                                <label>📚 التخصص</label>
+                                <input type="text" id="addSpecialty" placeholder="أدخل التخصص">
+                            </div>
+                            <div class="form-group">
+                                <label>👔 الدور</label>
+                                <select id="addRole" required>
+                                    <option value="admin">مدير</option>
+                                    <option value="teacher">معلم</option>
+                                    <option value="secretary">سكرتير</option>
+                                </select>
+                            </div>
+                            <div class="form-actions">
+                                <button type="submit" class="submit-btn">إضافة المستخدم</button>
+                                <button type="button" class="cancel-btn" onclick="closeAddUserModal()">إلغاء</button>
+                            </div>
+                        </form>
+                        <div id="addUserStatus" class="status-message"></div>
                     </div>
-                    <form id="addUserForm" class="add-user-form">
-                        <div class="form-group">
-                            <label>👤 الاسم الكامل</label>
-                            <input type="text" id="addFullName" required placeholder="أدخل الاسم الكامل">
-                        </div>
-                        <div class="form-group">
-                            <label>📧 البريد الإلكتروني</label>
-                            <input type="email" id="addEmail" required placeholder="أدخل البريد الإلكتروني">
-                        </div>
-                        <div class="form-group">
-                            <label>🔒 كلمة المرور</label>
-                            <input type="password" id="addPassword" required minlength="6" placeholder="أدخل كلمة مرور قوية">
-                        </div>
-                        <div class="form-group">
-                            <label>📱 رقم الهاتف</label>
-                            <input type="tel" id="addPhone" placeholder="أدخل رقم الهاتف">
-                        </div>
-                        <div class="form-group">
-                            <label>📚 التخصص</label>
-                            <input type="text" id="addSpecialty" placeholder="أدخل التخصص">
-                        </div>
-                        <div class="form-group">
-                            <label>👔 الدور</label>
-                            <select id="addRole" required>
-                                <option value="admin">مدير</option>
-                                <option value="teacher">معلم</option>
-                                <option value="secretary">سكرتير</option>
-                            </select>
-                        </div>
-                        <div class="form-actions">
-                            <button type="submit" class="submit-btn">إضافة المستخدم</button>
-                            <button type="button" class="cancel-btn" onclick="closeAddUserModal()">إلغاء</button>
-                        </div>
-                    </form>
-                    <div id="addUserStatus" class="status-message"></div>
+                </div>
+
+                <!-- Users Table -->
+                <div class="users-table-container">
+                    <table class="users-table">
+                        <thead>
+                            <tr>
+                                <th>الاسم الكامل</th>
+                                <th>البريد الإلكتروني</th>
+                                <th>رقم الهاتف</th>
+                                <th>التخصص</th>
+                                <th>الدور</th>
+                                <th>تاريخ الإنشاء</th>
+                                <th>الإجراءات</th>
+                            </tr>
+                        </thead>
+                        <tbody id="usersTableBody">
+                            <!-- سيتم ملء هذا الجزء ديناميكياً -->
+                        </tbody>
+                    </table>
                 </div>
             </div>
 
-            <div class="users-table-container">
-                <table class="users-table">
-                    <thead>
-                        <tr>
-                            <th>الاسم الكامل</th>
-                            <th>البريد الإلكتروني</th>
-                            <th>رقم الهاتف</th>
-                            <th>التخصص</th>
-                            <th>الدور</th>
-                            <th>تاريخ الإنشاء</th>
-                            <th>الإجراءات</th>
-                        </tr>
-                    </thead>
-                    <tbody id="usersTableBody">
-                        <!-- سيتم ملء هذا الجزء ديناميكياً -->
-                    </tbody>
-                </table>
+            <!-- Financial Stats -->
+            <div class="section-header">
+                <h2><i class="fas fa-chart-line"></i> الإحصائيات المالية</h2>
+            </div>
+            <div class="financial-summary">
+                <div class="financial-card">
+                    <h3><i class="fas fa-money-bill-wave"></i> المدفوعات</h3>
+                    <div class="amount paid" id="totalPaidAmount">0 جنيه</div>
+                    <p>إجمالي المبالغ المدفوعة</p>
+                </div>
+                <div class="financial-card">
+                    <h3><i class="fas fa-exclamation-circle"></i> المتبقي</h3>
+                    <div class="amount remaining" id="totalRemainingAmount">0 جنيه</div>
+                    <p>إجمالي المبالغ المتأخرة</p>
+                </div>
+                <div class="financial-card">
+                    <h3><i class="fas fa-calculator"></i> الإجمالي</h3>
+                    <div class="amount total" id="totalFinancialAmount">0 جنيه</div>
+                    <p>إجمالي المبالغ المطلوبة</p>
+                </div>
             </div>
         </div>
-        
-        <!-- الإحصائيات المالية -->
-        <div class="section-header">
-            <h2><i class="fas fa-chart-line"></i> الإحصائيات المالية</h2>
-        </div>
-        
-        <div class="financial-summary">
-            <div class="financial-card">
-                <h3><i class="fas fa-money-bill-wave"></i> المدفوعات</h3>
-                <div class="amount paid" id="totalPaidAmount">0 جنيه</div>
-                <p>إجمالي المبالغ المدفوعة</p>
+
+        <!-- Attendance Section -->
+        <div id="attendanceSection" class="content-section">
+            <div class="section-header">
+                <h2><i class="fas fa-user-check"></i> سجل حضور وانصراف الموظفين</h2>
             </div>
-            
-            <div class="financial-card">
-                <h3><i class="fas fa-exclamation-circle"></i> المتبقي</h3>
-                <div class="amount remaining" id="totalRemainingAmount">0 جنيه</div>
-                <p>إجمالي المبالغ المتأخرة</p>
-            </div>
-            
-            <div class="financial-card">
-                <h3><i class="fas fa-calculator"></i> الإجمالي</h3>
-                <div class="amount total" id="totalFinancialAmount">0 جنيه</div>
-                <p>إجمالي المبالغ المطلوبة</p>
-            </div>
+            <h3>المعلمين</h3>
+            <div id="teacherAttendanceList">جاري التحميل...</div>
+            <h3 style="margin-top:20px;">السكرتارية</h3>
+            <div id="secretaryAttendanceList">جاري التحميل...</div>
         </div>
     </div>
-</div>
 
+    <!-- Reminder Banner -->
+    <div id="reminderBanner"></div>
 
-<!-- ✅ قسم الحضور والانصراف -->
-<div id="attendanceSection" class="content-section">
-  <div class="section-header">
-    <h2><i class="fas fa-user-check"></i> سجل حضور وانصراف الموظفين</h2>
-  </div>
+    <script>
+        // ============ Configuration ============
+        const supabaseUrl = "https://zefsmckaihzfiqqbdake.supabase.co";
+        const supabaseKey = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InplZnNtY2thaWh6ZmlxcWJkYWtlIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTQyMzUzNTgsImV4cCI6MjA2OTgxMTM1OH0.vktk2VkEPtMclb6jb_pFa1DbrqWX9SOZRsBR577o5mc";
+        const serviceRoleKey = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InplZnNtY2thaWh6ZmlxcWJkYWtlIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc1NDIzNTM1OCwiZXhwIjoyMDY5ODExMzU4fQ.Ebb0swXnl8Wx3n8syoAhGrwHYXKVik8jqhraX_1MANs";
 
-  <h3>المعلمين</h3>
-  <div id="teacherAttendanceList">جاري التحميل...</div>
+        const supabase = window.supabase.createClient(supabaseUrl, supabaseKey);
+        const supabaseAdmin = window.supabase.createClient(supabaseUrl, serviceRoleKey);
 
-  <h3 style="margin-top:20px;">السكرتارية</h3>
-  <div id="secretaryAttendanceList">جاري التحميل...</div>
-</div>
+        // ============ Data Variables ============
+        let usersData = [], coursesData = [], paymentsData = [], attendanceData = [], 
+            studentsData = [], examsData = [], modulesData = [], lessonsData = [], 
+            teachersData = [], secretariesData = [], teacherAttendanceData = [], 
+            secretaryAttendanceData = [], examScoresData = [];
 
-<!-- 🔔 صندوق التذكير -->
-<div id="reminderBanner"></div>
-
-<style>
-#reminderBanner {
-  position: fixed;
-  top: 70px; /* اضبط حسب الـ Navbar */
-  left: 50%;
-  transform: translateX(-50%);
-  background: linear-gradient(90deg, #ff7b00, #ffb300);
-  color: #fff;
-  font-size: 20px;
-  font-weight: bold;
-  padding: 15px 30px;
-  border-radius: 10px;
-  box-shadow: 0 4px 10px rgba(0,0,0,0.3);
-  z-index: 1000;
-  display: none;
-  white-space: nowrap;
-}
-
-/* حركة الدخول */
-@keyframes slideInDown {
-  from { opacity: 0; transform: translate(-50%, -50px); }
-  to { opacity: 1; transform: translate(-50%, 0); }
-}
-
-/* حركة الخروج */
-@keyframes slideOutRight {
-  from { opacity: 1; transform: translate(-50%, 0); }
-  to { opacity: 0; transform: translateX(200%); }
-}
-</style>
-
-<script>
-// قائمة الرسائل
-const reminders = [
-  "🌹 صلِّ على النبي ﷺ",
-  "🤲 لا إله إلا الله",
-  "✨ استغفر الله العظيم",
-  "💖 سبحان الله وبحمده سبحان الله العظيم"
-];
-
-// دالة لعرض التذكير كبانر
-function showReminderBanner() {
-  const banner = document.getElementById("reminderBanner");
-  const randomIndex = Math.floor(Math.random() * reminders.length);
-  banner.textContent = reminders[randomIndex];
-
-  banner.style.display = "block";
-  banner.style.animation = "slideInDown 0.5s ease forwards";
-
-  // بعد ثانيتين يخرج يمين
-  setTimeout(() => {
-    banner.style.animation = "slideOutRight 1s ease forwards";
-  }, 2000);
-
-  // يخفيه بعد 3 ثواني (إجمالي: دخول + بقاء + خروج)
-  setTimeout(() => {
-    banner.style.display = "none";
-  }, 3000);
-}
-
-// تشغيل أول ما يفتح المستخدم + كل 5 دقايق
-document.addEventListener("DOMContentLoaded", () => {
-  showReminderBanner(); // أول ما يفتح
-  setInterval(showReminderBanner, 300000); // كل 5 دقايق
-});
-</script>
-
-<script>
-const supabaseUrl = "https://zefsmckaihzfiqqbdake.supabase.co";
-const supabaseKey = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InplZnNtY2thaWh6ZmlxcWJkYWtlIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTQyMzUzNTgsImV4cCI6MjA2OTgxMTM1OH0.vktk2VkEPtMclb6jb_pFa1DbrqWX9SOZRsBR577o5mc";
-const serviceRoleKey = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InplZnNtY2thaWh6ZmlxcWJkYWtlIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc1NDIzNTM1OCwiZXhwIjoyMDY5ODExMzU4fQ.Ebb0swXnl8Wx3n8syoAhGrwHYXKVik8jqhraX_1MANs";
-
-// إنشاء عميل Supabase للمصادقة العادية
-const supabase = window.supabase.createClient(supabaseUrl, supabaseKey);
-
-// إنشاء عميل Supabase مع صلاحيات الخدمة للتعامل مع جدول users
-const supabaseAdmin = window.supabase.createClient(supabaseUrl, serviceRoleKey);
-
-let usersData=[], coursesData=[], paymentsData=[], attendanceData=[], 
-    studentsData=[], examsData=[], modulesData=[], lessonsData=[], 
-    teachersData=[], secretariesData=[], teacherAttendanceData=[], 
-    secretaryAttendanceData=[], examScoresData=[];
-
-document.addEventListener('DOMContentLoaded',async()=>{await initializeApp();});
-
-async function initializeApp(){
-  try{
-    console.log("Starting data loading...");
-    await loadAllData();
-    console.log("Data loading completed");
-    updateStats();
-    updateFinancialStats();
-    renderUsersTable(); // تحميل جدول المستخدمين
-  }catch(err){
-    console.error("Error in initializeApp:", err);
-    showErrorMessage("حدث خطأ أثناء تحميل البيانات. يرجى المحاولة مرة أخرى.");
-  }
-}
-
-// دالة لعرض جدول المستخدمين
-function renderUsersTable(filteredUsers = null) {
-    const users = filteredUsers || usersData;
-    const tbody = document.getElementById('usersTableBody');
-    if (!tbody) return;
-
-    tbody.innerHTML = '';
-    users.forEach(user => {
-        const tr = document.createElement('tr');
-        const createdAt = new Date(user.created_at).toLocaleDateString('ar-EG');
-        tr.innerHTML = `
-            <td>${user.full_name || 'غير محدد'}</td>
-            <td>${user.email || 'غير محدد'}</td>
-            <td>${user.phone || 'غير محدد'}</td>
-            <td>${user.specialty || 'غير محدد'}</td>
-            <td>${translateRole(user.role)}</td>
-            <td>${createdAt}</td>
-            <td class="user-actions">
-                <button class="action-btn edit-btn" onclick="editUser('${user.id}')">
-                    <i class="fas fa-edit"></i> تعديل
-                </button>
-                <button class="action-btn delete-btn" onclick="deleteUser('${user.id}')">
-                    <i class="fas fa-trash"></i> حذف
-                </button>
-            </td>
-        `;
-        tbody.appendChild(tr);
-    });
-}
-
-// ترجمة الأدوار إلى العربية
-function translateRole(role) {
-    const roles = {
-        'admin': 'مدير',
-        'teacher': 'معلم',
-        'secretary': 'سكرتير'
-    };
-    return roles[role] || role;
-}
-
-// دالة تعديل المستخدم
-async function editUser(userId) {
-    try {
-        const user = usersData.find(u => u.id === userId);
-        if (!user) {
-            throw new Error('المستخدم غير موجود');
+        // ============ Subscription Check - FIXED VERSION ============
+        function checkSubscriptionDate() {
+            const today = new Date();
+            const day = today.getDate();
+            
+            // التحقق مما إذا كان اليوم بين 28-31 من الشهر الحالي أو 1-3 من الشهر التالي
+            const shouldShowAlert = (day >= 28) || (day <= 3);
+            
+            if (shouldShowAlert) {
+                // عرض التنبيه في شريط الأعلى
+                const alertElement = document.getElementById('subscriptionAlert');
+                if (alertElement) {
+                    alertElement.classList.add('show');
+                }
+                
+                // التحقق من آخر مرة تم فيها إغلاق المودال
+                const lastModalClose = localStorage.getItem('lastSubscriptionModalClose');
+                const lastCloseDate = lastModalClose ? new Date(lastModalClose) : null;
+                
+                // عرض المودال مرة واحدة فقط كل شهر (في اليوم الأول من الشهر)
+                if (day === 1) {
+                    if (!lastCloseDate || 
+                        lastCloseDate.getMonth() !== today.getMonth() || 
+                        lastCloseDate.getFullYear() !== today.getFullYear()) {
+                        setTimeout(showSubscriptionModal, 1000);
+                    }
+                }
+            } else {
+                // إخفاء التنبيه في الأيام الأخرى
+                const alertElement = document.getElementById('subscriptionAlert');
+                if (alertElement) {
+                    alertElement.classList.remove('show');
+                }
+            }
         }
 
-        // إنشاء نموذج التعديل
-        const editForm = document.createElement('div');
-        editForm.className = 'edit-user-form';
-        editForm.innerHTML = `
-            <h3>تعديل بيانات المستخدم</h3>
-            <div class="form-group">
-                <label>الاسم الكامل</label>
-                <input type="text" id="editFullName" value="${user.full_name || ''}">
-            </div>
-            <div class="form-group">
-                <label>البريد الإلكتروني</label>
-                <input type="email" id="editEmail" value="${user.email || ''}">
-            </div>
-            <div class="form-group">
-                <label>رقم الهاتف</label>
-                <input type="tel" id="editPhone" value="${user.phone || ''}">
-            </div>
-            <div class="form-group">
-                <label>التخصص</label>
-                <input type="text" id="editSpecialty" value="${user.specialty || ''}">
-            </div>
-            <div class="form-group">
-                <label>كلمة المرور الجديدة (اتركها فارغة إذا لم ترد تغييرها)</label>
-                <input type="password" id="editPassword" minlength="6" placeholder="أدخل كلمة المرور الجديدة">
-            </div>
-            <div class="form-group">
-                <label>الدور</label>
-                <select id="editRole">
-                    <option value="admin" ${user.role === 'admin' ? 'selected' : ''}>مدير</option>
-                    <option value="teacher" ${user.role === 'teacher' ? 'selected' : ''}>معلم</option>
-                    <option value="secretary" ${user.role === 'secretary' ? 'selected' : ''}>سكرتير</option>
-                </select>
-            </div>
-        `;
+        function showSubscriptionModal() {
+            const modal = document.getElementById('subscriptionModal');
+            const overlay = document.getElementById('modalOverlay');
+            if (modal && overlay) {
+                overlay.classList.add('show');
+                modal.classList.add('show');
+            }
+        }
 
-        // عرض النموذج في مودال
-        const modal = document.createElement('div');
-        modal.className = 'modal';
-        modal.innerHTML = `
-            <div class="modal-content">
-                ${editForm.outerHTML}
-                <div class="modal-actions">
-                    <button onclick="updateUser('${userId}')">حفظ</button>
-                    <button onclick="closeModal()">إلغاء</button>
-                </div>
-            </div>
-        `;
+        function closeSubscriptionModal() {
+            const modal = document.getElementById('subscriptionModal');
+            const overlay = document.getElementById('modalOverlay');
+            if (modal && overlay) {
+                modal.classList.remove('show');
+                overlay.classList.remove('show');
+                // حفظ تاريخ إغلاق المودال
+                localStorage.setItem('lastSubscriptionModalClose', new Date().toISOString());
+            }
+        }
 
-        document.body.appendChild(modal);
-        modal.style.display = 'flex';
+        // ============ Reminder Banner ============
+        const reminders = [
+            "🌹 صلِّ على النبي ﷺ",
+            "🤲 لا إله إلا الله",
+            "✨ استغفر الله العظيم",
+            "💖 سبحان الله وبحمده سبحان الله العظيم"
+        ];
 
-    } catch (error) {
-        console.error('Error in editUser:', error);
-        alert('حدث خطأ أثناء تحميل بيانات المستخدم');
-    }
-}
+        function showReminderBanner() {
+            const banner = document.getElementById("reminderBanner");
+            if (!banner) return;
+            const randomIndex = Math.floor(Math.random() * reminders.length);
+            banner.textContent = reminders[randomIndex];
+            banner.style.display = "block";
+            banner.style.animation = "slideInDown 0.5s ease forwards";
+            setTimeout(() => {
+                banner.style.animation = "slideOutRight 1s ease forwards";
+            }, 2000);
+            setTimeout(() => {
+                banner.style.display = "none";
+            }, 3000);
+        }
 
-// دالة تحديث المستخدم
+        // ============ Main App Initialization ============
+        document.addEventListener('DOMContentLoaded', async () => {
+            // فحص حالة الاشتراك
+            checkSubscriptionDate();
+            
+            // عرض رسالة التذكير الدينية
+            showReminderBanner();
+            setInterval(showReminderBanner, 300000); // كل 5 دقائق
+            
+            // تحميل البيانات
+            await initializeApp();
+            
+            // إضافة مستمع للنقر على الـ overlay لإغلاق المودال
+            const overlay = document.getElementById('modalOverlay');
+            if (overlay) {
+                overlay.addEventListener('click', closeSubscriptionModal);
+            }
+        });
+
+        async function initializeApp() {
+            try {
+                console.log("Starting data loading...");
+                await loadAllData();
+                console.log("Data loading completed");
+                updateStats();
+                updateFinancialStats();
+                renderUsersTable();
+            } catch (err) {
+                console.error("Error in initializeApp:", err);
+                showErrorMessage("حدث خطأ أثناء تحميل البيانات. يرجى المحاولة مرة أخرى.");
+            }
+        }
+
+        // ============ Data Loading ============
+        async function loadAllData() {
+            console.log("Loading all data...");
+            await loadWithPermissionCheck(loadUsers, 'users');
+            await loadWithPermissionCheck(loadStudents, 'students');
+            await loadWithPermissionCheck(loadCourses, 'courses');
+            await loadWithPermissionCheck(loadModules, 'modules');
+            await loadWithPermissionCheck(loadExams, 'exams');
+            await loadWithPermissionCheck(loadLessons, 'lessons');
+            await loadWithPermissionCheck(loadPayments, 'payments');
+            await loadWithPermissionCheck(loadTeacherAttendance, 'teacher_attendance');
+            await loadWithPermissionCheck(loadSecretaryAttendance, 'secretary_attendance');
+            await loadWithPermissionCheck(loadExamScores, 'exam_scores');
+            console.log("All data loading completed");
+        }
+
+        async function loadWithPermissionCheck(loadFunction, tableName) {
+            try {
+                await loadFunction();
+            } catch (error) {
+                console.error(`Error loading ${tableName}:`, error);
+                if (error.message && (error.message.includes('permission') || 
+                                      error.message.includes('denied') || 
+                                      error.message.includes('forbidden') ||
+                                      error.message.includes('403'))) {
+                    showPermissionError(tableName);
+                }
+            }
+        }
+
+        async function loadUsers() {
+            console.log("Loading users...");
+            const { data, error } = await supabaseAdmin.from('users').select('*');
+            if (error) throw error;
+            usersData = data;
+            console.log("Users loaded:", data.length);
+        }
+
+        async function loadStudents() {
+            console.log("Loading students...");
+            const { data, error } = await supabase.from('students').select('*');
+            if (error) throw error;
+            studentsData = data;
+            console.log("Students loaded:", data.length);
+        }
+
+        async function loadCourses() {
+            console.log("Loading courses...");
+            const { data, error } = await supabase.from('courses').select('*');
+            if (error) throw error;
+            coursesData = data;
+            console.log("Courses loaded:", data.length);
+        }
+
+        async function loadPayments() {
+            console.log("Loading payments...");
+            const { data, error } = await supabase.from('payments').select('*');
+            if (error) throw error;
+            paymentsData = data;
+            console.log("Payments loaded:", data.length);
+        }
+
+        async function loadExams() {
+            console.log("Loading exams...");
+            const { data, error } = await supabase.from('exams').select('*');
+            if (error) throw error;
+            examsData = data;
+            console.log("Exams loaded:", data.length);
+        }
+
+        async function loadModules() {
+            console.log("Loading modules...");
+            const { data, error } = await supabase.from('modules').select('*');
+            if (error) throw error;
+            modulesData = data;
+            console.log("Modules loaded:", data.length);
+        }
+
+        async function loadLessons() {
+            console.log("Loading lessons...");
+            const { data, error } = await supabase.from('lessons').select('*');
+            if (error) throw error;
+            lessonsData = data;
+            console.log("Lessons loaded:", data.length);
+        }
+
+        async function loadTeacherAttendance() {
+            console.log("Loading teacher attendance...");
+            const { data, error } = await supabase
+                .from('teacher_attendance')
+                .select(`
+                  id,
+                  date,
+                  check_in_time,
+                  check_out_time,
+                  users (
+                    full_name
+                  )
+                `);
+            if (error) throw error;
+            teacherAttendanceData = data;
+            console.log("Teacher attendance loaded:", data.length);
+            renderTeacherAttendance();
+        }
+
+        async function loadSecretaryAttendance() {
+            console.log("Loading secretary attendance...");
+            try {
+                const { data: attendanceData, error: attendanceError } = await supabase
+                    .from('secretary_attendance')
+                    .select('*')
+                    .order('attendance_date', { ascending: false });
+                if (attendanceError) throw attendanceError;
+                const secretaryIds = [...new Set(attendanceData.map(record => record.secretary_id).filter(id => id))];
+                let usersInfo = [];
+                if (secretaryIds.length > 0) {
+                    const { data: usersData, error: usersError } = await supabase
+                        .from('users')
+                        .select('id, full_name')
+                        .in('id', secretaryIds);
+                    if (usersError) throw usersError;
+                    usersInfo = usersData;
+                }
+                secretaryAttendanceData = attendanceData.map(record => ({
+                    ...record,
+                    user: usersInfo.find(user => user.id === record.secretary_id)
+                }));
+                console.log("Secretary attendance loaded:", secretaryAttendanceData.length);
+                renderSecretaryAttendance();
+            } catch (error) {
+                console.error("Error loading secretary attendance:", error);
+                secretaryAttendanceData = [];
+                renderSecretaryAttendance();
+            }
+        }
+
+        async function loadExamScores() {
+            console.log("Loading exam scores...");
+            const { data, error } = await supabase.from('exam_scores').select('*');
+            if (error) throw error;
+            examScoresData = data;
+            console.log("Exam scores loaded:", data.length);
+        }
+
+        // ============ Stats Update ============
+        function updateStats() {
+            console.log("Updating stats...");
+            const totalUsersEl = document.getElementById('totalUsers');
+            if (totalUsersEl) totalUsersEl.textContent = usersData.length;
+
+            const totalStudentsEl = document.getElementById('totalStudents');
+            if (totalStudentsEl) totalStudentsEl.textContent = studentsData.length;
+
+            const totalCoursesEl = document.getElementById('totalCourses');
+            if (totalCoursesEl) totalCoursesEl.textContent = coursesData.length;
+
+            const totalModulesEl = document.getElementById('totalModules');
+            if (totalModulesEl) totalModulesEl.textContent = modulesData.length;
+
+            const totalExamsEl = document.getElementById('totalExams');
+            if (totalExamsEl) totalExamsEl.textContent = examsData.length;
+
+            const totalLessonsEl = document.getElementById('totalLessons');
+            if (totalLessonsEl) totalLessonsEl.textContent = lessonsData.length;
+
+            const teachers = usersData.filter(user => user.role === 'teacher');
+            const secretaries = usersData.filter(user => user.role === 'secretary');
+
+            const totalTeachersEl = document.getElementById('totalTeachers');
+            if (totalTeachersEl) totalTeachersEl.textContent = teachers.length;
+
+            const totalSecretariesEl = document.getElementById('totalSecretaries');
+            if (totalSecretariesEl) totalSecretariesEl.textContent = secretaries.length;
+        }
+
+        function updateFinancialStats() {
+            console.log("Updating financial stats...");
+            const totalFinancialAmountEl = document.getElementById('totalFinancialAmount');
+            const totalPaidAmountEl = document.getElementById('totalPaidAmount');
+            const totalRemainingAmountEl = document.getElementById('totalRemainingAmount');
+            if (!totalFinancialAmountEl || !totalPaidAmountEl || !totalRemainingAmountEl) return;
+
+            const totalAmount = paymentsData.reduce((sum, payment) => sum + (payment.total_amount || 0), 0);
+            const paidAmount = paymentsData.reduce((sum, payment) => sum + (payment.amount || 0), 0);
+            const remainingAmount = totalAmount - paidAmount;
+
+            totalFinancialAmountEl.textContent = `${totalAmount.toLocaleString('ar-EG')} جنيه`;
+            totalPaidAmountEl.textContent = `${paidAmount.toLocaleString('ar-EG')} جنيه`;
+            totalRemainingAmountEl.textContent = `${remainingAmount.toLocaleString('ar-EG')} جنيه`;
+        }
+
+        // ============ User Management ============
+        function renderUsersTable(filteredUsers = null) {
+            const users = filteredUsers || usersData;
+            const tbody = document.getElementById('usersTableBody');
+            if (!tbody) return;
+            tbody.innerHTML = '';
+            users.forEach(user => {
+                const tr = document.createElement('tr');
+                const createdAt = new Date(user.created_at).toLocaleDateString('ar-EG');
+                tr.innerHTML = `
+                    <td>${user.full_name || 'غير محدد'}</td>
+                    <td>${user.email || 'غير محدد'}</td>
+                    <td>${user.phone || 'غير محدد'}</td>
+                    <td>${user.specialty || 'غير محدد'}</td>
+                    <td>${translateRole(user.role)}</td>
+                    <td>${createdAt}</td>
+                    <td class="user-actions">
+                        <button class="action-btn edit-btn" onclick="editUser('${user.id}')">
+                            <i class="fas fa-edit"></i> تعديل
+                        </button>
+                        <button class="action-btn" style="background: var(--warning);" onclick="resetPassword('${user.id}', '${user.email}')">
+                            <i class="fas fa-key"></i> كلمة المرور
+                        </button>
+                        <button class="action-btn delete-btn" onclick="deleteUser('${user.id}')">
+                            <i class="fas fa-trash"></i> حذف
+                        </button>
+                    </td>
+                `;
+                tbody.appendChild(tr);
+            });
+        }
+
+        function translateRole(role) {
+            const roles = {
+                'admin': 'مدير',
+                'teacher': 'معلم',
+                'secretary': 'سكرتير'
+            };
+            return roles[role] || role;
+        }
+
+        function showAddUserModal() {
+            const modal = document.getElementById('addUserModal');
+            if (modal) modal.style.display = 'flex';
+        }
+
+        function closeAddUserModal() {
+            const modal = document.getElementById('addUserModal');
+            if (modal) {
+                modal.style.display = 'none';
+                document.getElementById('addUserForm').reset();
+                document.getElementById('addUserStatus').className = 'status-message';
+                document.getElementById('addUserStatus').textContent = '';
+            }
+        }
+
+        document.addEventListener('DOMContentLoaded', function() {
+            const addUserForm = document.getElementById('addUserForm');
+            if (addUserForm) {
+                addUserForm.addEventListener('submit', handleAddUser);
+            }
+        });
+
+        async function handleAddUser(e) {
+            e.preventDefault();
+            const status = document.getElementById('addUserStatus');
+            const form = document.getElementById('addUserForm');
+            status.textContent = '';
+            status.className = 'status-message';
+            const inputs = form.querySelectorAll('input, select, button');
+            inputs.forEach(input => input.disabled = true);
+
+            const fullName = document.getElementById('addFullName').value.trim();
+            const email = document.getElementById('addEmail').value.trim();
+            const password = document.getElementById('addPassword').value;
+            const phone = document.getElementById('addPhone').value.trim();
+            const specialty = document.getElementById('addSpecialty').value.trim();
+            const role = document.getElementById('addRole').value;
+
+            try {
+                const { count, error: countError } = await supabaseAdmin
+                    .from('users')
+                    .select('id', { count: 'exact', head: true });
+                if (countError) throw countError;
+                if (count >= 6) {
+                    status.textContent = '🚫 تم الوصول للحد الأقصى من المستخدمين (6)';
+                    status.className = 'status-message error';
+                    return;
+                }
+
+                const { data: existingUser, error: emailCheckError } = await supabaseAdmin
+                    .from('users')
+                    .select('email')
+                    .eq('email', email)
+                    .maybeSingle();
+                if (emailCheckError) throw emailCheckError;
+                if (existingUser) {
+                    status.textContent = '❌ هذا البريد الإلكتروني مسجل مسبقاً';
+                    status.className = 'status-message error';
+                    return;
+                }
+
+                status.textContent = '⏳ جاري إنشاء الحساب...';
+                status.className = 'status-message info';
+
+                const { data: authData, error: authError } = await supabase.auth.signUp({
+                    email,
+                    password,
+                    options: {
+                        emailRedirectTo: window.location.origin,
+                        data: {
+                            full_name: fullName,
+                            role: role
+                        }
+                    }
+                });
+                if (authError) throw authError;
+                if (!authData.user || !authData.user.id) {
+                    throw new Error('لم يتم إنشاء حساب المستخدم بشكل صحيح');
+                }
+
+                await new Promise(resolve => setTimeout(resolve, 1000));
+
+                const { error: upsertError } = await supabaseAdmin
+                    .rpc('create_new_user', {
+                        user_id: authData.user.id,
+                        user_full_name: fullName,
+                        user_email: email,
+                        user_role: role,
+                        user_phone: phone,
+                        user_specialty: specialty
+                    });
+                if (upsertError) throw upsertError;
+
+                status.textContent = '✅ تم إنشاء الحساب بنجاح! تم إرسال رابط التفعيل إلى البريد الإلكتروني';
+                status.className = 'status-message success';
+
+                await loadUsers();
+                renderUsersTable();
+
+                setTimeout(closeAddUserModal, 3000);
+            } catch (error) {
+                console.error('Error adding user:', error);
+                status.textContent = `❌ حدث خطأ: ${error.message}`;
+                status.className = 'status-message error';
+            } finally {
+                inputs.forEach(input => input.disabled = false);
+            }
+        }
+
+        async function editUser(userId) {
+            try {
+                const user = usersData.find(u => u.id === userId);
+                if (!user) throw new Error('المستخدم غير موجود');
+
+                const editForm = document.createElement('div');
+                editForm.className = 'edit-user-form';
+                editForm.innerHTML = `
+                    <h3>تعديل بيانات المستخدم</h3>
+                    <div class="form-group">
+                        <label>الاسم الكامل</label>
+                        <input type="text" id="editFullName" value="${user.full_name || ''}">
+                    </div>
+                    <div class="form-group">
+                        <label>البريد الإلكتروني</label>
+                        <input type="email" id="editEmail" value="${user.email || ''}">
+                    </div>
+                    <div class="form-group">
+                        <label>رقم الهاتف</label>
+                        <input type="tel" id="editPhone" value="${user.phone || ''}">
+                    </div>
+                    <div class="form-group">
+                        <label>التخصص</label>
+                        <input type="text" id="editSpecialty" value="${user.specialty || ''}">
+                    </div>
+                    <div class="form-group">
+                        <label>كلمة المرور الجديدة (اتركها فارغة إذا لم ترد تغييرها)</label>
+                        <input type="password" id="editPassword" minlength="6" placeholder="أدخل كلمة المرور الجديدة">
+                    </div>
+                    <div class="form-group">
+                        <label>الدور</label>
+                        <select id="editRole">
+                            <option value="admin" ${user.role === 'admin' ? 'selected' : ''}>مدير</option>
+                            <option value="teacher" ${user.role === 'teacher' ? 'selected' : ''}>معلم</option>
+                            <option value="secretary" ${user.role === 'secretary' ? 'selected' : ''}>سكرتير</option>
+                        </select>
+                    </div>
+                `;
+
+                const modal = document.createElement('div');
+                modal.className = 'modal';
+                modal.innerHTML = `
+                    <div class="modal-content">
+                        ${editForm.outerHTML}
+                        <div class="modal-actions">
+                            <button onclick="updateUser('${userId}')">حفظ</button>
+                            <button onclick="closeModal()">إلغاء</button>
+                        </div>
+                    </div>
+                `;
+                document.body.appendChild(modal);
+                modal.style.display = 'flex';
+            } catch (error) {
+                console.error('Error in editUser:', error);
+                alert('حدث خطأ أثناء تحميل بيانات المستخدم');
+            }
+        }
+
 async function updateUser(userId) {
     try {
         const fullName = document.getElementById('editFullName').value.trim();
@@ -1749,22 +1716,30 @@ async function updateUser(userId) {
             return;
         }
 
-        // تحديث البيانات عبر Edge Function
-        const { data, error } = await supabase.functions.invoke('update-user', {
-            body: {
-                userId,
-                email,
-                fullName,
-                phone,
-                specialty,
-                role,
-                password: password && password.length >= 6 ? password : undefined
-            }
+        // استخدام RPC function
+        const { error: rpcError } = await supabaseAdmin.rpc('update_user_profile', {
+            user_id: userId,
+            user_full_name: fullName,
+            user_email: email,
+            user_phone: phone,
+            user_specialty: specialty,
+            user_role: role
         });
 
-        if (error) throw error;
+        if (rpcError) throw rpcError;
 
-        // تحديث البيانات محلياً
+        // تحديث كلمة المرور إذا تم إدخالها
+        if (password && password.length >= 6) {
+            const { error: passwordError } = await supabaseAdmin.auth.admin.updateUserById(
+                userId,
+                { password: password }
+            );
+            if (passwordError) {
+                console.warn('تحذير: فشل تحديث كلمة المرور:', passwordError);
+            }
+        }
+
+        // تحديث البيانات المحلية
         const userIndex = usersData.findIndex(u => u.id === userId);
         if (userIndex !== -1) {
             usersData[userIndex] = { 
@@ -1777,962 +1752,443 @@ async function updateUser(userId) {
             };
             renderUsersTable();
         }
-
+        
         closeModal();
-        alert('تم تحديث بيانات المستخدم بنجاح في النظام وفي المصادقة');
+        alert('تم تحديث بيانات المستخدم بنجاح');
     } catch (error) {
         console.error('Error updating user:', error);
-        alert('حدث خطأ أثناء تحديث بيانات المستخدم');
+        alert(`حدث خطأ أثناء تحديث بيانات المستخدم: ${error.message}`);
     }
 }
 
-// دالة إغلاق المودال
-function closeModal() {
-  const modal = document.querySelector('.modal');
-  if (modal) {
-    modal.remove();
-  }
-}
-
-// مثال لدالة تحديث بيانات المستخدم
-async function updateUserData(userId, newData) {
-  try {
-    // هنا تحط الكود الخاص بتحديث المستخدم
-    // مثلا: 
-    // const { error } = await supabase.from("users").update(newData).eq("id", userId);
-    // if (error) throw error;
-
-    alert('تم تحديث بيانات المستخدم بنجاح');
-  } catch (error) {
-    console.error('Error updating user:', error);
-    alert('حدث خطأ أثناء تحديث بيانات المستخدم');
-  }
-}
-
-
-// دالة حذف المستخدم
-async function deleteUser(userId) {
-    let statusMessage;
-    try {
-        // التأكيد مع رسالة تحذير
-        const confirmDelete = confirm(`⚠️ تحذير: سيتم حذف المستخدم بشكل نهائي من النظام والمصادقة.
-هل أنت متأكد من حذف هذا المستخدم؟`);
-        
-        if (!confirmDelete) return;
-
-        // عرض رسالة الانتظار
-        const user = usersData.find(u => u.id === userId);
-        statusMessage = document.createElement('div');
-        statusMessage.className = 'status-message info';
-        statusMessage.textContent = `جاري حذف المستخدم ${user?.email || ''}...`;
-        document.body.appendChild(statusMessage);
-
-        // محاولة حذف المستخدم من Auth أولاً
-        const { error: authError } = await supabaseAdmin.auth.admin.deleteUser(userId);
-        
-        // إذا كان الخطأ هو "User not found"، نتجاهله لأن المستخدم قد يكون غير موجود في Auth
-        if (authError && !authError.message.includes('User not found')) {
-            throw new Error(`فشل حذف المستخدم من نظام المصادقة: ${authError.message}`);
+        function closeModal() {
+            const modal = document.querySelector('.modal');
+            if (modal) modal.remove();
         }
-        
-        console.log('Auth deletion result:', authError ? 'User not in auth' : 'Deleted from auth');
 
-        try {
-            // حذف المستخدم من جدول users
-            const { error: dbError } = await supabaseAdmin
-                .from('users')
-                .delete()
-                .eq('id', userId);
-
-            if (dbError) {
-                console.error('Database deletion error:', dbError);
-                throw new Error(`فشل حذف المستخدم من قاعدة البيانات: ${dbError.message}`);
+        async function resetPassword(userId, userEmail) {
+            try {
+                // إنشاء مودال لإدخال كلمة المرور الجديدة
+                const modal = document.createElement('div');
+                modal.className = 'modal';
+                modal.innerHTML = `
+                    <div class="modal-content">
+                        <div class="modal-header">
+                            <h3>🔑 تغيير كلمة المرور</h3>
+                            <button class="close-btn" onclick="closeModal()">×</button>
+                        </div>
+                        <div style="margin-bottom: 20px;">
+                            <p style="color: var(--gray); margin-bottom: 10px;">
+                                <strong>المستخدم:</strong> ${userEmail}
+                            </p>
+                            <p style="color: var(--warning); font-size: 0.9rem;">
+                                ⚠️ سيتم تغيير كلمة المرور مباشرة بدون إرسال بريد إلكتروني
+                            </p>
+                        </div>
+                        <div class="form-group">
+                            <label>🔒 كلمة المرور الجديدة</label>
+                            <input type="password" id="newPassword" minlength="6" placeholder="أدخل كلمة المرور الجديدة (6 أحرف على الأقل)" required>
+                        </div>
+                        <div class="form-group">
+                            <label>🔒 تأكيد كلمة المرور</label>
+                            <input type="password" id="confirmPassword" minlength="6" placeholder="أعد إدخال كلمة المرور" required>
+                        </div>
+                        <div class="form-group" style="margin-top: 15px;">
+                            <label style="display: flex; align-items: center; gap: 8px; cursor: pointer;">
+                                <input type="checkbox" id="showPassword" onchange="togglePasswordVisibility()" style="cursor: pointer;">
+                                <span>👁️ إظهار كلمة المرور</span>
+                            </label>
+                        </div>
+                        <div class="modal-actions">
+                            <button onclick="confirmResetPassword('${userId}', '${userEmail}')">
+                                تغيير كلمة المرور
+                            </button>
+                            <button onclick="closeModal()">إلغاء</button>
+                        </div>
+                        <div id="resetPasswordStatus" class="status-message"></div>
+                    </div>
+                `;
+                document.body.appendChild(modal);
+                modal.style.display = 'flex';
+            } catch (error) {
+                console.error('Error in resetPassword:', error);
+                alert('حدث خطأ أثناء فتح نافذة تغيير كلمة المرور');
             }
-
-            console.log('Successfully deleted user from database'); 
-
-            // حذف المستخدم من المصفوفة المحلية
-            usersData = usersData.filter(u => u.id !== userId);
-            renderUsersTable();
-            updateStats(); // تحديث الإحصائيات
-        } catch (dbError) {
-            console.error('Database operation failed:', dbError);
-            throw new Error(`فشل حذف المستخدم من قاعدة البيانات: ${dbError.message}`);
         }
 
-        // إزالة رسالة الانتظار وعرض رسالة النجاح
-        if (statusMessage) {
-            statusMessage.remove();
-        }
-        alert('✅ تم حذف المستخدم بنجاح من النظام والمصادقة');
-
-    } catch (error) {
-        console.error('Error deleting user:', error);
-        if (statusMessage) {
-            statusMessage.remove();
-        }
-        alert(`❌ حدث خطأ أثناء حذف المستخدم: ${error.message}`);
-        throw error; // إعادة رمي الخطأ للتتبع
-    }
-}
-
-// إضافة مستمعي الأحداث للفلترة
-document.addEventListener('DOMContentLoaded', () => {
-    const searchInput = document.getElementById('userSearchInput');
-    const roleFilter = document.getElementById('userRoleFilter');
-
-    if (searchInput) {
-        searchInput.addEventListener('input', filterUsers);
-    }
-
-    if (roleFilter) {
-        roleFilter.addEventListener('change', filterUsers);
-    }
-});
-
-// دالة فلترة المستخدمين
-function filterUsers() {
-    const searchInput = document.getElementById('userSearchInput');
-    const roleFilter = document.getElementById('userRoleFilter');
-
-    if (!searchInput || !roleFilter) return;
-
-    const searchTerm = searchInput.value.toLowerCase();
-    const selectedRole = roleFilter.value;
-
-    const filteredUsers = usersData.filter(user => {
-        const matchesSearch = 
-            (user.full_name && user.full_name.toLowerCase().includes(searchTerm)) ||
-            (user.email && user.email.toLowerCase().includes(searchTerm)) ||
-            (user.phone && user.phone.toLowerCase().includes(searchTerm)) ||
-            (user.specialty && user.specialty.toLowerCase().includes(searchTerm));
-        
-        const matchesRole = !selectedRole || user.role === selectedRole;
-
-        return matchesSearch && matchesRole;
-    });
-
-    renderUsersTable(filteredUsers);
-}
-
-async function loadAllData(){
-  console.log("Loading all data...");
-  
-  // تحميل البيانات بالتسلسل مع التحقق من الأخطاء
-  await loadWithPermissionCheck(loadUsers, 'users');
-  await loadWithPermissionCheck(loadStudents, 'students');
-  await loadWithPermissionCheck(loadCourses, 'courses');
-  await loadWithPermissionCheck(loadModules, 'modules');
-  await loadWithPermissionCheck(loadExams, 'exams');
-  await loadWithPermissionCheck(loadLessons, 'lessons');
-  await loadWithPermissionCheck(loadPayments, 'payments');
-  await loadWithPermissionCheck(loadTeacherAttendance, 'teacher_attendance');
-  await loadWithPermissionCheck(loadSecretaryAttendance, 'secretary_attendance');
-  await loadWithPermissionCheck(loadExamScores, 'exam_scores');
-
-  console.log("All data loading completed");
-}
-
-async function loadWithPermissionCheck(loadFunction, tableName) {
-  try {
-    await loadFunction();
-  } catch (error) {
-    console.error(`Error loading ${tableName}:`, error);
-    
-    // التحقق من أخطاء الصلاحيات
-    if (error.message && (error.message.includes('permission') || 
-                          error.message.includes('denied') || 
-                          error.message.includes(' forbidden') ||
-                          error.message.includes('403'))) {
-      showPermissionError(tableName);
-    }
-  }
-}
-
-async function loadUsers(){
-  console.log("Loading users...");
-  const {data,error}=await supabaseAdmin.from('users').select('*');
-  if(error) throw error;
-  usersData=data;
-  console.log("Users loaded:", data.length);
-}
-
-// دالة إظهار نافذة إضافة مستخدم
-function showAddUserModal() {
-    const modal = document.getElementById('addUserModal');
-    if (modal) {
-        modal.style.display = 'flex';
-    }
-}
-
-// دالة إغلاق نافذة إضافة مستخدم
-function closeAddUserModal() {
-    const modal = document.getElementById('addUserModal');
-    if (modal) {
-        modal.style.display = 'none';
-        document.getElementById('addUserForm').reset();
-        document.getElementById('addUserStatus').className = '';
-        document.getElementById('addUserStatus').textContent = '';
-    }
-}
-
-// إضافة معالج النموذج
-document.addEventListener('DOMContentLoaded', function() {
-    const addUserForm = document.getElementById('addUserForm');
-    if (addUserForm) {
-        addUserForm.addEventListener('submit', handleAddUser);
-    }
-});
-
-async function handleAddUser(e) {
-    e.preventDefault();
-    
-    const status = document.getElementById('addUserStatus');
-    const form = document.getElementById('addUserForm');
-    
-    status.textContent = '';
-    status.className = 'status-message';
-    
-    // تعطيل النموذج أثناء المعالجة
-    const inputs = form.querySelectorAll('input, select, button');
-    inputs.forEach(input => input.disabled = true);
-    
-    const fullName = document.getElementById('addFullName').value.trim();
-    const email = document.getElementById('addEmail').value.trim();
-    const password = document.getElementById('addPassword').value;
-    const phone = document.getElementById('addPhone').value.trim();
-    const specialty = document.getElementById('addSpecialty').value.trim();
-    const role = document.getElementById('addRole').value;
-
-    try {
-        // التحقق من عدد المستخدمين
-        const { count, error: countError } = await supabaseAdmin
-            .from('users')
-            .select('id', { count: 'exact', head: true });
-
-        if (countError) throw countError;
-
-        if (count >= 6) {
-            status.textContent = '🚫 تم الوصول للحد الأقصى من المستخدمين (6)';
-            status.className = 'status-message error';
-            return;
+        function togglePasswordVisibility() {
+            const newPasswordInput = document.getElementById('newPassword');
+            const confirmPasswordInput = document.getElementById('confirmPassword');
+            const showPasswordCheckbox = document.getElementById('showPassword');
+            
+            if (showPasswordCheckbox && showPasswordCheckbox.checked) {
+                if (newPasswordInput) newPasswordInput.type = 'text';
+                if (confirmPasswordInput) confirmPasswordInput.type = 'text';
+            } else {
+                if (newPasswordInput) newPasswordInput.type = 'password';
+                if (confirmPasswordInput) confirmPasswordInput.type = 'password';
+            }
         }
 
-        // التحقق من وجود البريد الإلكتروني
-        const { data: existingUser, error: emailCheckError } = await supabaseAdmin
-            .from('users')
-            .select('email')
-            .eq('email', email)
-            .maybeSingle();
-
-        if (emailCheckError) throw emailCheckError;
-
-        if (existingUser) {
-            status.textContent = '❌ هذا البريد الإلكتروني مسجل مسبقاً';
-            status.className = 'status-message error';
-            return;
-        }
-
-        // إنشاء المستخدم في Auth
-        status.textContent = '⏳ جاري إنشاء الحساب...';
-        status.className = 'status-message info';
-
-        const { data: authData, error: authError } = await supabase.auth.signUp({
-            email,
-            password,
-            options: {
-                emailRedirectTo: window.location.origin,
-                data: {
-                    full_name: fullName,
-                    role: role
+        async function confirmResetPassword(userId, userEmail) {
+            const newPassword = document.getElementById('newPassword')?.value;
+            const confirmPassword = document.getElementById('confirmPassword')?.value;
+            const statusDiv = document.getElementById('resetPasswordStatus');
+            
+            try {
+                // التحقق من صحة الإدخال
+                if (!newPassword || !confirmPassword) {
+                    statusDiv.textContent = '❌ يرجى إدخال كلمة المرور في الحقلين';
+                    statusDiv.className = 'status-message error';
+                    return;
                 }
+
+                if (newPassword.length < 6) {
+                    statusDiv.textContent = '❌ كلمة المرور يجب أن تكون 6 أحرف على الأقل';
+                    statusDiv.className = 'status-message error';
+                    return;
+                }
+
+                if (newPassword !== confirmPassword) {
+                    statusDiv.textContent = '❌ كلمة المرور غير متطابقة';
+                    statusDiv.className = 'status-message error';
+                    return;
+                }
+
+                // عرض رسالة تحميل
+                statusDiv.textContent = '⏳ جاري تغيير كلمة المرور...';
+                statusDiv.className = 'status-message info';
+
+                // تغيير كلمة المرور باستخدام Admin API
+                const { error } = await supabaseAdmin.auth.admin.updateUserById(
+                    userId,
+                    { password: newPassword }
+                );
+
+                if (error) throw error;
+
+                // عرض رسالة النجاح مع كلمة المرور
+                statusDiv.innerHTML = `
+                    <div style="text-align: center;">
+                        <p style="font-size: 1.2rem; margin-bottom: 10px;">✅ تم تغيير كلمة المرور بنجاح!</p>
+                        <div style="background: var(--gray-light); padding: 15px; border-radius: 8px; margin-top: 15px;">
+                            <p style="margin-bottom: 8px;"><strong>📧 البريد الإلكتروني:</strong></p>
+                            <p style="font-family: monospace; background: white; padding: 8px; border-radius: 4px; margin-bottom: 15px;">${userEmail}</p>
+                            <p style="margin-bottom: 8px;"><strong>🔑 كلمة المرور الجديدة:</strong></p>
+                            <p style="font-family: monospace; background: white; padding: 8px; border-radius: 4px; word-break: break-all;">${newPassword}</p>
+                            <p style="color: var(--warning); margin-top: 15px; font-size: 0.9rem;">
+                                ⚠️ تأكد من نسخ كلمة المرور قبل الإغلاق
+                            </p>
+                        </div>
+                    </div>
+                `;
+                statusDiv.className = 'status-message success';
+
+                // تعطيل حقول الإدخال والأزرار
+                const inputs = document.querySelectorAll('#newPassword, #confirmPassword, #showPassword');
+                inputs.forEach(input => input.disabled = true);
+                
+                const buttons = document.querySelectorAll('.modal-actions button');
+                buttons.forEach((btn, index) => {
+                    if (index === 0) {
+                        btn.style.display = 'none'; // إخفاء زر التأكيد
+                    }
+                });
+
+            } catch (error) {
+                console.error('Error resetting password:', error);
+                statusDiv.textContent = `❌ فشل تغيير كلمة المرور: ${error.message}`;
+                statusDiv.className = 'status-message error';
             }
+        }
+
+        async function deleteUser(userId) {
+            let statusMessage;
+            try {
+                const confirmDelete = confirm(`⚠️ تحذير: سيتم حذف المستخدم بشكل نهائي من النظام والمصادقة.\nهل أنت متأكد من حذف هذا المستخدم؟`);
+                if (!confirmDelete) return;
+
+                const user = usersData.find(u => u.id === userId);
+                statusMessage = document.createElement('div');
+                statusMessage.className = 'status-message info';
+                statusMessage.textContent = `جاري حذف المستخدم ${user?.email || ''}...`;
+                document.body.appendChild(statusMessage);
+
+                const { error: authError } = await supabaseAdmin.auth.admin.deleteUser(userId);
+                if (authError && !authError.message.includes('User not found')) {
+                    throw new Error(`فشل حذف المستخدم من نظام المصادقة: ${authError.message}`);
+                }
+
+                const { error: dbError } = await supabaseAdmin
+                    .from('users')
+                    .delete()
+                    .eq('id', userId);
+                if (dbError) throw new Error(`فشل حذف المستخدم من قاعدة البيانات: ${dbError.message}`);
+
+                usersData = usersData.filter(u => u.id !== userId);
+                renderUsersTable();
+                updateStats();
+
+                if (statusMessage) statusMessage.remove();
+                alert('✅ تم حذف المستخدم بنجاح من النظام والمصادقة');
+            } catch (error) {
+                console.error('Error deleting user:', error);
+                if (statusMessage) statusMessage.remove();
+                alert(`❌ حدث خطأ أثناء حذف المستخدم: ${error.message}`);
+            }
+        }
+
+        document.addEventListener('DOMContentLoaded', () => {
+            const searchInput = document.getElementById('userSearchInput');
+            const roleFilter = document.getElementById('userRoleFilter');
+            if (searchInput) searchInput.addEventListener('input', filterUsers);
+            if (roleFilter) roleFilter.addEventListener('change', filterUsers);
         });
 
-        if (authError) throw authError;
+        function filterUsers() {
+            const searchInput = document.getElementById('userSearchInput');
+            const roleFilter = document.getElementById('userRoleFilter');
+            if (!searchInput || !roleFilter) return;
 
-        if (!authData.user || !authData.user.id) {
-            throw new Error('لم يتم إنشاء حساب المستخدم بشكل صحيح');
+            const searchTerm = searchInput.value.toLowerCase();
+            const selectedRole = roleFilter.value;
+
+            const filteredUsers = usersData.filter(user => {
+                const matchesSearch = 
+                    (user.full_name && user.full_name.toLowerCase().includes(searchTerm)) ||
+                    (user.email && user.email.toLowerCase().includes(searchTerm)) ||
+                    (user.phone && user.phone.toLowerCase().includes(searchTerm)) ||
+                    (user.specialty && user.specialty.toLowerCase().includes(searchTerm));
+                const matchesRole = !selectedRole || user.role === selectedRole;
+                return matchesSearch && matchesRole;
+            });
+            renderUsersTable(filteredUsers);
         }
 
-        // تأخير قصير للتأكد من اكتمال عملية Auth
-        await new Promise(resolve => setTimeout(resolve, 1000));
+        // ============ Attendance Rendering ============
+        function renderTeacherAttendance() {
+            const container = document.getElementById("teacherAttendanceList");
+            if (!container) return;
+            const dates = [...new Set(
+                teacherAttendanceData.map(r => getRecordDate(r.check_in_time, r.check_out_time, true)).filter(Boolean)
+            )];
 
-        // إضافة بيانات المستخدم في جدول users باستخدام RPC
-        const { error: upsertError } = await supabaseAdmin
-            .rpc('create_new_user', {
-                user_id: authData.user.id,
-                user_full_name: fullName,
-                user_email: email,
-                user_role: role,
-                user_phone: phone,
-                user_specialty: specialty
+            let filterHtml = `
+                <div class="attendance-filters">
+                    <div class="filter-group">
+                        <label for="teacherDateFilter">بحث بالتاريخ:</label>
+                        <select id="teacherDateFilter" onchange="filterTeacherAttendance()">
+                            <option value="">كل التواريخ</option>
+                            ${dates.map(d => `<option value="${d}">${formatDate(d)}</option>`).join("")}
+                        </select>
+                    </div>
+                    <button class="clear-btn" onclick="clearTeacherFilters()">مسح الفلتر</button>
+                </div>
+            `;
+
+            if (!teacherAttendanceData.length) {
+                container.innerHTML = filterHtml + "<p class='no-data'>لا توجد سجلات حضور للمعلمين.</p>";
+                return;
+            }
+            container.innerHTML = filterHtml;
+            updateTeacherAttendanceDisplay(teacherAttendanceData);
+        }
+
+        function updateTeacherAttendanceDisplay(data) {
+            const container = document.getElementById("teacherAttendanceList");
+            if (!container) return;
+            const filters = container.querySelector('.attendance-filters');
+            container.innerHTML = '';
+            if (filters) container.appendChild(filters);
+            if (!data.length) {
+                container.innerHTML += "<p class='no-data'>لا توجد سجلات حضور لهذا التاريخ.</p>";
+                return;
+            }
+
+            let html = '<div class="attendance-cards">';
+            data.forEach(r => {
+                const checkInTime = r.check_in_time ? new Date(r.check_in_time).toLocaleTimeString('ar-EG', { hour: '2-digit', minute: '2-digit' }) : '-';
+                const checkOutTime = r.check_out_time ? new Date(r.check_out_time).toLocaleTimeString('ar-EG', { hour: '2-digit', minute: '2-digit' }) : '-';
+                let status = 'غائب';
+                let statusClass = 'absent';
+                if (r.check_in_time && r.check_out_time) {
+                    status = 'حاضر';
+                    statusClass = 'present';
+                } else if (r.check_in_time) {
+                    status = 'حضور جزئي';
+                    statusClass = 'partial';
+                }
+                html += `
+                    <div class="attendance-card">
+                        <div class="card-header">
+                            <h3>${r.users?.full_name || "-"}</h3>
+                            <span class="status ${statusClass}">${status}</span>
+                        </div>
+                        <div class="card-body">
+                            <div class="info-row"><span class="label">التاريخ:</span>
+                                <span class="value">${getRecordDate(r.check_in_time, r.check_out_time)}</span>
+                            </div>
+                            <div class="info-row"><span class="label">الحضور:</span><span class="value">${checkInTime}</span></div>
+                            <div class="info-row"><span class="label">الانصراف:</span><span class="value">${checkOutTime}</span></div>
+                        </div>
+                    </div>`;
             });
+            html += "</div>";
+            container.innerHTML += html;
+        }
 
-        if (upsertError) throw upsertError;
+        function filterTeacherAttendance() {
+            const dateFilter = document.getElementById('teacherDateFilter').value;
+            if (!dateFilter) {
+                updateTeacherAttendanceDisplay(teacherAttendanceData);
+                return;
+            }
+            const filteredData = teacherAttendanceData.filter(record => {
+                const actualDate = getRecordDate(record.check_in_time, record.check_out_time, true);
+                return actualDate === dateFilter;
+            });
+            updateTeacherAttendanceDisplay(filteredData);
+        }
 
-        status.textContent = '✅ تم إنشاء الحساب بنجاح! تم إرسال رابط التفعيل إلى البريد الإلكتروني';
-        status.className = 'status-message success';
+        function clearTeacherFilters() {
+            document.getElementById('teacherDateFilter').value = '';
+            updateTeacherAttendanceDisplay(teacherAttendanceData);
+        }
 
-        // تحديث قائمة المستخدمين
-        await loadUsers();
-        renderUsersTable();
+        function renderSecretaryAttendance() {
+            const container = document.getElementById("secretaryAttendanceList");
+            if (!container) return;
+            const dates = [...new Set(
+                secretaryAttendanceData.map(r => {
+                    if (r.attendance_date) return r.attendance_date;
+                    const sourceDate = r.check_in || r.check_out;
+                    if (sourceDate) return new Date(sourceDate).toISOString().split("T")[0];
+                    return null;
+                }).filter(Boolean)
+            )];
 
-        // إغلاق النافذة بعد 3 ثواني
-        setTimeout(closeAddUserModal, 3000);
+            let filterHtml = `
+                <div class="attendance-filters">
+                    <div class="filter-group">
+                        <label for="secretaryDateFilter">بحث بالتاريخ:</label>
+                        <select id="secretaryDateFilter" onchange="filterSecretaryAttendance()">
+                            <option value="">كل التواريخ</option>
+                            ${dates.map(d => `<option value="${d}">${formatDate(d)}</option>`).join("")}
+                        </select>
+                    </div>
+                    <button class="clear-btn" onclick="clearSecretaryFilters()">مسح الفلتر</button>
+                </div>
+            `;
 
-    } catch (error) {
-        console.error('Error adding user:', error);
-        status.textContent = `❌ حدث خطأ: ${error.message}`;
-        status.className = 'status-message error';
-    } finally {
-        // إعادة تمكين النموذج
-        inputs.forEach(input => input.disabled = false);
-    }
-}
+            if (!secretaryAttendanceData.length) {
+                container.innerHTML = filterHtml + "<p class='no-data'>لا توجد سجلات حضور للسكرتارية.</p>";
+                return;
+            }
+            container.innerHTML = filterHtml;
+            updateSecretaryAttendanceDisplay(secretaryAttendanceData);
+        }
 
-async function loadStudents(){
-  console.log("Loading students...");
-  const {data,error}=await supabase.from('students').select('*');
-  if(error) throw error;
-  studentsData=data;
-  console.log("Students loaded:", data.length);
-}
+        function updateSecretaryAttendanceDisplay(data) {
+            const container = document.getElementById("secretaryAttendanceList");
+            if (!container) return;
+            const filters = container.querySelector('.attendance-filters');
+            container.innerHTML = '';
+            if (filters) container.appendChild(filters);
+            if (!data.length) {
+                container.innerHTML += "<p class='no-data'>لا توجد سجلات حضور لهذا التاريخ.</p>";
+                return;
+            }
 
-async function loadCourses(){
-  console.log("Loading courses...");
-  const {data,error}=await supabase.from('courses').select('*');
-  if(error) throw error;
-  coursesData=data;
-  console.log("Courses loaded:", data.length);
-}
+            let html = '<div class="attendance-cards">';
+            data.forEach(r => {
+                const checkInTime = r.check_in ? new Date(r.check_in).toLocaleTimeString('ar-EG', { hour: '2-digit', minute: '2-digit' }) : '-';
+                const checkOutTime = r.check_out ? new Date(r.check_out).toLocaleTimeString('ar-EG', { hour: '2-digit', minute: '2-digit' }) : '-';
+                let status = 'غائب';
+                let statusClass = 'absent';
+                if (r.check_in && r.check_out) {
+                    status = 'حاضر';
+                    statusClass = 'present';
+                } else if (r.check_in) {
+                    status = 'حضور جزئي';
+                    statusClass = 'partial';
+                }
+                html += `
+                    <div class="attendance-card">
+                        <div class="card-header">
+                            <h3>${r.user?.full_name || 'غير محدد'}</h3>
+                            <span class="status ${statusClass}">${status}</span>
+                        </div>
+                        <div class="card-body">
+                            <div class="info-row"><span class="label">التاريخ:</span>
+                                <span class="value">${r.attendance_date || getRecordDate(r.check_in, r.check_out)}</span>
+                            </div>
+                            <div class="info-row"><span class="label">الحضور:</span><span class="value">${checkInTime}</span></div>
+                            <div class="info-row"><span class="label">الانصراف:</span><span class="value">${checkOutTime}</span></div>
+                        </div>
+                    </div>`;
+            });
+            html += "</div>";
+            container.innerHTML += html;
+        }
 
-async function loadPayments(){
-  console.log("Loading payments...");
-  const {data,error}=await supabase.from('payments').select('*');
-  if(error) throw error;
-  paymentsData=data;
-  console.log("Payments loaded:", data.length);
-}
+        function filterSecretaryAttendance() {
+            const dateFilter = document.getElementById('secretaryDateFilter').value;
+            if (!dateFilter) {
+                updateSecretaryAttendanceDisplay(secretaryAttendanceData);
+                return;
+            }
+            const filteredData = secretaryAttendanceData.filter(r => {
+                const recordDate = r.attendance_date || getRecordDate(r.check_in, r.check_out, true);
+                return recordDate === dateFilter;
+            });
+            updateSecretaryAttendanceDisplay(filteredData);
+        }
 
-async function loadExams(){
-  console.log("Loading exams...");
-  const {data,error}=await supabase.from('exams').select('*');
-  if(error) throw error;
-  examsData=data;
-  console.log("Exams loaded:", data.length);
-  console.log("Exams data sample:", data.slice(0, 2));
-}
+        function clearSecretaryFilters() {
+            document.getElementById('secretaryDateFilter').value = '';
+            updateSecretaryAttendanceDisplay(secretaryAttendanceData);
+        }
 
-async function loadModules(){
-  console.log("Loading modules...");
-  const {data,error}=await supabase.from('modules').select('*');
-  if(error) throw error;
-  modulesData=data;
-  console.log("Modules loaded:", data.length);
-  console.log("Modules data sample:", data.slice(0, 2));
-}
+        // ============ Utilities ============
+        function getRecordDate(checkIn, checkOut, asISO = false) {
+            const sourceDate = checkIn || checkOut;
+            if (!sourceDate) return null;
+            const d = new Date(sourceDate);
+            return asISO ? d.toISOString().split("T")[0] : d.toLocaleDateString("ar-EG");
+        }
 
-async function loadLessons(){
-  console.log("Loading lessons...");
-  const {data,error}=await supabase.from('lessons').select('*');
-  if(error) throw error;
-  lessonsData=data;
-  console.log("Lessons loaded:", data.length);
-}
+        function formatDate(dateStr) {
+            const d = new Date(dateStr);
+            return d.toLocaleDateString("ar-EG");
+        }
 
-async function loadTeacherAttendance(){
-  console.log("Loading teacher attendance...");
-  const {data,error}=await supabase
-    .from('teacher_attendance')
-    .select(`
-      id,
-      date,
-      check_in_time,
-      check_out_time,
-      users (
-        full_name
-      )
-    `);
-
-  if(error) throw error;
-  teacherAttendanceData=data;
-  console.log("Teacher attendance loaded:", data.length);
-  renderTeacherAttendance();
-}
-
-async function loadSecretaryAttendance(){
-  console.log("Loading secretary attendance...");
-  try {
-    const {data: attendanceData, error: attendanceError} = await supabase
-      .from('secretary_attendance')
-      .select('*')
-      .order('attendance_date', { ascending: false }); // ✅ تعديل
-
-    if(attendanceError) throw attendanceError;
-    
-    const secretaryIds = [...new Set(attendanceData.map(record => record.secretary_id).filter(id => id))];
-    let usersInfo = [];
-    
-    if(secretaryIds.length > 0) {
-      const {data: usersData, error: usersError} = await supabase
-        .from('users')
-        .select('id, full_name')
-        .in('id', secretaryIds);
-      
-      if(usersError) throw usersError;
-      usersInfo = usersData;
-    }
-    
-    secretaryAttendanceData = attendanceData.map(record => ({
-      ...record,
-      user: usersInfo.find(user => user.id === record.secretary_id)
-    }));
-    
-    console.log("Secretary attendance loaded:", secretaryAttendanceData.length, secretaryAttendanceData);
-    renderSecretaryAttendance();
-  } catch (error) {
-    console.error("Error loading secretary attendance:", error);
-    secretaryAttendanceData = [];
-    renderSecretaryAttendance();
-  }
-}
-
-function renderSecretaryAttendance() {
-  const container = document.getElementById("secretaryAttendanceList");
-  if (!container) return;
-
-  const dates = [...new Set(
-    secretaryAttendanceData.map(r => {
-      if (r.attendance_date) return r.attendance_date; // ✅ تعديل
-      const sourceDate = r.check_in || r.check_out;
-      if (sourceDate) {
-        return new Date(sourceDate).toISOString().split("T")[0];
-      }
-      return null;
-    }).filter(Boolean)
-  )];
-
-  let filterHtml = `
-    <div class="attendance-filters">
-      <div class="filter-group">
-        <label for="secretaryDateFilter">بحث بالتاريخ:</label>
-        <select id="secretaryDateFilter" onchange="filterSecretaryAttendance()">
-          <option value="">كل التواريخ</option>
-          ${dates.map(d => `<option value="${d}">${formatDate(d)}</option>`).join("")}
-        </select>
-      </div>
-      <button class="clear-btn" onclick="clearSecretaryFilters()">مسح الفلتر</button>
-    </div>
-  `;
-
-  if (!secretaryAttendanceData.length) {
-    container.innerHTML = filterHtml + "<p class='no-data'>لا توجد سجلات حضور للسكرتارية.</p>";
-    return;
-  }
-
-  container.innerHTML = filterHtml;
-  updateSecretaryAttendanceDisplay(secretaryAttendanceData);
-}
-
-function updateSecretaryAttendanceDisplay(data) {
-  const container = document.getElementById("secretaryAttendanceList");
-  if (!container) return;
-
-  const filters = container.querySelector('.attendance-filters');
-  container.innerHTML = '';
-  if (filters) container.appendChild(filters);
-
-  if (!data.length) {
-    container.innerHTML += "<p class='no-data'>لا توجد سجلات حضور لهذا التاريخ.</p>";
-    return;
-  }
-
-  let html = '<div class="attendance-cards">';
-  data.forEach(r => {
-    const checkInTime = r.check_in ? new Date(r.check_in).toLocaleTimeString('ar-EG', { hour: '2-digit', minute: '2-digit' }) : '-';
-    const checkOutTime = r.check_out ? new Date(r.check_out).toLocaleTimeString('ar-EG', { hour: '2-digit', minute: '2-digit' }) : '-';
-
-    let status = 'غائب';
-    let statusClass = 'absent';
-    if (r.check_in && r.check_out) {
-      status = 'حاضر';
-      statusClass = 'present';
-    } else if (r.check_in) {
-      status = 'حضور جزئي';
-      statusClass = 'partial';
-    }
-
-    html += `
-      <div class="attendance-card">
-        <div class="card-header">
-          <h3>${r.user?.full_name || 'غير محدد'}</h3>
-          <span class="status ${statusClass}">${status}</span>
-        </div>
-        <div class="card-body">
-          <div class="info-row"><span class="label">التاريخ:</span>
-            <span class="value">${r.attendance_date || getRecordDate(r.check_in, r.check_out)}</span>
-          </div>
-          <div class="info-row"><span class="label">الحضور:</span><span class="value">${checkInTime}</span></div>
-          <div class="info-row"><span class="label">الانصراف:</span><span class="value">${checkOutTime}</span></div>
-        </div>
-      </div>`;
-  });
-  html += "</div>";
-  container.innerHTML += html;
-}
-
-function filterSecretaryAttendance() {
-  const dateFilter = document.getElementById('secretaryDateFilter').value;
-  if (!dateFilter) {
-    updateSecretaryAttendanceDisplay(secretaryAttendanceData);
-    return;
-  }
-  const filteredData = secretaryAttendanceData.filter(r => {
-    const recordDate = r.attendance_date || getRecordDate(r.check_in, r.check_out, true);
-    return recordDate === dateFilter;
-  });
-  updateSecretaryAttendanceDisplay(filteredData);
-}
-
-async function loadExamScores(){
-  console.log("Loading exam scores...");
-  const {data,error}=await supabase.from('exam_scores').select('*');
-  if(error) throw error;
-  examScoresData=data;
-  console.log("Exam scores loaded:", data.length);
-}
-
-function updateStats(){
-  console.log("Updating stats...");
-  
-  // تحديث إحصائيات المستخدمين
-  const totalUsersEl = document.getElementById('totalUsers');
-  if(totalUsersEl) {
-    totalUsersEl.textContent = usersData.length;
-    console.log("Total users:", usersData.length);
-  }
-  
-  // تحديث إحصائيات الطلاب
-  const totalStudentsEl = document.getElementById('totalStudents');
-  if(totalStudentsEl) {
-    totalStudentsEl.textContent = studentsData.length;
-    console.log("Total students:", studentsData.length);
-  }
-  
-  // تحديث إحصائيات الدورات
-  const totalCoursesEl = document.getElementById('totalCourses');
-  if(totalCoursesEl) {
-    totalCoursesEl.textContent = coursesData.length;
-    console.log("Total courses:", coursesData.length);
-  }
-  
-  // تحديث إحصائيات الوحدات
-  const totalModulesEl = document.getElementById('totalModules');
-  if(totalModulesEl) {
-    totalModulesEl.textContent = modulesData.length;
-    console.log("Total modules:", modulesData.length);
-  }
-  
-  // تحديث إحصائيات الامتحانات
-  const totalExamsEl = document.getElementById('totalExams');
-  if(totalExamsEl) {
-    totalExamsEl.textContent = examsData.length;
-    console.log("Total exams:", examsData.length);
-  }
-  
-  // تحديث إحصائيات الدروس
-  const totalLessonsEl = document.getElementById('totalLessons');
-  if(totalLessonsEl) {
-    totalLessonsEl.textContent = lessonsData.length;
-    console.log("Total lessons:", lessonsData.length);
-  }
-  
-  // تحديد عدد المعلمين والسكرتارية من بيانات المستخدمين
-  const teachers = usersData.filter(user => user.role === 'teacher');
-  const secretaries = usersData.filter(user => user.role === 'secretary');
-  
-  const totalTeachersEl = document.getElementById('totalTeachers');
-  if(totalTeachersEl) {
-    totalTeachersEl.textContent = teachers.length;
-    console.log("Total teachers:", teachers.length);
-  }
-  
-  const totalSecretariesEl = document.getElementById('totalSecretaries');
-  if(totalSecretariesEl) {
-    totalSecretariesEl.textContent = secretaries.length;
-    console.log("Total secretaries:", secretaries.length);
-  }
-}
-
-function updateFinancialStats(){
-  console.log("Updating financial stats...");
-  
-  // التأكد من وجود العناصر قبل تحديثها
-  const totalFinancialAmountEl = document.getElementById('totalFinancialAmount');
-  const totalPaidAmountEl = document.getElementById('totalPaidAmount');
-  const totalRemainingAmountEl = document.getElementById('totalRemainingAmount');
-  
-  if(!totalFinancialAmountEl || !totalPaidAmountEl || !totalRemainingAmountEl) {
-    console.log("Financial elements not found");
-    return;
-  }
-  
-  // حساب الإجماليات
-  const totalAmount = paymentsData.reduce((sum, payment) => sum + (payment.total_amount || 0), 0);
-  const paidAmount = paymentsData.reduce((sum, payment) => sum + (payment.amount || 0), 0);
-  const remainingAmount = totalAmount - paidAmount;
-  
-  console.log("Financial stats - Total:", totalAmount, "Paid:", paidAmount, "Remaining:", remainingAmount);
-  
-  // تحديث العناصر في الواجهة
-  totalFinancialAmountEl.textContent = `${totalAmount.toLocaleString('ar-EG')} جنيه`;
-  totalPaidAmountEl.textContent = `${paidAmount.toLocaleString('ar-EG')} جنيه`;
-  totalRemainingAmountEl.textContent = `${remainingAmount.toLocaleString('ar-EG')} جنيه`;
-}
-
-function showPermissionError(tableName) {
-  const errorMessageDiv = document.getElementById('errorMessage');
-  if(errorMessageDiv) {
-    errorMessageDiv.innerHTML = `
-      <div class="permission-error">
-        <h3><i class="fas fa-exclamation-triangle"></i> خطأ في الصلاحيات</h3>
-        <p>لا توجد صلاحيات كافية لقراءة بيانات جدول "${tableName}".</p>
-        <p>يرجى التحقق من إعدادات السياسات (Policies) في Supabase.</p>
-      </div>
-    `;
-    errorMessageDiv.style.display = 'block';
-  }
-}
-
-function showErrorMessage(message) {
-  const errorMessageDiv = document.getElementById('errorMessage');
-  if(errorMessageDiv) {
-    errorMessageDiv.innerHTML = `<div class="error-message">${message}</div>`;
-    errorMessageDiv.style.display = 'block';
-  }
-}
-
-function logout(){
-  console.log("Logging out...");
-  // إعادة التوجيه إلى صفحة index.html
-  window.location.href = 'index.html';
-}
-
-// =============================
-// 🎓 تحميل وعرض حضور المعلمين
-// =============================
-function renderTeacherAttendance() {
-  const container = document.getElementById("teacherAttendanceList");
-  if (!container) return;
-
-  const dates = [...new Set(
-    teacherAttendanceData.map(r => getRecordDate(r.check_in_time, r.check_out_time, true)).filter(Boolean)
-  )];
-
-  let filterHtml = `
-    <div class="attendance-filters">
-      <div class="filter-group">
-        <label for="teacherDateFilter">بحث بالتاريخ:</label>
-        <select id="teacherDateFilter" onchange="filterTeacherAttendance()">
-          <option value="">كل التواريخ</option>
-          ${dates.map(d => `<option value="${d}">${formatDate(d)}</option>`).join("")}
-        </select>
-      </div>
-      <button class="clear-btn" onclick="clearTeacherFilters()">مسح الفلتر</button>
-    </div>
-  `;
-
-  if (!teacherAttendanceData.length) {
-    container.innerHTML = filterHtml + "<p class='no-data'>لا توجد سجلات حضور للمعلمين.</p>";
-    return;
-  }
-
-  container.innerHTML = filterHtml;
-  updateTeacherAttendanceDisplay(teacherAttendanceData);
-}
-
-function updateTeacherAttendanceDisplay(data) {
-  const container = document.getElementById("teacherAttendanceList");
-  if (!container) return;
-
-  const filters = container.querySelector('.attendance-filters');
-  container.innerHTML = '';
-  if (filters) container.appendChild(filters);
-
-  if (!data.length) {
-    container.innerHTML += "<p class='no-data'>لا توجد سجلات حضور لهذا التاريخ.</p>";
-    return;
-  }
-
-  let html = '<div class="attendance-cards">';
-  data.forEach(r => {
-    const checkInTime = r.check_in_time ? new Date(r.check_in_time).toLocaleTimeString('ar-EG', { hour: '2-digit', minute: '2-digit' }) : '-';
-    const checkOutTime = r.check_out_time ? new Date(r.check_out_time).toLocaleTimeString('ar-EG', { hour: '2-digit', minute: '2-digit' }) : '-';
-
-    let status = 'غائب';
-    let statusClass = 'absent';
-    if (r.check_in_time && r.check_out_time) {
-      status = 'حاضر';
-      statusClass = 'present';
-    } else if (r.check_in_time) {
-      status = 'حضور جزئي';
-      statusClass = 'partial';
-    }
-
-    html += `
-      <div class="attendance-card">
-        <div class="card-header">
-          <h3>${r.users?.full_name || "-"}</h3>
-          <span class="status ${statusClass}">${status}</span>
-        </div>
-        <div class="card-body">
-          <div class="info-row"><span class="label">التاريخ:</span>
-            <span class="value">${getRecordDate(r.check_in_time, r.check_out_time)}</span>
-          </div>
-          <div class="info-row"><span class="label">الحضور:</span><span class="value">${checkInTime}</span></div>
-          <div class="info-row"><span class="label">الانصراف:</span><span class="value">${checkOutTime}</span></div>
-        </div>
-      </div>`;
-  });
-  html += "</div>";
-  container.innerHTML += html;
-}
-
-function filterTeacherAttendance() {
-  const dateFilter = document.getElementById('teacherDateFilter').value;
-  if (!dateFilter) {
-    updateTeacherAttendanceDisplay(teacherAttendanceData);
-    return;
-  }
-  const filteredData = teacherAttendanceData.filter(record => {
-    const actualDate = getRecordDate(record.check_in_time, record.check_out_time, true);
-    return actualDate === dateFilter;
-  });
-  updateTeacherAttendanceDisplay(filteredData);
-}
-
-function clearTeacherFilters() {
-  document.getElementById('teacherDateFilter').value = '';
-  updateTeacherAttendanceDisplay(teacherAttendanceData);
-}
-
-// =============================
-// 🗂️ تحميل وعرض حضور السكرتارية
-// =============================
-function renderSecretaryAttendance() {
-  const container = document.getElementById("secretaryAttendanceList");
-  if (!container) return;
-
-  // استخراج التواريخ من البيانات
-  const dates = [...new Set(
-    secretaryAttendanceData.map(r => {
-      if (r.date) {
-        return r.date;
-      }
-      const sourceDate = r.check_in || r.check_out;
-      if (sourceDate) {
-        return new Date(sourceDate).toISOString().split("T")[0];
-      }
-      return null;
-    }).filter(Boolean)
-  )];
-
-  let filterHtml = `
-    <div class="attendance-filters">
-      <div class="filter-group">
-        <label for="secretaryDateFilter">بحث بالتاريخ:</label>
-        <select id="secretaryDateFilter" onchange="filterSecretaryAttendance()">
-          <option value="">كل التواريخ</option>
-          ${dates.map(d => `<option value="${d}">${formatDate(d)}</option>`).join("")}
-        </select>
-      </div>
-      <button class="clear-btn" onclick="clearSecretaryFilters()">مسح الفلتر</button>
-    </div>
-  `;
-
-  if (!secretaryAttendanceData.length) {
-    container.innerHTML = filterHtml + "<p class='no-data'>لا توجد سجلات حضور للسكرتارية.</p>";
-    return;
-  }
-
-  container.innerHTML = filterHtml;
-  updateSecretaryAttendanceDisplay(secretaryAttendanceData);
-}
-
-function updateSecretaryAttendanceDisplay(data) {
-  const container = document.getElementById("secretaryAttendanceList");
-  if (!container) return;
-
-  const filters = container.querySelector('.attendance-filters');
-  container.innerHTML = '';
-  if (filters) container.appendChild(filters);
-
-  if (!data.length) {
-    container.innerHTML += "<p class='no-data'>لا توجد سجلات حضور لهذا التاريخ.</p>";
-    return;
-  }
-
-  let html = '<div class="attendance-cards">';
-  data.forEach(r => {
-    const checkInTime = r.check_in ? new Date(r.check_in).toLocaleTimeString('ar-EG', { hour: '2-digit', minute: '2-digit' }) : '-';
-    const checkOutTime = r.check_out ? new Date(r.check_out).toLocaleTimeString('ar-EG', { hour: '2-digit', minute: '2-digit' }) : '-';
-
-    let status = 'غائب';
-    let statusClass = 'absent';
-    if (r.check_in && r.check_out) {
-      status = 'حاضر';
-      statusClass = 'present';
-    } else if (r.check_in) {
-      status = 'حضور جزئي';
-      statusClass = 'partial';
-    }
-
-    html += `
-      <div class="attendance-card">
-        <div class="card-header">
-          <h3>${r.user?.full_name || 'غير محدد'}</h3>
-          <span class="status ${statusClass}">${status}</span>
-        </div>
-        <div class="card-body">
-          <div class="info-row"><span class="label">التاريخ:</span>
-            <span class="value">${r.date || getRecordDate(r.check_in, r.check_out)}</span>
-          </div>
-          <div class="info-row"><span class="label">الحضور:</span><span class="value">${checkInTime}</span></div>
-          <div class="info-row"><span class="label">الانصراف:</span><span class="value">${checkOutTime}</span></div>
-        </div>
-      </div>`;
-  });
-  html += "</div>";
-  container.innerHTML += html;
-}
-
-function filterSecretaryAttendance() {
-  const dateFilter = document.getElementById('secretaryDateFilter').value;
-  if (!dateFilter) {
-    updateSecretaryAttendanceDisplay(secretaryAttendanceData);
-    return;
-  }
-  const filteredData = secretaryAttendanceData.filter(record => {
-    const recordDate = record.date || getRecordDate(record.check_in, record.check_out, true);
-    return recordDate === dateFilter;
-  });
-  updateSecretaryAttendanceDisplay(filteredData);
-}
-
-function clearSecretaryFilters() {
-  document.getElementById('secretaryDateFilter').value = '';
-  updateSecretaryAttendanceDisplay(secretaryAttendanceData);
-}
-
-// كود التحكم في Modal التنبيه
-function showSubscriptionModal() {
-    document.getElementById('subscriptionModal').classList.add('show');
-    document.getElementById('modalOverlay').classList.add('show');
-}
-
-function closeSubscriptionModal() {
-    document.getElementById('subscriptionModal').classList.remove('show');
-    document.getElementById('modalOverlay').classList.remove('show');
-    
-    // حفظ تاريخ آخر إغلاق في localStorage
-    localStorage.setItem('lastModalClose', new Date().toISOString());
-}
-
-function shouldShowModal() {
-    const today = new Date();
-    const dayOfMonth = today.getDate();
-    
-    // التحقق من أن اليوم هو من 1 إلى 5
-    if (dayOfMonth <= 5) {
-        // التحقق من آخر مرة تم فيها إغلاق التنبيه
-        const lastClose = localStorage.getItem('lastModalClose');
-        if (lastClose) {
-            const lastCloseDate = new Date(lastClose);
-            // إذا تم الإغلاق في نفس اليوم، لا تظهر التنبيه مرة أخرى
-            if (lastCloseDate.getDate() === today.getDate() && 
-                lastCloseDate.getMonth() === today.getMonth() && 
-                lastCloseDate.getFullYear() === today.getFullYear()) {
-                return false;
+        function showPermissionError(tableName) {
+            const errorMessageDiv = document.getElementById('errorMessage');
+            if (errorMessageDiv) {
+                errorMessageDiv.innerHTML = `
+                    <div class="permission-error">
+                        <h3><i class="fas fa-exclamation-triangle"></i> خطأ في الصلاحيات</h3>
+                        <p>لا توجد صلاحيات كافية لقراءة بيانات جدول "${tableName}".</p>
+                        <p>يرجى التحقق من إعدادات السياسات (Policies) في Supabase.</p>
+                    </div>
+                `;
+                errorMessageDiv.style.display = 'block';
             }
         }
-        return true;
-    }
-    return false;
-}
 
-// تشغيل التحقق عند تحميل الصفحة
-document.addEventListener('DOMContentLoaded', function() {
-    const today = new Date();
-    const dayOfMonth = today.getDate();
-    console.log('Current day of month:', dayOfMonth); // للتأكد من اليوم الحالي
-    
-    // يظهر فقط في اليوم الأول من كل شهر
-    if (dayOfMonth === 1) {
-        const lastClose = localStorage.getItem('lastModalClose');
-        const lastCloseDate = lastClose ? new Date(lastClose) : null;
-        
-        // عرض التنبيه فقط إذا:
-        // 1. لم يتم إغلاقه من قبل
-        // 2. أو تم إغلاقه في شهر سابق
-        if (!lastClose || lastCloseDate.getMonth() !== today.getMonth() || lastCloseDate.getFullYear() !== today.getFullYear()) {
-            setTimeout(showSubscriptionModal, 1000);
+        function showErrorMessage(message) {
+            const errorMessageDiv = document.getElementById('errorMessage');
+            if (errorMessageDiv) {
+                errorMessageDiv.innerHTML = `<div class="error-message">${message}</div>`;
+                errorMessageDiv.style.display = 'block';
+            }
         }
-    }
-});
 
-// دالة للتحقق مما إذا كان اليوم جديداً
-function isNewDay(lastCloseDate) {
-    const today = new Date();
-    return lastCloseDate.getDate() !== today.getDate() ||
-           lastCloseDate.getMonth() !== today.getMonth() ||
-           lastCloseDate.getFullYear() !== today.getFullYear();
-}
-
-// إغلاق Modal عند النقر على الـ overlay
-document.getElementById('modalOverlay').addEventListener('click', closeSubscriptionModal);
-
-// =============================
-// 📌 أدوات مشتركة
-// =============================
-function getRecordDate(checkIn, checkOut, asISO = false) {
-  const sourceDate = checkIn || checkOut;
-  if (!sourceDate) return null;
-  const d = new Date(sourceDate);
-  return asISO ? d.toISOString().split("T")[0] : d.toLocaleDateString("ar-EG");
-}
-
-function formatDate(dateStr) {
-  const d = new Date(dateStr);
-  return d.toLocaleDateString("ar-EG");
-}
-
-
-
-
-// تم إزالة عرض نافذة الاشتراك
-
-</script>
-
-</body>
-<script>
-// كود التحقق من تاريخ الاشتراك
-function checkSubscriptionDate() {
-    const today = new Date();
-    const day = today.getDate();
+        function logout() {
+            console.log("Logging out...");
+            window.location.href = 'index.html';
+        }
+    </script>
     
-    // التحقق ما إذا كان اليوم في أول 3 أيام من الشهر
-    if (day <= 3) {
-        document.getElementById('subscriptionAlert').classList.add('show');
-    } else {
-        document.getElementById('subscriptionAlert').classList.remove('show');
-    }
-}
-
-// تشغيل الفحص عند تحميل الصفحة
-document.addEventListener('DOMContentLoaded', checkSubscriptionDate);
-
-// فحص كل يوم في منتصف الليل
-// تم إزالة كود فحص الاشتراك
-</script>
+</body>
 </html>

@@ -1,1852 +1,858 @@
-    <!DOCTYPE html>
-    <html lang="ar" dir="rtl">
-
-
-    <head>
-      <meta charset="UTF-8">
-      <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-      <title>لوحة التحكم - المعلم</title>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <!-- Arabic friendly webfont used in styles -->
-    <link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@300;400;700&display=swap" rel="stylesheet">
-    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    <script src="https://unpkg.com/html5-qrcode" type="text/javascript"></script>
-
-    <!-- PWA manifest and theme color -->
-    <link rel="manifest" href="./manifest.json">
-    <meta name="theme-color" content="#f97316">
-    <meta name="mobile-web-app-capable" content="yes">
-    <meta name="apple-mobile-web-app-capable" content="yes">
-    <link rel="apple-touch-icon" href="./logo2.jpg">
-      <style>
-        :root {
-          --primary: #f97316;
-          --primary-dark: #ea580c;
-          --secondary: #059669;
-          --dark: #1f2937;
-          --light: #f9fafb;
-          --gray: #6b7280;
-          --border: #e5e7eb;
-          --success: #059669;
-          --warning: #f59e0b;
-          --danger: #ef4444;
-          --info: #3b82f6;
-          --waiting: #8b5cf6;
-          --sidebar-width: 250px;
-          --header-height: 60px;
-          --sidebar-collapsed-width: 60px;
-          --mobile-header-height: 50px;
-        }
-        
-        * {
-          box-sizing: border-box;
-          margin: 0;
-          padding: 0;
-        }
-        
-        body {
-          font-family: 'Tajawal', sans-serif;
-          background-color: #f0f2f5;
-          display: flex;
-          min-height: 100vh;
-          color: #333;
-          overflow-x: hidden;
-        }
-        
-        /* Sidebar Styles */
-        .sidebar {
-          width: var(--sidebar-width);
-          background-color: var(--primary); /* primary color */
-          color: white;
-          position: fixed;
-          top: 0;
-          right: 0;
-          height: 100%;
-          overflow-y: auto;
-          transition: all 0.3s ease;
-          z-index: 1000;
-          padding-top: var(--header-height);
-          box-shadow: -2px 0 5px rgba(0,0,0,0.1);
-        }
-        
-        .sidebar.collapsed {
-          width: var(--sidebar-collapsed-width);
-        }
-        
-        .sidebar img {
-          width: 80%;
-          max-width: 150px;
-          height: auto;
-          margin: 15px auto;
-          display: block;
-          border-radius: 50%;
-          border: 3px solid rgba(255, 255, 255, 0.3);
-        }
-        
-        .sidebar h3 {
-          text-align: center;
-          margin: 0 0 15px;
-          padding: 10px 0;
-          border-bottom: 1px solid rgba(255, 255, 255, 0.1);
-          font-size: 1.1rem;
-        }
-        
-        .sidebar.collapsed h3 {
-          font-size: 0;
-          padding: 5px 0;
-        }
-        
-        .sidebar-menu {
-          list-style: none;
-          padding: 0;
-        }
-        
-        .sidebar-menu li a {
-          display: flex;
-          align-items: center;
-          color: var(--light);
-          padding: 12px 15px;
-          text-decoration: none;
-          transition: 0.3s;
-          font-size: 0.95rem;
-          border-radius: 0 20px 20px 0;
-          margin: 5px 0;
-        }
-        
-        .sidebar-menu li a:hover,
-        .sidebar-menu li a.active {
-          background-color: rgba(255, 255, 255, 0.15);
-          color: white;
-        }
-        
-        .sidebar-menu i {
-          margin-left: 12px;
-          width: 20px;
-          text-align: center;
-          font-size: 1rem;
-        }
-        
-        .sidebar.collapsed .sidebar-menu span {
-          display: none;
-        }
-        
-        .sidebar.collapsed .sidebar-menu i {
-          margin-left: 0;
-          width: 100%;
-        }
-        
-        /* Content Styles */
-        .content {
-          flex: 1;
-          margin-right: var(--sidebar-width);
-          padding: 20px;
-          transition: margin 0.3s ease;
-          margin-top: var(--header-height);
-        }
-        
-        .content.sidebar-collapsed {
-          margin-right: var(--sidebar-collapsed-width);
-        }
-        
-  .dashboard-header{
-      padding: 25px;
-    color: var(--primary); /* primary color */
-    text-align: center;
-    font-weight: bold;
-    font-size: 20px;
-  }
-        
-  /* Header Styles */
-  .app-header {
-    position: fixed;
-    top: 0;
-    right: 0;
-    left: var(--sidebar-width);
-    height: var(--header-height);
-    background: white;
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    padding: 0 15px;
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.06);
-    z-index: 999;
-    transition: left 0.3s ease, right 0.3s ease, background-color 0.3s ease;
-    border-bottom: 2px solid #f5f5f5;
-  }
-
-  .content.sidebar-collapsed .app-header {
-    left: var(--sidebar-collapsed-width);
-  }
-
-  .menu-toggle {
-    background: none;
-    border: none;
-    color: var(--primary); /* primary color */
-    font-size: 1.5rem;
-    cursor: pointer;
-    padding: 6px;
-    margin-left: 10px;
-    transition: color 0.3s ease, transform 0.2s ease;
-  }
-  .menu-toggle:hover {
-    color: var(--primary); /* primary color */
-    transform: rotate(10deg);
-  }
-
-  .header-content {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    width: 100%;
-  }
-  .app-title {
-    font-size: 1.2rem;
-    font-weight: 700;
-    color: var(--dark);
-    flex: 1;
-    text-align: left;
-    letter-spacing: 0.2px;
-  }
-
-  .greeting {
-    font-weight: 700;
-    color: var(--dark);
-    font-size: 1rem;
-  }
-  .subtitle {
-    font-size: 0.75rem;
-    color: var(--gray);
-  }
-
-  .header-greeting {
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    font-weight: 800;
-    color: var(--dark);
-    font-size: 1rem;
-    margin-right: 12px;
-  }
-
-  .header-greeting .avatar {
-    width: 36px;
-    height: 36px;
-    border-radius: 50%;
-    object-fit: cover;
-    border: 2px solid rgba(15,23,42,0.06);
-    box-shadow: 0 4px 10px rgba(2,6,23,0.06);
-  }
-
-  .user-info {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-  }
-
-  .user-name {
-    font-weight: bold;
-    color: var(--dark);
-    font-size: 0.9rem;
-    max-width: 120px;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
-  }
-
-  /* Header Buttons */
-  .header-buttons {
-    display: flex;
-    gap: 8px;
-  }
-
-  .btn {
-    padding: 8px 14px;
-    border: none;
-    border-radius: 999px; /* pill */
-    cursor: pointer;
-    color: white;
-    font-weight: 700;
-    display: inline-flex;
-    align-items: center;
-    gap: 8px;
-    transition: transform 0.12s ease, box-shadow 0.12s ease, opacity 0.12s ease;
-    font-size: 0.9rem;
-    box-shadow: 0 6px 18px rgba(15,23,42,0.06);
-  }
-
-  .btn-success {
-    background-color: var(--success);
-  }
-  .btn-success:hover {
-    background-color: #047857;
-  }
-
-  .btn-danger {
-    background-color: var(--danger);
-  }
-  .btn-danger:hover {
-    background-color: #b91c1c;
-  }
-
-  .btn-primary {
-    background-color: var(--primary); /* primary color */
-  }
-  .btn-primary:hover {
-    background-color: var(--primary-dark);
-  }
-
-  .btn:active { transform: translateY(1px); }
-  .btn:focus { outline: none; box-shadow: 0 8px 24px rgba(249,115,22,0.12); }
-
-  /* small icon-only header buttons */
-  .header-icon-btn {
-    width: 40px;
-    height: 40px;
-    display: inline-grid;
-    place-items: center;
-    border-radius: 10px;
-    padding: 0;
-    background: rgba(15,23,42,0.04);
-    color: var(--dark);
-  }
-  .header-icon-btn:hover { background: rgba(15,23,42,0.08); }
-
-  /* ensure header looks elevated and rounded on larger screens */
-  .app-header {
-    border-radius: 0 0 14px 14px;
-  }
-
-  .btn-secondary {
-    background-color: var(--gray);
-  }
-  .btn-secondary:hover {
-    background-color: #555;
-  }
-
-  .btn-xs {
-    padding: 4px 8px;
-    font-size: 0.75rem;
-  }
-
-  /* Status Message */
-  .status-message {
-    padding: 10px 15px;
-    border-radius: 6px;
-    margin: 20px 0 0;
-    display: none;
-    text-align: center;
-    font-weight: bold;
-    position: fixed;
-    top: var(--header-height);
-    left: 20px;
-    right: 20px;
-    z-index: 1000;
-  }
-
-  .status-message.success {
-    background: #d1fae5;
-    color: var(--success);
-    border: 1px solid #10b981;
-  }
-
-  .status-message.error {
-    background: #fee2e2;
-    color: var(--danger);
-    border: 1px solid #ef4444;
-  }
-
-  /* 📱 Responsive Header */
-  @media (max-width: 768px) {
-    .app-title {
-      font-size: 1rem;
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>لوحة التحكم - المعلم</title>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@300;400;700&display=swap" rel="stylesheet">
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <script src="https://unpkg.com/html5-qrcode"></script>
+  <style>
+    :root {
+      --primary: #f97316;
+      --primary-dark: #ea580c;
+      --secondary: #059669;
+      --dark: #1f2937;
+      --light: #f9fafb;
+      --gray: #6b7280;
+      --success: #059669;
+      --danger: #ef4444;
+      --sidebar-width: 250px;
+      --header-height: 60px;
+      --sidebar-collapsed-width: 60px;
     }
-    .user-name {
-      display: none;
+    
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    
+    body {
+      font-family: 'Tajawal', sans-serif;
+      background: linear-gradient(180deg, #fbfbfc 0%, #f0f4f8 100%);
+      display: flex;
+      min-height: 100vh;
+      color: #333;
+      overflow-x: hidden;
     }
-    .header-buttons .btn {
-      padding: 5px 8px;
-      font-size: 1.2rem;
-    }
-  }
-
-  /* Tab Content */
-  .tab-content {
-    display: none;
-    animation: fadeIn 0.5s;
-  }
-
-        @keyframes fadeIn {
-          from {
-            opacity: 0;
-            transform: translateY(10px);
-          }
-          to {
-            opacity: 1;
-            transform: translateY(0);
-          }
-        }
-        
-    /* أنماط صورة الملف الشخصي وزر التغيير */
-    .profile-picture-container {
-      position: relative;
-      margin-bottom: 15px;
-    }
-
-    .profile-picture {
-      width: 120px;
-      height: 120px;
-      border-radius: 50%;
-      object-fit: cover;
-      border: 3px solid var(--primary); /* primary color */
-    }
-
-    .change-picture-btn {
-      position: absolute;
-      bottom: 5px;
-      right: 5px;
-      background: var(--primary); /* primary color */
+    
+    .sidebar {
+      width: var(--sidebar-width);
+      background: linear-gradient(180deg, var(--primary) 0%, var(--primary-dark) 100%);
       color: white;
-      border: none;
+      position: fixed;
+      top: 0;
+      right: 0;
+      height: 100%;
+      overflow-y: auto;
+      transition: all 0.3s ease;
+      z-index: 1000;
+      padding-top: 20px;
+      box-shadow: -2px 0 10px rgba(0,0,0,0.1);
+    }
+    
+    .sidebar.collapsed { width: var(--sidebar-collapsed-width); }
+    .sidebar.collapsed h3 { font-size: 0; padding: 5px 0; }
+    .sidebar.collapsed .sidebar-menu span { display: none; }
+    
+    .sidebar img {
+      max-width: 150px;
+      height: 150px;
+      margin: 15px auto;
+      display: block;
       border-radius: 50%;
-      width: 35px;
-      height: 35px;
-      cursor: pointer;
+      border: 3px solid rgba(255, 255, 255, 0.3);
+      object-fit: cover;
+      background: white;
+    }
+    
+    .sidebar h3 {
+      text-align: center;
+      margin: 0 0 20px;
+      padding: 10px 0;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.2);
+      font-size: 1.1rem;
+    }
+    
+    .sidebar-menu {
+      list-style: none;
+      padding: 0;
+    }
+    
+    .sidebar-menu li a {
       display: flex;
       align-items: center;
-      justify-content: center;
-      box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+      color: rgba(255,255,255,0.9);
+      padding: 14px 20px;
+      text-decoration: none;
+      transition: all 0.3s;
+      font-size: 0.95rem;
+      border-radius: 0 25px 25px 0;
+      margin: 5px 0;
     }
-
-    /* أنماط حقل إدخال رابط الصورة وزر الحفظ */
-    .avatar-url-input {
+    
+    .sidebar-menu li a:hover,
+    .sidebar-menu li a.active {
+      background-color: rgba(255, 255, 255, 0.2);
+      color: white;
+    }
+    
+    .sidebar-menu i {
+      margin-left: 12px;
+      width: 20px;
+      text-align: center;
+      font-size: 1.1rem;
+    }
+    
+    .content {
+      flex: 1;
+      margin-right: var(--sidebar-width);
+      padding: 20px;
+      transition: margin 0.3s ease;
+      margin-top: var(--header-height);
+    }
+    
+    .content.sidebar-collapsed {
+      margin-right: var(--sidebar-collapsed-width);
+    }
+    
+    .app-header {
+      position: fixed;
+      top: 0;
+      right: var(--sidebar-width);
+      left: 0;
+      height: var(--header-height);
+      background: white;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 20px;
+      box-shadow: 0 2px 10px rgba(0, 0, 0, 0.06);
+      z-index: 999;
+      transition: right 0.3s ease;
+      border-bottom: 1px solid rgba(15, 23, 42, 0.04);
+    }
+    
+    .menu-toggle {
+      background: none;
+      border: none;
+      color: var(--primary);
+      font-size: 1.5rem;
+      cursor: pointer;
+      padding: 8px;
+      transition: transform 0.3s;
+    }
+    
+    .menu-toggle:hover { transform: rotate(90deg); }
+    
+    .header-content {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
       width: 100%;
-      padding: 10px;
+      gap: 15px;
+    }
+    
+    .header-greeting {
+      font-weight: 700;
+      color: var(--dark);
+      font-size: 1rem;
+    }
+    
+    .header-buttons {
+      display: flex;
+      gap: 10px;
+    }
+    
+    .btn {
+      padding: 10px 16px;
+      border: none;
+      border-radius: 10px;
+      cursor: pointer;
+      color: white;
+      font-weight: 700;
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      transition: all 0.2s ease;
+      font-size: 0.9rem;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+    }
+    
+    .btn:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 6px 16px rgba(0, 0, 0, 0.12);
+    }
+    
+    .btn-success { background-color: var(--success); }
+    .btn-danger { background-color: var(--danger); }
+    .btn-primary { background-color: var(--primary); }
+    .btn-secondary { background-color: var(--gray); }
+    .btn-warning { background-color: #f59e0b; }
+    .btn-sm { padding: 6px 12px; font-size: 0.85rem; }
+    .btn-xs { padding: 4px 8px; font-size: 0.75rem; }
+    
+    .tab-content {
+      display: none;
+      animation: fadeIn 0.4s ease;
+    }
+    
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(10px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+    
+    .quick-actions {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+      gap: 15px;
+      margin-bottom: 25px;
+    }
+    
+    .quick-action-btn {
+      background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);
+      color: white;
+      padding: 20px;
+      border-radius: 14px;
+      border: none;
+      cursor: pointer;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+      min-height: 100px;
+      transition: all 0.3s ease;
+      box-shadow: 0 6px 20px rgba(249, 115, 22, 0.2);
+    }
+    
+    .quick-action-btn:hover {
+      transform: translateY(-4px);
+      box-shadow: 0 10px 30px rgba(249, 115, 22, 0.3);
+    }
+    
+    .quick-action-btn i {
+      font-size: 2.2rem;
+      color: white;
+    }
+    
+    .quick-action-btn span {
+      font-weight: 700;
+      font-size: 0.9rem;
+    }
+    
+    .stats-container {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+      gap: 15px;
+      margin-bottom: 25px;
+    }
+    
+    .stat-card {
+      background: white;
+      padding: 25px 15px;
+      border-radius: 14px;
+      text-align: center;
+      box-shadow: 0 6px 20px rgba(0, 0, 0, 0.06);
+      border-bottom: 3px solid var(--primary);
+      transition: all 0.3s ease;
+    }
+    
+    .stat-card:hover {
+      transform: translateY(-5px);
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+    }
+    
+    .stat-card i {
+      font-size: 3rem;
+      margin-bottom: 10px;
+      color: var(--primary);
+    }
+    
+    .stat-card .stat-value {
+      font-size: 1.8rem;
+      font-weight: bold;
+      margin: 8px 0;
+      color: var(--dark);
+    }
+    
+    .stat-card .stat-label {
+      color: var(--gray);
+      font-size: 0.9rem;
+    }
+    
+    .card {
+      background: white;
+      border-radius: 12px;
+      padding: 20px;
+      margin-bottom: 15px;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.06);
+    }
+    
+    .card-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 15px;
+      padding-bottom: 12px;
+      border-bottom: 2px solid #f0f0f0;
+    }
+    
+    .card-title {
+      font-size: 1.1rem;
+      font-weight: bold;
+      color: var(--dark);
+    }
+    
+    .course-box {
+      background: white;
+      border-radius: 12px;
+      padding: 18px;
+      margin-bottom: 15px;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.06);
+      cursor: pointer;
+      transition: all 0.3s ease;
+    }
+    
+    .course-box:hover {
+      transform: translateY(-3px);
+      box-shadow: 0 8px 20px rgba(0, 0, 0, 0.1);
+    }
+    
+    .course-title {
+      font-size: 1.1rem;
+      font-weight: bold;
+      color: var(--primary);
+      margin-bottom: 10px;
+    }
+    
+    .no-data {
+      text-align: center;
+      color: var(--gray);
+      padding: 40px 20px;
+      font-size: 0.95rem;
+    }
+    
+    .loading {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 40px 20px;
+      color: var(--gray);
+    }
+    
+    .loading-spinner {
+      border: 4px solid rgba(0, 0, 0, 0.1);
+      border-left-color: var(--primary);
+      border-radius: 50%;
+      width: 40px;
+      height: 40px;
+      animation: spin 1s linear infinite;
+      margin-bottom: 15px;
+    }
+    
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+    
+    .status-message {
+      position: fixed;
+      top: 70px;
+      left: 50%;
+      transform: translateX(-50%);
+      padding: 15px 30px;
+      border-radius: 10px;
+      font-weight: bold;
+      z-index: 2000;
+      display: none;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+    }
+    
+    .status-message.success {
+      background: #d1fae5;
+      color: var(--success);
+    }
+    
+    .status-message.error {
+      background: #fee2e2;
+      color: var(--danger);
+    }
+    
+    .chart-container {
+      background: white;
+      padding: 20px;
+      border-radius: 12px;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.06);
+      height: 250px;
+      margin-bottom: 20px;
+    }
+    
+    .search-box {
+      width: 100%;
+      padding: 10px 15px;
       border: 1px solid #ddd;
-      border-radius: 5px;
-      margin-top: 10px;
+      border-radius: 8px;
+      margin-bottom: 15px;
       font-family: 'Tajawal', sans-serif;
       font-size: 0.9rem;
     }
-
-    .save-avatar-btn {
-      margin-top: 10px;
-      padding: 8px 15px;
-      background-color: var(--primary); /* primary color */
+    
+    .modal {
+      display: none;
+      position: fixed;
+      z-index: 2000;
+      left: 0;
+      top: 0;
+      width: 100%;
+      height: 100%;
+      background-color: rgba(0, 0, 0, 0.6);
+      justify-content: center;
+      align-items: center;
+      padding: 20px;
+    }
+    
+    .modal-content {
+      background-color: white;
+      border-radius: 14px;
+      width: 100%;
+      max-width: 700px;
+      max-height: 90vh;
+      display: flex;
+      flex-direction: column;
+      overflow: scroll;
+      box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3);
+    }
+    
+    .modal-header {
+      padding: 20px;
+      background: linear-gradient(135deg, var(--primary), var(--primary-dark));
       color: white;
-      border: none;
-      border-radius: 5px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    
+    .modal-title {
+      margin: 0;
+      font-size: 1.2rem;
+    }
+    
+    .close {
+      color: white;
+      font-size: 1.5rem;
+      font-weight: bold;
       cursor: pointer;
+      padding: 5px 10px;
+      transition: transform 0.2s;
+    }
+    
+    .close:hover {
+      transform: rotate(90deg);
+    }
+    
+    .modal-body {
+      padding: 20px;
+      overflow-y: auto;
+      flex: 1;
+    }
+    
+    .modal-footer {
+      padding: 15px 20px;
+      background-color: #f9fafb;
+      border-top: 1px solid #eee;
+      display: flex;
+      justify-content: flex-start;
+      gap: 10px;
+    }
+    
+    .student-item {
+      background-color: #fafafa;
+      border-radius: 8px;
+      margin-bottom: 10px;
+      padding: 12px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      justify-content: space-between;
+    }
+    
+    .student-header {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    
+    .student-name {
       font-weight: bold;
       font-size: 0.9rem;
     }
-
-    .save-avatar-btn:hover {
-      background-color: var(--primary-dark);
-    }
-
-  /* Dashboard Styles */
-  .stats-container {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
-    gap: 15px;
-    margin-bottom: 20px;
-  }
-
-  .stat-card {
-    background: white;
-    padding: 18px 12px;
-    border-radius: 12px;
-    text-align: center;
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.06);
-    border-bottom: 3px solid var(--danger);
-    transition: transform 0.2s ease, box-shadow 0.2s ease;
-  }
-  .stat-card:hover {
-    transform: translateY(-3px);
-    box-shadow: 0 8px 20px rgba(0, 0, 0, 0.08);
-  }
-
-  .stat-card i {
-    font-size: 3.3rem;
-    margin-bottom: 8px;
-    color: var(--primary); /* primary color */
-  }
-
-  .stat-card .stat-value {
-    font-size: 1.4rem;
-    font-weight: bold;
-    margin: 6px 0;
-    color: var(--dark);
-  }
-
-  .stat-card .stat-label {
-    color: var(--gray);
-    font-size: 0.85rem;
-  }
-
-  /* Chart Container */
-  .chart-container {
-    background: white;
-    padding: 20px;
-    border-radius: 12px;
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.06);
-    height: 250px;
-    position: relative;
-    margin-bottom: 20px;
-  }
-
-  /* Course Box */
-  .course-box {
-    background: white;
-    border-radius: 12px;
-    padding: 18px;
-    margin-bottom: 15px;
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.06);
-  }
-
-  .course-title {
-    font-size: 1.1rem;
-    font-weight: bold;
-    color: var(--primary); /* primary color */
-    border-bottom: 2px solid #f0f0f0;
-    padding-bottom: 8px;
-    margin-bottom: 15px;
-    display: flex;
-    justify-content: center;
-    align-items: center;
-  }
-
-  .student-count {
-    font-size: 0.85rem;
-    color: var(--gray);
-  }
-
-  /* Student Card */
-  .student-card {
-    background: #fafafa;
-    border: 1px solid #eee;
-    transition: 0.3s ease;
-    margin-bottom: 10px;
-    border-radius: 8px;
-  }
-  .student-card:hover {
-    background: #fff;
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
-  }
-
-  .card-field {
-    padding: 4px 0;
-  }
-  .card-field .field-label {
-    color: var(--dark);
-    font-weight: bold;
-    margin-left: 5px;
-  }
-  .card-field .field-value {
-    color: var(--gray);
-  }
-
-  /* Card-based List Styles */
-  .card-list {
-    display: flex;
-    flex-direction: column;
-    gap: 12px;
-  }
-
-  .card {
-    background: white;
-    border-radius: 12px;
-    padding: 18px;
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.06);
-  }
-
-  .card-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    margin-bottom: 12px;
-    padding-bottom: 10px;
-    border-bottom: 1px solid #eee;
-  }
-
-  .card-title {
-    font-size: 1rem;
-    font-weight: bold;
-    color: var(--dark);
-    flex: 1;
-  }
-
-  .card-content {
-    display: flex;
-    flex-direction: column;
-    gap: 8px;
-  }
-
-  .card-field {
-    display: flex;
-    justify-content: space-between;
-  }
-
-  .field-label {
-    font-weight: bold;
-    color: var(--gray);
-    font-size: 0.85rem;
-  }
-
-  .field-value {
-    text-align: left;
-    font-size: 0.85rem;
-  }
-
-  /* 📱 Responsive */
-  @media (max-width: 600px) {
-    .stat-card {
-      padding: 15px 8px;
-    }
-    .stat-card i {
-      font-size: 2.5rem;
-    }
-    .stat-card .stat-value {
-      font-size: 1.2rem;
-    }
-  }
-        
-        /* Search Box */
-        .search-box {
-          width: 100%;
-          padding: 10px 15px;
-          border: 1px solid #ddd;
-          border-radius: 5px;
-          margin-bottom: 15px;
-          font-family: 'Tajawal', sans-serif;
-          font-size: 0.9rem;
-        }
-        
-        /* No Data Message */
-        .no-data {
-          text-align: center;
-          color: var(--gray);
-          padding: 30px 15px;
-          font-size: 0.9rem;
-        }
-        
-        .no-data.error {
-          color: var(--danger);
-        }
-        
-        /* Loading Spinner */
-        .loading {
-          display: flex;
-          flex-direction: column;
-          align-items: center;
-          justify-content: center;
-          padding: 30px 15px;
-          color: var(--gray);
-        }
-        
-        .loading-spinner {
-          border: 4px solid rgba(0, 0, 0, 0.1);
-          border-left-color: var(--primary); /* primary color */
-          border-radius: 50%;
-          width: 30px;
-          height: 30px;
-          animation: spin 1s linear infinite;
-          margin-bottom: 10px;
-        }
-        
-        @keyframes spin {
-          to {
-            transform: rotate(360deg);
-          }
-        }
-        
-        table {
-          width: 100%;
-          border-collapse: collapse;
-          background: #fff;
-          margin-top: 10px;
-          box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
-          font-size: 0.85rem;
-        }
-        
-        th,
-        td {
-          padding: 8px;
-          border-bottom: 1px solid #ddd;
-          text-align: center;
-        }
-        
-        th {
-          background: #4CAF50;
-          color: white;
-          font-size: 0.8rem;
-        }
-        
-        input.score-input {
-          width: 50px;
-          padding: 3px;
-          text-align: center;
-          border: 1px solid #ccc;
-          border-radius: 4px;
-          font-size: 0.8rem;
-        }
-        
-        button.save-score {
-          padding: 4px 8px;
-          border: none;
-          border-radius: 4px;
-          background: #4CAF50;
-          color: #fff;
-          cursor: pointer;
-          font-size: 0.8rem;
-        }
-        
-        button.save-score:hover {
-          background: #45a049;
-        }
-        
-        /* Modal Styles */
-        .modal {
-          display: none;
-          position: fixed;
-          z-index: 1001;
-          left: 0;
-          top: 0;
-          width: 100%;
-          height: 100%;
-          background-color: rgba(0, 0, 0, 0.5);
-          justify-content: center;
-          align-items: center;
-          padding: 10px;
-        }
-        
-        .modal-content {
-          background-color: #fefefe;
-          margin: auto;
-          padding: 0;
-          border: none;
-          border-radius: 8px;
-          width: 100%;
-          max-width: 800px;
-          max-height: 100vh;
-          display: flex;
-          flex-direction: column;
-          overflow: scroll;
-        }
-        
-        .modal-header {
-          padding: 12px 15px;
-          background-color: var(--dark);
-          color: white;
-          display: flex;
-          justify-content: space-between;
-          align-items: center;
-        }
-        
-        .modal-title {
-          margin: 0;
-          font-size: 1.1rem;
-        }
-        
-        .close {
-          color: white;
-          font-size: 1.3rem;
-          font-weight: bold;
-          cursor: pointer;
-          padding: 5px;
-        }
-        
-        .modal-body {
-          padding: 15px;
-          overflow-y: auto;
-          flex: 1;
-        }
-        
-        .modal-footer {
-          padding: 12px 15px;
-          background-color: #f9fafb;
-          text-align: left;
-          border-top: 1px solid #eee;
-          display: flex;
-          justify-content: flex-start;
-          gap: 10px;
-        }
-        
-        /* Course Detail Tabs */
-        .course-detail-tabs {
-          display: flex;
-          border-bottom: 1px solid #eee;
-          margin-bottom: 15px;
-        }
-        
-        .tab-button {
-          padding: 10px 12px;
-          background: none;
-          border: none;
-          cursor: pointer;
-          font-weight: bold;
-          color: var(--gray);
-          border-bottom: 3px solid transparent;
-          font-size: 0.85rem;
-        }
-        
-        .tab-button.active {
-          color: var(--primary); /* primary color */
-          border-bottom-color: var(--primary); /* primary color */
-        }
-        
-        .course-detail-tab-content {
-          display: none;
-        }
-        
-        .course-detail-tab-content.active {
-          display: block;
-        }
-        
-        /* Module Card */
-        .module-card {
-          border: 1px solid #eee;
-          border-radius: 8px;
-          margin-bottom: 12px;
-          overflow: hidden;
-        }
-        
-        .module-header {
-          background-color: #f9fafb;
-          padding: 10px 12px;
-        }
-        
-        .module-header h3 {
-          margin: 0 0 5px;
-          color: var(--dark);
-          font-size: 1rem;
-        }
-        
-        .module-header p {
-          margin: 0;
-          color: var(--gray);
-          font-size: 0.8rem;
-        }
-        
-        .lessons-list {
-          padding: 8px 12px;
-        }
-        
-        .lesson-item {
-          padding: 8px 0;
-          border-bottom: 1px solid #f0f0f0;
-        }
-        
-        .lesson-item:last-child {
-          border-bottom: none;
-        }
-        
-        .lesson-info strong {
-          display: block;
-          margin-bottom: 3px;
-          font-size: 0.9rem;
-        }
-        
-        .lesson-info p {
-          margin: 0 0 3px;
-          font-size: 0.8rem;
-          color: var(--gray);
-        }
-        
-        .lesson-info small {
-          color: var(--gray);
-          font-size: 0.75rem;
-        }
-        
-        /* Attendance Modal Specific Styles */
-        .attendance-form-group {
-          margin-bottom: 12px;
-        }
-        
-        .attendance-form-group label {
-          display: block;
-          margin-bottom: 5px;
-          font-weight: bold;
-          font-size: 0.85rem;
-        }
-        
-        .attendance-form-group select,
-        .attendance-form-group input,
-        .attendance-form-group textarea {
-          width: 100%;
-          padding: 8px;
-          border: 1px solid #ddd;
-          border-radius: 5px;
-          font-family: 'Tajawal', sans-serif;
-          font-size: 0.9rem;
-        }
-        
-        .attendance-form-group textarea {
-          min-height: 60px;
-          resize: vertical;
-        }
-        
-        .student-attendance-actions {
-          display: flex;
-          gap: 6px;
-          margin-bottom: 12px;
-          flex-wrap: wrap;
-        }
-        
-        .btn-group-sm .btn {
-          padding: 4px 8px;
-          font-size: 0.75rem;
-        }
-        
-        /* Profile Section */
-        .profile-header {
-          display: flex;
-          flex-direction: column;
-          align-items: center;
-          margin-bottom: 20px;
-          padding: 20px;
-          background: white;
-          border-radius: 8px;
-          box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
-        }
-        
-        .profile-picture-container {
-          position: relative;
-          margin-bottom: 15px;
-        }
-        
-        .profile-picture {
-          width: 120px;
-          height: 120px;
-          border-radius: 50%;
-          object-fit: cover;
-          border: 3px solid var(--primary); /* primary color */
-        }
-        
-        .change-picture-btn {
-          position: absolute;
-          bottom: 5px;
-          right: 5px;
-          background: var(--primary); /* primary color */
-          color: white;
-          border: none;
-          border-radius: 50%;
-          width: 35px;
-          height: 35px;
-          cursor: pointer;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          box-shadow: 0 2px 5px rgba(0,0,0,0.2);
-        }
-        
-        .profile-name {
-          font-size: 1.3rem;
-          font-weight: bold;
-          margin-bottom: 5px;
-          color: var(--dark);
-        }
-        
-        .profile-role {
-          color: var(--gray);
-          font-size: 0.9rem;
-        }
-        
-        .profile-stats {
-          display: grid;
-          grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
-          gap: 10px;
-          width: 100%;
-          margin-top: 15px;
-        }
-        
-        .profile-stat-card {
-          background: #f8f9fa;
-          padding: 12px;
-          border-radius: 6px;
-          text-align: center;
-        }
-        
-        .profile-stat-value {
-          font-size: 1.2rem;
-          font-weight: bold;
-          color: var(--primary); /* primary color */
-          margin-bottom: 3px;
-        }
-        
-        .profile-stat-label {
-          font-size: 0.8rem;
-          color: var(--gray);
-        }
-        
-        .profile-form {
-          background: white;
-          padding: 20px;
-          border-radius: 8px;
-          box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
-        }
-        
-        .form-group {
-          margin-bottom: 15px;
-        }
-        
-        .form-group label {
-          display: block;
-          margin-bottom: 5px;
-          font-weight: bold;
-          color: var(--dark);
-          font-size: 0.9rem;
-        }
-        
-        .form-group input,
-        .form-group select,
-        .form-group textarea {
-          width: 100%;
-          padding: 10px;
-          border: 1px solid #ddd;
-          border-radius: 5px;
-          font-family: 'Tajawal', sans-serif;
-          font-size: 0.9rem;
-        }
-        
-        .form-actions {
-          display: flex;
-          gap: 10px;
-          margin-top: 20px;
-        }
-        
-        /* Mobile Responsive */
-        @media (max-width: 768px) {
-          :root {
-            --sidebar-width: 250px;
-            --sidebar-collapsed-width: 0;
-            --header-height: var(--mobile-header-height);
-          }
-          
-          .app-title {
-            font-size: 1.1rem;
-          }
-          
-          .user-info {
-            gap: 8px;
-          }
-          
-          .user-name {
-            font-size: 0.8rem;
-            max-width: 100px;
-          }
-          
-          .sidebar {
-            transform: translateX(100%);
-            width: var(--sidebar-width);
-          }
-          
-          .sidebar.active {
-            transform: translateX(0);
-          }
-          
-          .content {
-            margin-right: 0;
-            padding: 15px 10px;
-            margin-top: 90px;
-          }
-          
-          .app-header {
-            left: 0;
-      padding: 45px 10px;
-            right: 0;
     
-          }
-          
-          .content.sidebar-collapsed .app-header {
-            left: 0;
-          }
-          
-          .btn {
-            padding: 5px 10px;
-            font-size: 0.75rem;
-          }
-          
-          .stats-container {
-            grid-template-columns: repeat(2, 1fr);
-            gap: 10px;
-          }
-          
-          .stat-card {
-          padding: 20px 10px;
-          }
-          
-          .stat-card i {
-      font-size: 3.3rem;
-          }
-          
-          .stat-card .stat-value {
-            font-size: 1.1rem;
-          }
-          
-          .stat-card .stat-label {
-            font-size: 0.7rem;
-          }
-          
-          .chart-container {
-            height: 200px;
-            padding: 10px;
-          }
-          
-          .card {
-            padding: 12px;
-          }
-          
-          .card-header {
-            margin-bottom: 8px;
-            padding-bottom: 8px;
-          }
-          
-          .card-title {
-            font-size: 0.95rem;
-          }
-          
-          .modal {
-            padding: 5px;
-          }
-          
-          .modal-content {
-            max-height: 95vh;
-          }
-          
-          .modal-header,
-          .modal-footer {
-            padding: 10px 12px;
-          }
-          
-          .modal-title {
-            font-size: 1rem;
-          }
-          
-          .modal-body {
-            padding: 12px;
-          }
-          
-          .course-detail-tabs {
-            flex-wrap: wrap;
-          }
-          
-          .tab-button {
-            flex: 1 0 auto;
-            text-align: center;
-            padding: 6px 5px;
-            font-size: 0.8rem;
-          }
-          
-          .module-header {
-            padding: 8px 10px;
-          }
-          
-          .module-header h3 {
-            font-size: 0.9rem;
-          }
-          
-          .lessons-list {
-            padding: 6px 10px;
-          }
-          
-          .lesson-item {
-            padding: 6px 0;
-          }
-          
-          .student-attendance-actions {
-            gap: 5px;
-          }
-          
-          .btn-group-sm .btn {
-            padding: 3px 6px;
-            font-size: 0.7rem;
-          }
-          
-          .profile-picture {
-            width: 100px;
-            height: 100px;
-          }
-          
-          .profile-stats {
-            grid-template-columns: repeat(2, 1fr);
-          }
-        }
-        
-        @media (max-width: 480px) {
-          .stats-container {
-            grid-template-columns: 1fr;
-          }
-          
-          .header-buttons {
-            gap: 5px;
-          }
-          
-          .btn {
-            padding: 4px 8px;
-          }
-          
-          .user-name {
-            display: none;
-          }
-          
-          .student-attendance-actions {
-            gap: 4px;
-          }
-          
-          .btn-group-sm .btn {
-            padding: 3px 5px;
-            font-size: 0.65rem;
-          }
-          
-          .modal-title {
-            font-size: 0.95rem;
-          }
-          
-          .close {
-            font-size: 1.2rem;
-          }
-          
-          .profile-stats {
-            grid-template-columns: 1fr;
-          }
-          
-          .form-actions {
-            flex-direction: column;
-          }
-          
-          .form-actions .btn {
-            width: 100%;
-            justify-content: center;
-          }
-        }
-        
-        /* تحسينات إضافية لتجربة المستخدم */
-        .quick-actions {
-          display: flex;
-          gap: 10px;
-          margin-bottom: 20px;
-          flex-wrap: wrap;
-        }
-        
-  .quick-action-btn {
-    flex: 1;
-    min-width: 120px;
-    background: white;
-    border: none;
-    border-radius: 12px;
-    padding: 15px 10px;
-    text-align: center;
-    cursor: pointer;
-    position: relative;
-    z-index: 0;
-    overflow: hidden;
-  }
-
-  /* التوهج الدائري */
-  .quick-action-btn::before {
-    content: "";
-    position: absolute;
-    top: -50%;
-    left: -50%;
-    width: 200%;
-    height: 200%;
-    background: conic-gradient(
-      from 0deg,
-      #ff3c00,
-      #ff9100,
-      #ff3c00
-    );
-    z-index: -5;
-  }
-
-  /* لعمل حدود داخلية ناعمة */
-  .quick-action-btn::after {
-    content: "";
-    position: absolute;
-    inset: 3px;
-    background: white;
-    border-radius: 10px;
-    z-index: -30;
-  }
-
-  /* حركة الدوران */
-  @keyframes rotateGlow {
-    0% {
-      transform: rotate(0deg);
+    .student-checkbox {
+      transform: scale(1.2);
     }
-    100% {
-      transform: rotate(360deg);
+    
+    .student-status-select {
+      padding: 6px 10px;
+      border: 1px solid #ddd;
+      border-radius: 6px;
+      font-size: 0.85rem;
+      min-width: 100px;
     }
-  }
-        
-        .quick-action-btn:hover {
-          transform: translateY(-2px);
-          box-shadow: 0 2px 5px rgba(0,0,0,0.1);
-          border-color: var(--primary); /* primary color */
-        }
-        
-        .quick-action-btn i {
-          display: block;
-    font-size: 2.5rem;
-          margin-bottom: 8px;
-    color: aliceblue;
-        }
-        
-        .quick-action-btn span {
-          font-size: 0.85rem;
-          font-weight: bold;
-          color: var();
-        }
-        
-        /* تحسينات لقائمة الطلاب */
-        .student-item {
-          background-color: #fafafa;
-          border-radius: 6px;
-          margin-bottom: 8px;
-          padding: 12px;
-          box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
-          transition: all 0.2s ease;
-          display: flex;
-          align-items: center;
-          gap: 10px;
-        }
-        
-        .student-item:hover {
-          background-color: #f0f0f0;
-          box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-        }
-        
-        .student-checkbox {
-          transform: scale(1.2);
-          margin: 0;
-        }
-        
-        .student-info {
-          flex: 1;
-        }
-        
-        .student-name {
-          font-weight: bold;
-          font-size: 0.9rem;
-          margin-bottom: 3px;
-        }
-        
-        .student-details {
-          font-size: 0.8rem;
-          color: var(--gray);
-        }
-        
-        .student-status-select {
-          padding: 5px;
-          border: 1px solid #ddd;
-          border-radius: 4px;
-          background-color: white;
-          font-size: 0.8rem;
-          min-width: 100px;
-        }
-        
-        /* تحسينات لجدول الاختبارات */
-        .teacher-table {
-          width: 100%;
-          border-collapse: collapse;
-          background: #fff;
-          margin-top: 10px;
-          box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
-          font-size: 0.8rem;
-        }
-        
-        .teacher-table th,
-        .teacher-table td {
-          padding: 6px;
-          border-bottom: 1px solid #ddd;
-          text-align: center;
-        }
-        
-        .teacher-table th {
-          background: var(--primary); /* primary color */
-          color: white;
-          font-size: 0.75rem;
-        }
-        
-        .teacher-table input,
-        .teacher-table select {
-          width: 100%;
-          padding: 4px;
-          font-size: 0.75rem;
-        }
-        
-        .teacher-table button {
-          padding: 4px 8px;
-          font-size: 0.75rem;
-        }
-        
-      /* أنماط سجل الحضور في قسم الملف الشخصي */
-      .profile-attendance-section {
-        width: 100%;
-        margin-top: 15px;
-        text-align: right;
-      }
+    
+    .student-report-card {
+      background: white;
+      border-radius: 10px;
+      padding: 15px;
+      margin-bottom: 12px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+      transition: all 0.3s ease;
+      cursor: pointer;
+    }
+    
+    .student-report-card:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+    }
 
-      .profile-attendance-section h3 {
-        font-size: 1.1rem;
-        margin-bottom: 10px;
-        color: var(--dark);
-        border-bottom: 1px solid #eee;
-        padding-bottom: 5px;
-      }
+    .accordion-header {
+  padding: 10px;
+  background: #f9fafb;
+  border-radius: 8px;
+  cursor: pointer;
+  margin: 5px 0;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-weight: bold;
+  color: var(--primary);
+  transition: background 0.2s ease;
+}
 
-      .profile-attendance-list {
-        max-height: 200px;
-        overflow-y: auto;
-        background: #f8f9fa;
-        border-radius: 6px;
-        padding: 10px;
-      }
+.accordion-header:hover {
+  background: #f3f4f6;
+}
 
-      .profile-attendance-record {
-        padding: 8px 0;
-        border-bottom: 1px solid #eee;
-        font-size: 0.85rem;
-        display: flex;
-        justify-content: space-between;
-      }
+.accordion-body {
+  padding: 8px 12px;
+  border-right: 3px solid var(--primary);
+  background: #fafafa;
+  border-radius: 6px;
+  margin-bottom: 10px;
+}
 
-      .profile-attendance-record:last-child {
-        border-bottom: none;
-      }
-
-      .profile-attendance-date {
-        font-weight: bold;
-        color: var(--dark);
-      }
-
-      .profile-attendance-times {
-        text-align: left;
-      }
-
-      .profile-attendance-time {
-        color: var(--gray);
-      }
-
-      .profile-attendance-stay {
-        color: var(--primary); /* primary color */
-        font-weight: bold;
-      }
-
-        /* تحسينات لشاشة الحضور الشخصي */
-        .attendance-record {
-          display: flex;
-          justify-content: space-between;
-          padding: 10px 0;
-          border-bottom: 1px solid #eee;
-        }
-        
-        .attendance-record:last-child {
-          border-bottom: none;
-        }
-        
-        .attendance-date {
-          font-weight: bold;
-          color: var(--dark);
-        }
-        
-        .attendance-times {
-          text-align: left;
-        }
-        
-        .attendance-time {
-          font-size: 0.85rem;
-          color: var(--gray);
-        }
-        
-        .attendance-stay {
-          font-size: 0.8rem;
-          color: var(--primary); /* primary color */
-          font-weight: bold;
-        }
-        
-        /* File input styling */
-        .file-input-wrapper {
-          position: relative;
-          overflow: hidden;
-          display: inline-block;
-        }
-        
-        .file-input-wrapper input[type=file] {
-          position: absolute;
-          left: 0;
-          top: 0;
-          opacity: 0;
-          cursor: pointer;
-          width: 100%;
-          height: 100%;
-        }
-        
-        .file-input-button {
-          display: inline-block;
-          padding: 8px 12px;
-          background: var(--primary); /* primary color */
-          color: white;
-          border-radius: 5px;
-          cursor: pointer;
-          font-size: 0.85rem;
-        }
-        
-        /* === تحسينات تصميمية عامة (Overrides) === */
-        :root {
-          --accent: var(--primary); /* primary color */
-          --card-bg: linear-gradient(180deg, #ffffff, #fffaf5);
-          --soft-shadow: 0 6px 18px rgba(15, 23, 42, 0.06);
-        }
-
-        /* Page background and base text */
-        body {
-          background: linear-gradient(180deg, #fbfbfc 0%, #f0f4f8 100%);
-          color: var(--dark);
-          -webkit-font-smoothing: antialiased;
-          -moz-osx-font-smoothing: grayscale;
-        }
-
-        /* Header and sidebar polish */
-        .app-header {
-          background: #fff;
-          border-bottom: 1px solid rgba(15, 23, 42, 0.04);
-          backdrop-filter: blur(6px);
-        }
-
-        .sidebar {
-          background: linear-gradient(180deg, var(--primary) 0%, var(--primary-dark) 100%);
-          padding-top: calc(var(--header-height) + 10px);
-        }
-
-        .sidebar h3 {
-          color: rgba(255,255,255,0.95);
-          font-weight: 700;
-        }
-
-        /* Buttons: larger touch targets + nicer hover/focus */
-        .btn {
-          padding: 10px 14px;
-          border-radius: 10px;
-          box-shadow: var(--soft-shadow);
-          transition: transform 0.12s ease, box-shadow 0.12s ease, background-color 0.12s ease;
-          -webkit-tap-highlight-color: transparent;
-        }
-
-        .btn:active { transform: translateY(1px); }
-        .btn:focus { outline: 3px solid rgba(249,115,22,0.12); outline-offset: 2px; }
-
-        /* Primary, success, danger colors keep existing variables but improve contrast */
-        .btn-primary { background: var(--accent); }
-        .btn-success { background: var(--success); }
-        .btn-danger  { background: var(--danger); }
-
-        .header-buttons .btn i { margin-left: 8px; }
-
-        /* Card styles */
-        .card, .course-box, .stat-card, .profile-form {
-          background: var(--card-bg);
-          border-radius: 14px;
-          box-shadow: 0 10px 30px rgba(15, 23, 42, 0.06);
-          border: 1px solid rgba(15,23,42,0.03);
-        }
-
-        .stat-card i { color: var(--accent); }
-
-        /* Quick action buttons: colorful gradient + readable text */
-        .quick-action-btn {
-          background: linear-gradient(90deg, rgba(249,115,22,0.95), rgba(234,88,12,0.95));
-          color: #fff;
-          padding: 16px 12px;
-          border-radius: 12px;
-          min-height: 84px;
-          display:flex;
-          flex-direction:column;
-          align-items:center;
-          justify-content:center;
-          gap:6px;
-          box-shadow: 0 8px 24px rgba(15,23,42,0.08);
-        }
-
-        .quick-action-btn i { font-size: 1.5rem; color: #fff; }
-        .quick-action-btn span { font-weight:700; color: #fff; }
-
-        /* Chart container tweak */
-        .chart-container { padding: 18px; }
-
-        /* Modal sizing and scroll improvements */
-        .modal-content { max-width: 900px; width: calc(100% - 24px); border-radius: 12px; }
-
-        /* Table header accent */
-        th { background: linear-gradient(90deg, rgba(249,115,22,0.95), rgba(234,88,12,0.95)); color: white; }
-
-        /* Improve focus state for inputs */
-        input:focus, select:focus, textarea:focus {
-          border-color: rgba(249,115,22,0.6);
-          box-shadow: 0 6px 18px rgba(249,115,22,0.08);
-          outline: none;
-        }
-
-        /* Accessibility: larger touch targets on mobile */
-        @media (max-width: 768px) {
-          .btn { padding: 12px 16px; font-size: 1rem; }
-          .quick-action-btn { min-height: 88px; padding: 18px 12px; }
-          .sidebar { transform: translateX(100%); }
-          .sidebar.active { transform: translateX(0); }
-        }
-
-        /* Small-screen fine tuning */
-        @media (max-width: 480px) {
-          .app-title { font-size: 1rem; }
-          .stat-card i { font-size: 2.4rem; }
-          .profile-picture { width: 96px; height: 96px; }
-        }
-      </style>
-    </head>
-
-
-    <body>
-      <!-- Sidebar -->
-      <div class="sidebar" id="sidebar">
-        <img src="logo2.jpg" alt="Logo" >
-        <h3>أكاديمية أسيوط</h3>
-        <ul class="sidebar-menu">
-          <li><a href="#" class="nav-link active" onclick="switchTab('dashboard'); setActiveLink(this)"><i class="fas fa-tachometer-alt"></i><span>نظرة عامة</span></a></li>
-          <li><a href="#" class="nav-link" onclick="switchTab('profile'); setActiveLink(this)"><i class="fas fa-user"></i><span>الملف الشخصي</span></a></li>
-          <li><a href="#" class="nav-link" onclick="switchTab('courses'); setActiveLink(this)"><i class="fas fa-book"></i><span>كورساتي</span></a></li>
-          <li class="nav-item">
-            <a class="nav-link" href="#" onclick="switchTab('exams')">
-              <i class="fas fa-file-alt"></i>
-              <span>اختباراتي</span>
-            </a>
-          </li>
-          <li><a href="#" class="nav-link" onclick="switchTab('students'); setActiveLink(this)"><i class="fas fa-users"></i><span>طلابي</span></a></li>
-          <li><a href="#" class="nav-link" onclick="switchTab('attendances'); setActiveLink(this)"><i class="fas fa-calendar-check"></i><span>حضور الطلاب</span></a></li>
-        </ul>
-      </div>
-      
-      <!-- Main Content -->
-      <div class="content" id="mainContent">
-        <!-- App Header -->
-        <div class="app-header">
-          <button class="menu-toggle" id="menuToggle">
-            <i class="fas fa-bars"></i>
+    
+    .attendance-record {
+      background: #f9fafb;
+      padding: 10px;
+      border-radius: 6px;
+      margin-bottom: 8px;
+      border-right: 3px solid #ddd;
+    }
+    
+    .attendance-record.present { border-right-color: var(--success); }
+    .attendance-record.absent { border-right-color: var(--danger); }
+    .attendance-record.late { border-right-color: #f59e0b; }
+    
+    #reminderBanner {
+      position: fixed;
+      top: 80px;
+      left: 50%;
+      transform: translateX(-50%);
+      background: linear-gradient(90deg, #ff7b00, #ffb300);
+      color: white;
+      font-size: 1.1rem;
+      font-weight: bold;
+      padding: 15px 35px;
+      border-radius: 12px;
+      box-shadow: 0 6px 20px rgba(0,0,0,0.3);
+      z-index: 1500;
+      display: none;
+    }
+    
+    @keyframes slideInDown {
+      from { opacity: 0; transform: translate(-50%, -50px); }
+      to { opacity: 1; transform: translate(-50%, 0); }
+    }
+    
+    @keyframes slideOutRight {
+      from { opacity: 1; transform: translate(-50%, 0); }
+      to { opacity: 0; transform: translateX(200%); }
+    }
+    
+    @media (max-width: 768px) {
+      :root { --header-height: 55px; }
+      .sidebar { transform: translateX(100%); }
+      .sidebar.active { transform: translateX(0); }
+      .content { margin-right: 0; margin-top: calc(var(--header-height) + 10px); padding: 15px; }
+      .app-header { right: 0; padding: 0 15px; }
+      .stats-container, .quick-actions { grid-template-columns: repeat(2, 1fr); }
+    }
+  </style>
+</head>
+<body>
+  <div class="sidebar" id="sidebar">
+    <img src="logo.png" alt="أكاديمية">
+    <h3>أكاديمية أسيوط</h3>
+    <ul class="sidebar-menu">
+      <li><a href="#" class="nav-link active" onclick="switchTab('dashboard')">
+        <i class="fas fa-tachometer-alt"></i><span>نظرة عامة</span>
+      </a></li>
+      <li><a href="#" class="nav-link" onclick="switchTab('profile')">
+        <i class="fas fa-user"></i><span>الملف الشخصي</span>
+      </a></li>
+      <li><a href="#" class="nav-link" onclick="switchTab('courses')">
+        <i class="fas fa-book"></i><span>كورساتي</span>
+      </a></li>
+      <li><a href="#" class="nav-link" onclick="switchTab('students')">
+        <i class="fas fa-users"></i><span>طلابي</span>
+      </a></li>
+      <li><a href="#" class="nav-link" onclick="switchTab('exams')">
+        <i class="fas fa-file-alt"></i><span>اختباراتي</span>
+      </a></li>
+      <li><a href="#" class="nav-link" onclick="switchTab('attendances')">
+        <i class="fas fa-calendar-check"></i><span>حضور الطلاب</span>
+      </a></li>
+      <li><a href="#" class="nav-link" onclick="switchTab('reports')">
+        <i class="fas fa-chart-bar"></i><span>التقارير والإحصائيات</span>
+      </a></li>
+    </ul>
+  </div>
+  
+  <div class="content" id="mainContent">
+    <div class="app-header">
+      <button class="menu-toggle" id="menuToggle">
+        <i class="fas fa-bars"></i>
+      </button>
+      <div class="header-content">
+        <div class="header-greeting">
+          <span id="userNameHeader">مرحباً</span>
+        </div>
+        <div class="header-buttons">
+          <button id="checkInBtn" class="btn btn-success" onclick="recordCheckIn()">
+            <i class="fas fa-sign-in-alt"></i> حضور
           </button>
-          <div class="header-content">
-            <div class="header-greeting">  <span id="userNameHeader"></span></div>
-            <div class="user-info">
-              <div class="header-buttons">
-                <button id="checkInBtn" class="btn btn-success" onclick="recordCheckIn()"><i class="fas fa-sign-in-alt"></i> حضور</button>
-                <button id="checkOutBtn" class="btn btn-danger" onclick="recordCheckOut()"><i class="fas fa-sign-out-alt"></i> انصراف</button>
-                <!-- Install PWA button (hidden by default, shown when available) -->
-                <button id="installBtn" class="btn btn-primary" style="display:none;"><i class="fas fa-download"></i> تثبيت</button>
-              </div>
-            </div>
-          </div>
-        </div>
-        
-        <!-- Status Message -->
-        <div id="statusMessage" class="status-message"></div>
-        <div id="statusMessage"></div>
-
-        <!-- Dashboard Tab -->
-        <div id="dashboardContent" class="tab-content" style="display:block;  ">
-          <div class="quick-actions">
-            <div class="quick-action-btn" onclick="switchTab('courses')">
-              <i class="fas fa-book"></i>
-              <span>كورساتي</span>
-            </div>
-            <div class="quick-action-btn" onclick="switchTab('students')">
-              <i class="fas fa-users"></i>
-              <span>طلابي</span>
-            </div>
-            <div class="quick-action-btn" onclick="switchTab('attendances')">
-              <i class="fas fa-calendar-check"></i>
-              <span>حضور الطلاب</span>
-            </div>
-            <div class="quick-action-btn" onclick="switchTab('exams')">
-              <i class="fas fa-file-alt"></i>
-              <span>اختباراتي</span>
-            </div>
-          </div>
-          
-          <div class="stats-container">
-            <div class="stat-card">
-              <i class="fas fa-book"></i>
-              <div class="stat-value" id="totalCourses">0</div>
-              <div class="stat-label">الكورسات</div>
-            </div>
-            <div class="stat-card">
-              <i class="fas fa-chalkboard-teacher"></i>
-              <div class="stat-value" id="totalLessons">0</div>
-              <div class="stat-label">الدروس</div>
-            </div>
-            <div class="stat-card">
-              <i class="fas fa-users"></i>
-              <div class="stat-value" id="totalStudents">0</div>
-              <div class="stat-label">الطلاب</div>
-            </div>
-          </div>
-          <div class="chart-container">
-            <canvas id="lessonsPerCourseChart"></canvas>
-          </div>
-        </div>
-        
-        <!-- تبويب الاختبارات -->
-        <div id="examsContent" class="tab-content" style="display: none;">
-          <div class="dashboard-header">
-            <h2>اختباراتي</h2>
-          </div>
-          <div id="examsContainer">
-            <div class="loading">
-              <div class="loading-spinner"></div>
-              <p>جاري تحميل بيانات الاختبارات...</p>
-            </div>
-          </div>
-        </div>
-        
-        <!-- Courses Tab -->
-        <div id="coursesContent" class="tab-content">
-          <div id="coursesContainer">
-            <p class="no-data">جاري تحميل بيانات الكورسات...</p>
-          </div>
-        </div>
-        
-        <!-- Students Tab -->
-        <div id="studentsContent" class="tab-content">
-          <div id="studentsContainer">
-            <p class="no-data">جاري تحميل بيانات الطلاب...</p>
-          </div>
-        </div>
-        
-        <!-- Student Attendances Tab -->
-        <div id="attendancesContent" class="tab-content">
-          <div style="margin-bottom: 15px;">
-            <button class="btn btn-primary" onclick="showAddAttendanceModal()"><i class="fas fa-plus"></i> تسجيل حضور</button>
-          </div>
-          <div id="attendancesContainer">
-            <p class="no-data">جاري تحميل بيانات الحضور...</p>
-          </div>
-        </div>
-        
-        
-      <!-- Profile Tab -->
-  <!-- Profile Tab -->
-  <div id="profileContent" class="tab-content">
-    <div class="profile-header">
-      <div class="profile-name" id="profileName">اسم المعلم</div>
-      <div class="profile-role" id="profileRole">معلم</div>
-
-      <!-- سجل حضور المعلم -->
-      <div class="profile-attendance-section">
-        <h3>سجل حضوري الشخصي</h3>
-        <div id="profileAttendanceRecords" class="profile-attendance-list">
-          <p class="no-data">جاري تحميل سجل الحضور...</p>
+          <button id="checkOutBtn" class="btn btn-danger" onclick="recordCheckOut()">
+            <i class="fas fa-sign-out-alt"></i> انصراف
+          </button>
         </div>
       </div>
     </div>
-
-    <div class="profile-form">
-      <h3>معلومات الحساب</h3>
-      <form id="profileForm">
-        <div class="form-group">
-          <label for="fullName">الاسم الكامل</label>
-          <input type="text" id="fullName" name="fullName" required>
+    
+    <div id="statusMessage" class="status-message"></div>
+    
+    <div id="dashboardContent" class="tab-content" style="display:block;">
+      <div class="quick-actions">
+        <button class="quick-action-btn" onclick="switchTab('courses')">
+          <i class="fas fa-book"></i>
+          <span>كورساتي</span>
+        </button>
+        <button class="quick-action-btn" onclick="switchTab('students')">
+          <i class="fas fa-users"></i>
+          <span>طلابي</span>
+        </button>
+        <button class="quick-action-btn" onclick="switchTab('exams')">
+          <i class="fas fa-file-alt"></i>
+          <span>اختباراتي</span>
+        </button>
+        <button class="quick-action-btn" onclick="switchTab('attendances')">
+          <i class="fas fa-calendar-check"></i>
+          <span>الحضور</span>
+        </button>
+        <button class="quick-action-btn" onclick="switchTab('reports')">
+          <i class="fas fa-chart-bar"></i>
+          <span>التقارير</span>
+        </button>
+      </div>
+      
+      <div class="stats-container">
+        <div class="stat-card">
+          <i class="fas fa-book"></i>
+          <div class="stat-value" id="totalCourses">0</div>
+          <div class="stat-label">الكورسات</div>
         </div>
-        <div class="form-group">
-          <label for="email">البريد الإلكتروني</label>
-          <input type="email" id="email" name="email" required>
+        <div class="stat-card">
+          <i class="fas fa-chalkboard-teacher"></i>
+          <div class="stat-value" id="totalLessons">0</div>
+          <div class="stat-label">الدروس</div>
         </div>
-        <div class="form-group">
-          <label for="phone">رقم الهاتف</label>
-          <input type="tel" id="phone" name="phone">
+        <div class="stat-card">
+          <i class="fas fa-users"></i>
+          <div class="stat-value" id="totalStudents">0</div>
+          <div class="stat-label">الطلاب</div>
         </div>
-        <div class="form-group">
-          <label for="specialty">التخصص</label>
-          <input type="text" id="specialty" name="specialty">
+      </div>
+      
+      <div class="chart-container">
+        <canvas id="lessonsPerCourseChart"></canvas>
+      </div>
+    </div>
+    
+    <div id="profileContent" class="tab-content">
+      <div class="card">
+        <div class="card-header">
+          <div class="card-title" id="profileName">الملف الشخصي</div>
+          <div id="profileRole">معلم</div>
         </div>
-        <div class="form-actions">
-          <button type="submit" class="btn btn-primary"><i class="fas fa-save"></i> حفظ التغييرات</button>
-          <button type="button" class="btn btn-secondary" onclick="resetProfileForm()"><i class="fas fa-redo"></i> إعادة تعيين</button>
+        <div id="profileAttendanceRecords">
+          <div class="loading">
+            <div class="loading-spinner"></div>
+            <p>جاري التحميل...</p>
+          </div>
         </div>
-      </form>
+        <form id="profileForm" style="margin-top: 20px;">
+          <div style="margin-bottom: 15px;">
+            <label style="display: block; margin-bottom: 5px; font-weight: bold;">الاسم الكامل</label>
+            <input type="text" id="fullName" style="width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 5px;">
+          </div>
+          <div style="margin-bottom: 15px;">
+            <label style="display: block; margin-bottom: 5px; font-weight: bold;">البريد الإلكتروني</label>
+            <input type="email" id="email" style="width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 5px;">
+          </div>
+          <div style="margin-bottom: 15px;">
+            <label style="display: block; margin-bottom: 5px; font-weight: bold;">رقم الهاتف</label>
+            <input type="tel" id="phone" style="width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 5px;">
+          </div>
+          <div style="margin-bottom: 15px;">
+            <label style="display: block; margin-bottom: 5px; font-weight: bold;">التخصص</label>
+            <input type="text" id="specialty" style="width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 5px;">
+          </div>
+          <button type="submit" class="btn btn-primary">
+            <i class="fas fa-save"></i> حفظ التغييرات
+          </button>
+        </form>
+      </div>
+    </div>
+    
+    <div id="coursesContent" class="tab-content">
+      <h2 style="text-align: center; color: var(--primary); margin-bottom: 20px;">كورساتي</h2>
+      <div id="coursesContainer">
+        <div class="loading">
+          <div class="loading-spinner"></div>
+          <p>جاري التحميل...</p>
+        </div>
+      </div>
+    </div>
+    
+    <div id="studentsContent" class="tab-content">
+      <h2 style="text-align: center; color: var(--primary); margin-bottom: 20px;">طلابي</h2>
+      <div id="studentsContainer">
+        <div class="loading">
+          <div class="loading-spinner"></div>
+          <p>جاري التحميل...</p>
+        </div>
+      </div>
+    </div>
+    
+    <div id="examsContent" class="tab-content">
+      <h2 style="text-align: center; color: var(--primary); margin-bottom: 20px;">اختباراتي</h2>
+      <div id="examsContainer">
+        <div class="loading">
+          <div class="loading-spinner"></div>
+          <p>جاري التحميل...</p>
+        </div>
+      </div>
+    </div>
+    
+    <div id="attendancesContent" class="tab-content">
+      <h2 style="text-align: center; color: var(--primary); margin-bottom: 20px;">حضور الطلاب</h2>
+      <button class="btn btn-primary" onclick="showAddAttendanceModal()" style="margin-bottom: 15px;">
+        <i class="fas fa-plus"></i> تسجيل حضور
+      </button>
+      <div id="attendancesContainer">
+        <div class="loading">
+          <div class="loading-spinner"></div>
+          <p>جاري التحميل...</p>
+        </div>
+      </div>
+    </div>
+    
+    <div id="reportsContent" class="tab-content">
+      <h2 style="text-align: center; color: var(--primary); margin-bottom: 20px;">التقارير والإحصائيات</h2>
+      
+      <div style="margin-bottom: 20px;">
+        <div style="display: flex; gap: 10px; flex-wrap: wrap; margin-bottom: 15px;">
+          <select id="reportCourseFilter" class="search-box" style="max-width: 250px;">
+            <option value="">كل الكورسات</option>
+          </select>
+          <select id="reportMonthFilter" class="search-box" style="max-width: 250px;">
+            <option value="">كل الأشهر</option>
+          </select>
+          <button class="btn btn-primary btn-sm" onclick="loadReportsData()">
+            <i class="fas fa-filter"></i> تطبيق الفلتر
+          </button>
+        </div>
+      </div>
+      
+      <div class="stats-container" style="margin-bottom: 25px;">
+        <div class="stat-card">
+          <i class="fas fa-user-check"></i>
+          <div class="stat-value" id="totalPresentStudents">0</div>
+          <div class="stat-label">إجمالي الحضور</div>
+        </div>
+        <div class="stat-card">
+          <i class="fas fa-user-times"></i>
+          <div class="stat-value" id="totalAbsentStudents">0</div>
+          <div class="stat-label">إجمالي الغياب</div>
+        </div>
+        <div class="stat-card">
+          <i class="fas fa-user-clock"></i>
+          <div class="stat-value" id="totalLateStudents">0</div>
+          <div class="stat-label">إجمالي التأخر</div>
+        </div>
+        <div class="stat-card">
+          <i class="fas fa-percentage"></i>
+          <div class="stat-value" id="attendanceRate">0%</div>
+          <div class="stat-label">نسبة الحضور</div>
+        </div>
+      </div>
+      
+      <div class="chart-container" style="height: 300px;">
+        <canvas id="attendanceChart"></canvas>
+      </div>
+      
+      <div class="card">
+        <div class="card-header">
+          <div class="card-title">سجل حضور الطلاب التفصيلي</div>
+          <input type="text" id="studentReportSearch" class="search-box" placeholder="ابحث عن طالب..." style="max-width: 300px; margin: 0;">
+        </div>
+        <div id="studentReportsContainer">
+          <div class="loading">
+            <div class="loading-spinner"></div>
+            <p>جاري التحميل...</p>
+          </div>
+        </div>
+      </div>
     </div>
   </div>
-
-      <!-- Course Detail Modal -->
-      <div id="courseDetailModal" class="modal">
-        <div class="modal-content">
-          <div class="modal-header">
-            <h2 class="modal-title" id="courseDetailTitle">تفاصيل الكورس</h2>
-            <span class="close" onclick="closeModal('courseDetailModal')">&times;</span>
-          </div>
-          <div class="modal-body">
-            <!-- Course Detail Tabs -->
-            <div class="course-detail-tabs">
-              <button class="tab-button active" onclick="switchCourseDetailTab('overview')">نظرة عامة</button>
-              <button class="tab-button" onclick="switchCourseDetailTab('modules')">الوحدات</button>
-            </div>
-            <!-- Overview Tab Content -->
-            <div id="courseOverviewTab" class="course-detail-tab-content active">
-              <div class="card-content">
-                <div class="card-field">
-                  <span class="field-label">الاسم:</span>
-                  <span class="field-value" id="detailCourseName"></span>
-                </div>
-                <div class="card-field">
-                  <span class="field-label">الوصف:</span>
-                  <span class="field-value" id="detailCourseDescription"></span>
-                </div>
-                <div class="card-field">
-                  <span class="field-label">البداية:</span>
-                  <span class="field-value" id="detailCourseStartDate"></span>
-                </div>
-                <div class="card-field">
-                  <span class="field-label">النهاية:</span>
-                  <span class="field-value" id="detailCourseEndDate"></span>
-                </div>
-              </div>
-            </div>
-            <!-- Modules Tab Content -->
-            <div id="courseModulesTab" class="course-detail-tab-content">
-              <div id="modulesList">
-                <p class="no-data">جاري التحميل...</p>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-      
-  <!-- Add Attendance Modal -->
+  
+  <!-- Attendance Modal -->
   <div id="attendanceModal" class="modal">
     <div class="modal-content">
       <div class="modal-header">
-        <h2 class="modal-title" id="attendanceModalTitle">تسجيل حضور الدرس</h2>
+        <h2 class="modal-title">تسجيل حضور الدرس</h2>
         <span class="close" onclick="closeModal('attendanceModal')">&times;</span>
       </div>
       <form id="attendanceForm">
         <div class="modal-body">
-          <div class="attendance-form-group">
-            <label for="attendanceCourseFilter">اختر الكورس:</label>
-            <select id="attendanceCourseFilter" required>
+          <div style="margin-bottom: 15px;">
+            <label style="display: block; margin-bottom: 5px; font-weight: bold;">اختر الكورس:</label>
+            <select id="attendanceCourseFilter" style="width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 5px;" required>
               <option value="">جاري التحميل...</option>
             </select>
           </div>
-          <div class="attendance-form-group">
-            <label for="attendanceLesson">اختر الدرس:</label>
-            <select id="attendanceLesson" disabled required>
-              <option value="">اختر كورسًا أولاً</option>
+          <div style="margin-bottom: 15px;">
+            <label style="display: block; margin-bottom: 5px; font-weight: bold;">اختر الدرس:</label>
+            <select id="attendanceLesson" style="width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 5px;" disabled required>
+              <option value="">اختر كورساً أولاً</option>
             </select>
           </div>
-          <div class="attendance-form-group">
-            <label for="attendanceDate">تاريخ الحضور:</label>
-            <input type="date" id="attendanceDate" disabled required>
+          <div style="margin-bottom: 15px;">
+            <label style="display: block; margin-bottom: 5px; font-weight: bold;">تاريخ الحضور:</label>
+            <input type="date" id="attendanceDate" style="width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 5px;" disabled required>
           </div>
-          <div class="attendance-form-group">
-            <label>إجراءات جماعية:</label>
-            <div class="student-attendance-actions">
+          <div style="margin-bottom: 15px;">
+            <label style="display: block; margin-bottom: 5px; font-weight: bold;">إجراءات جماعية:</label>
+            <div style="display: flex; gap: 8px; flex-wrap: wrap;">
               <button type="button" class="btn btn-success btn-sm" onclick="setAllAttendance('present')">
                 <i class="fas fa-user-check"></i> الجميع حاضر
               </button>
@@ -1861,19 +867,15 @@
               </button>
             </div>
           </div>
-          <div class="attendance-form-group">
-            <label>الطلاب:</label>
-            <div class="student-search-container">
-              <input type="text" id="studentSearchInModal" class="search-box" placeholder="بحث في أسماء الطلاب...">
-            </div>
-            <div id="studentAttendanceList" class="student-list-container">
-              <p class="no-data" style="text-align: center; margin: 20px 0;">اختر درسًا أولاً</p>
+          <div style="margin-bottom: 15px;">
+            <label style="display: block; margin-bottom: 5px; font-weight: bold;">الطلاب:</label>
+            <input type="text" id="studentSearchInModal" class="search-box" placeholder="بحث في أسماء الطلاب..." style="display: none;">
+            <div id="studentAttendanceList">
+              <p class="no-data">اختر درساً أولاً</p>
             </div>
           </div>
-
-          <!-- ✅ زر تفعيل الكاميرا للـ QR -->
-          <div class="attendance-form-group">
-            <label>تسجيل حضور بالـ QR:</label>
+          <div style="margin-bottom: 15px;">
+            <label style="display: block; margin-bottom: 5px; font-weight: bold;">تسجيل حضور بالـ QR:</label>
             <div style="margin-bottom: 10px;">
               <button type="button" id="startQrScan" class="btn btn-secondary btn-sm">
                 <i class="fas fa-qrcode"></i> تشغيل الكاميرا
@@ -1882,13 +884,11 @@
                 <i class="fas fa-stop"></i> إيقاف الكاميرا
               </button>
             </div>
-            <!-- ✅ مكان ظهور الكاميرا -->
-            <div id="qr-reader" style="width:300px; margin:auto; display:none;"></div>
+            <div id="qr-reader" style="width:100%; max-width:400px; margin:auto; display:none;"></div>
           </div>
-
-          <div class="attendance-form-group">
-            <label for="attendanceNotes">ملاحظات:</label>
-            <textarea id="attendanceNotes" placeholder="ملاحظات عامة..."></textarea>
+          <div style="margin-bottom: 15px;">
+            <label style="display: block; margin-bottom: 5px; font-weight: bold;">ملاحظات:</label>
+            <textarea id="attendanceNotes" placeholder="ملاحظات عامة..." style="width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 5px; min-height: 60px;"></textarea>
           </div>
         </div>
         <div class="modal-footer">
@@ -1902,176 +902,1360 @@
       </form>
     </div>
   </div>
-      
-      <!-- Exam Detail Modal -->
-      <div id="examDetailModal" class="modal">
-        <div class="modal-content">
-          <div class="modal-header">
-            <h2 class="modal-title" id="examDetailTitle">تفاصيل الاختبار</h2>
-            <span class="close" onclick="closeModal('examDetailModal')">&times;</span>
+  
+  <!-- Student Attendance Details Modal -->
+  <div id="studentAttendanceModal" class="modal">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h2 class="modal-title" id="studentAttendanceModalTitle">سجل حضور الطالب</h2>
+        <span class="close" onclick="closeModal('studentAttendanceModal')">&times;</span>
+      </div>
+      <div class="modal-body">
+        <div class="stats-container" style="grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)); margin-bottom: 20px;">
+          <div class="stat-card">
+            <i class="fas fa-calendar-check" style="font-size: 2rem;"></i>
+            <div class="stat-value" id="modalStudentPresent">0</div>
+            <div class="stat-label">حاضر</div>
           </div>
-          <div class="modal-body">
-            <div class="card">
-              <div class="card-header">
-                <div class="card-title" id="examDetailModalName"></div>
-              </div>
-              <div class="card-content">
-                <div class="card-field">
-                  <span class="field-label">الدرجة الكلية:</span>
-                  <span class="field-value" id="examDetailModalMaxScore"></span>
-                </div>
-                <div class="card-field">
-                  <span class="field-label">التاريخ:</span>
-                  <span class="field-value" id="examDetailModalDate"></span>
-                </div>
-              </div>
-            </div>
-            <div class="exam-stats-container">
-              <h3>الإحصائيات</h3>
-              <div id="examStatsContainer">
-                <p class="no-data">جاري تحميل الإحصائيات...</p>
-              </div>
-            </div>
-            <div class="student-scores-container">
-              <h3>درجات الطلاب</h3>
-              <div id="studentScoresContainer">
-                <p class="no-data">جاري تحميل بيانات الطلاب والدرجات...</p>
-              </div>
-            </div>
+          <div class="stat-card">
+            <i class="fas fa-calendar-times" style="font-size: 2rem;"></i>
+            <div class="stat-value" id="modalStudentAbsent">0</div>
+            <div class="stat-label">غائب</div>
           </div>
-          <div class="modal-footer">
-            <button type="button" class="btn btn-secondary" onclick="closeModal('examDetailModal')">إلغاء</button>
-            <button type="button" class="btn btn-primary" onclick="saveExamScores()">حفظ الدرجات</button>
+          <div class="stat-card">
+            <i class="fas fa-calendar-alt" style="font-size: 2rem;"></i>
+            <div class="stat-value" id="modalStudentLate">0</div>
+            <div class="stat-label">متأخر</div>
+          </div>
+          <div class="stat-card">
+            <i class="fas fa-chart-line" style="font-size: 2rem;"></i>
+            <div class="stat-value" id="modalStudentRate">0%</div>
+            <div class="stat-label">نسبة الحضور</div>
+          </div>
+        </div>
+        
+        <div id="studentAttendanceDetailsContainer">
+          <div class="loading">
+            <div class="loading-spinner"></div>
+            <p>جاري التحميل...</p>
           </div>
         </div>
       </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" onclick="closeModal('studentAttendanceModal')">
+          <i class="fas fa-times"></i> إغلاق
+        </button>
+      </div>
+    </div>
+  </div>
 
-      <!-- 🔔 صندوق التذكير -->
-<div id="reminderBanner"></div>
+  <div id="courseDetailsModal" class="modal">
+  <div class="modal-content">
+    <div class="modal-header">
+      <h2 class="modal-title" id="courseDetailsTitle">تفاصيل الكورس</h2>
+      <span class="close" onclick="closeModal('courseDetailsModal')">&times;</span>
+    </div>
+    <div class="modal-body" id="courseDetailsBody">
+      <div class="loading"><div class="loading-spinner"></div><p>جاري التحميل...</p></div>
+    </div>
+  </div>
+</div>
 
-<style>
-#reminderBanner {
-  position: fixed;
-  top: 70px; /* اضبط حسب الـ Navbar */
-  left: 50%;
-  transform: translateX(-50%);
-  background: linear-gradient(90deg, #ff7b00, #ffb300);
-  color: #fff;
-  font-size: 20px;
-  font-weight: bold;
-  padding: 15px 30px;
-  border-radius: 10px;
-  box-shadow: 0 4px 10px rgba(0,0,0,0.3);
-  z-index: 1000;
-  display: none;
-  white-space: nowrap;
-}
-
-/* حركة الدخول */
-@keyframes slideInDown {
-  from { opacity: 0; transform: translate(-50%, -50px); }
-  to { opacity: 1; transform: translate(-50%, 0); }
-}
-
-/* حركة الخروج */
-@keyframes slideOutRight {
-  from { opacity: 1; transform: translate(-50%, 0); }
-  to { opacity: 0; transform: translateX(200%); }
-}
-</style>
-
-<script>
-// قائمة الرسائل
-const reminders = [
-  "🌹 صلِّ على النبي ﷺ",
-  "🤲 لا إله إلا الله",
-  "✨ استغفر الله العظيم",
-  "💖 سبحان الله وبحمده سبحان الله العظيم"
-];
-
-// دالة لعرض التذكير كبانر
-function showReminderBanner() {
-  const banner = document.getElementById("reminderBanner");
-  const randomIndex = Math.floor(Math.random() * reminders.length);
-  banner.textContent = reminders[randomIndex];
-
-  banner.style.display = "block";
-  banner.style.animation = "slideInDown 0.5s ease forwards";
-
-  // بعد ثانيتين يخرج يمين
-  setTimeout(() => {
-    banner.style.animation = "slideOutRight 1s ease forwards";
-  }, 2000);
-
-  // يخفيه بعد 3 ثواني (إجمالي: دخول + بقاء + خروج)
-  setTimeout(() => {
-    banner.style.display = "none";
-  }, 3000);
-}
-
-// تشغيل أول ما يفتح المستخدم + كل 5 دقايق
-document.addEventListener("DOMContentLoaded", () => {
-  showReminderBanner(); // أول ما يفتح
-  setInterval(showReminderBanner, 300000); // كل 5 دقايق
-});
-</script>
-      
-  <script src="teacher.js"></script>
+  
+  <div id="reminderBanner"></div>
+  
   <script>
-  // Register service worker and handle PWA install prompt
-  (function(){
-    // SW registration
-    if ('serviceWorker' in navigator) {
-      window.addEventListener('load', function() {
-        navigator.serviceWorker.register('./sw.js').then(reg => {
-          console.log('SW registered:', reg.scope);
-        }).catch(err => console.warn('SW failed:', err));
+    const supabaseUrl = "https://zefsmckaihzfiqqbdake.supabase.co";
+    const supabaseKey = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InplZnNtY2thaWh6ZmlxcWJkYWtlIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTQyMzUzNTgsImV4cCI6MjA2OTgxMTM1OH0.vktk2VkEPtMclb6jb_pFa1DbrqWX9SOZRsBR577o5mc";
+    const supabaseClient = supabase.createClient(supabaseUrl, supabaseKey);
+    
+    let currentUserId = null;
+    let currentUserData = null;
+    let courses = [];
+    let lessonsPerCourseChart = null;
+    let attendanceChart = null;
+    let lessonsByCourse = {};
+    let qrScanner = null;
+    
+    const menuToggle = document.getElementById('menuToggle');
+    const sidebar = document.getElementById('sidebar');
+    const mainContent = document.getElementById('mainContent');
+    
+    menuToggle.addEventListener('click', () => {
+      if (window.innerWidth <= 768) {
+        sidebar.classList.toggle('active');
+      } else {
+        sidebar.classList.toggle('collapsed');
+        mainContent.classList.toggle('sidebar-collapsed');
+      }
+    });
+    
+    function showStatus(message, type = 'success') {
+      const statusEl = document.getElementById('statusMessage');
+      if (!statusEl) return;
+      statusEl.textContent = message;
+      statusEl.className = `status-message ${type}`;
+      statusEl.style.display = 'block';
+      setTimeout(() => statusEl.style.display = 'none', 3500);
+    }
+    
+    function closeModal(modalId) {
+      const modal = document.getElementById(modalId);
+      if (modal) modal.style.display = 'none';
+      if (qrScanner) {
+        qrScanner.stop().then(() => {
+          qrScanner.clear();
+          document.getElementById('qr-reader').style.display = 'none';
+          document.getElementById('startQrScan').style.display = 'inline-block';
+          document.getElementById('stopQrScan').style.display = 'none';
+        }).catch(err => console.error(err));
+      }
+    }
+    
+    function switchTab(tabName) {
+      document.querySelectorAll('.tab-content').forEach(tab => tab.style.display = 'none');
+      const activeTab = document.getElementById(tabName + 'Content');
+      if (activeTab) activeTab.style.display = 'block';
+      
+      document.querySelectorAll('.nav-link').forEach(link => link.classList.remove('active'));
+      const navLinks = document.querySelectorAll('.nav-link');
+      navLinks.forEach(link => {
+        if (link.getAttribute('onclick') === `switchTab('${tabName}')`) {
+          link.classList.add('active');
+        }
+      });
+      
+      if (tabName === 'dashboard') loadDashboardData();
+      if (tabName === 'courses') loadCourses();
+      if (tabName === 'students') loadTeacherStudents();
+      if (tabName === 'exams') loadTeacherExams();
+      if (tabName === 'attendances') loadTeacherAttendances();
+      if (tabName === 'profile') loadProfileData();
+      if (tabName === 'reports') loadReportsData();
+      
+      if (window.innerWidth <= 768) sidebar.classList.remove('active');
+    }
+    
+    async function loadUserData() {
+      try {
+        const { data: { user }, error } = await supabaseClient.auth.getUser();
+        if (error) throw error;
+        if (!user) {
+          window.location.href = 'index.html';
+          return;
+        }
+        
+        currentUserId = user.id;
+        
+        await supabaseClient.from('users').upsert({
+          id: user.id,
+          email: user.email,
+          full_name: user.user_metadata?.full_name || user.email?.split('@')[0] || 'المعلم',
+          role: 'teacher'
+        }, { onConflict: 'id' });
+        
+        const { data: userData } = await supabaseClient
+          .from('users')
+          .select('*')
+          .eq('id', currentUserId)
+          .maybeSingle();
+        
+        if (userData) {
+          currentUserData = userData;
+          document.getElementById('userNameHeader').textContent = `أهلاً بك، ${userData.full_name || 'المعلم'}`;
+          await loadDashboardData();
+        }
+      } catch (error) {
+        console.error('Error loading user data:', error);
+        showStatus('خطأ في تحميل بيانات المستخدم', 'error');
+      }
+    }
+    
+    async function loadDashboardData() {
+      try {
+        const { count: coursesCount } = await supabaseClient
+          .from('courses')
+          .select('*', { count: 'exact', head: true })
+          .eq('teacher_id', currentUserId);
+        
+        document.getElementById('totalCourses').textContent = coursesCount || 0;
+        
+        const { data: teacherCourses } = await supabaseClient
+          .from('courses')
+          .select('id')
+          .eq('teacher_id', currentUserId);
+        
+        const courseIds = (teacherCourses || []).map(c => c.id);
+        
+        let lessonsCount = 0;
+        if (courseIds.length > 0) {
+          const { count } = await supabaseClient
+            .from('lessons')
+            .select('*', { count: 'exact', head: true })
+            .in('course_id', courseIds);
+          lessonsCount = count || 0;
+        }
+        document.getElementById('totalLessons').textContent = lessonsCount;
+        
+        let studentsCount = 0;
+        if (courseIds.length > 0) {
+          const { data: subs } = await supabaseClient
+            .from('subscriptions')
+            .select('student_id')
+            .in('course_id', courseIds);
+          studentsCount = [...new Set((subs || []).map(s => s.student_id))].length;
+        }
+        document.getElementById('totalStudents').textContent = studentsCount;
+        
+        await loadLessonsPerCourseChart();
+      } catch (error) {
+        console.error('Error loading dashboard:', error);
+      }
+    }
+    
+    async function loadLessonsPerCourseChart() {
+      const chartCtx = document.getElementById('lessonsPerCourseChart');
+      if (!chartCtx) return;
+      
+      const { data: teacherCourses } = await supabaseClient
+        .from('courses')
+        .select('id, name')
+        .eq('teacher_id', currentUserId);
+      
+      const courseIds = (teacherCourses || []).map(c => c.id);
+      const courseNames = (teacherCourses || []).map(c => c.name);
+      
+      const lessonsPerCourse = {};
+      if (courseIds.length > 0) {
+        const { data: lessonsData } = await supabaseClient
+          .from('lessons')
+          .select('course_id')
+          .in('course_id', courseIds);
+        
+        (lessonsData || []).forEach(lesson => {
+          lessonsPerCourse[lesson.course_id] = (lessonsPerCourse[lesson.course_id] || 0) + 1;
+        });
+      }
+      
+      const lessonCounts = courseIds.map(id => lessonsPerCourse[id] || 0);
+      
+      if (lessonsPerCourseChart) lessonsPerCourseChart.destroy();
+      
+      lessonsPerCourseChart = new Chart(chartCtx, {
+        type: 'bar',
+        data: {
+          labels: courseNames,
+          datasets: [{
+            label: 'عدد الدروس',
+            data: lessonCounts,
+            backgroundColor: 'rgba(249, 115, 22, 0.7)',
+            borderColor: 'rgba(249, 115, 22, 1)',
+            borderWidth: 1
+          }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          scales: { y: { beginAtZero: true, ticks: { stepSize: 1 } } },
+          plugins: { legend: { display: false } }
+        }
       });
     }
+    
+async function loadCourses() {
+  const container = document.getElementById('coursesContainer');
+  container.innerHTML = '<div class="loading"><div class="loading-spinner"></div><p>جاري التحميل...</p></div>';
 
-    // beforeinstallprompt handling
-    let deferredPrompt = null;
-    const installBtn = document.getElementById('installBtn');
+  try {
+    const { data: courses, error } = await supabaseClient
+      .from('courses')
+      .select('*')
+      .eq('teacher_id', currentUserId)
+      .order('created_at', { ascending: false });
 
-    window.addEventListener('beforeinstallprompt', (e) => {
-      e.preventDefault();
-      deferredPrompt = e;
-      // show the install button
-      installBtn.style.display = 'inline-flex';
-    });
+    if (error) throw error;
 
-    installBtn.addEventListener('click', async () => {
-      installBtn.style.display = 'none';
-      if (!deferredPrompt) return;
-      deferredPrompt.prompt();
-      const choice = await deferredPrompt.userChoice;
-      if (choice.outcome === 'accepted') {
-        console.log('User accepted the install prompt');
-      } else {
-        console.log('User dismissed the install prompt');
-      }
-      deferredPrompt = null;
-    });
-
-    // Connection status messaging
-    const statusEl = document.getElementById('statusMessage');
-    function showStatus(msg, type='success', timeout=3500){
-      if(!statusEl) return;
-      statusEl.textContent = msg;
-      statusEl.className = 'status-message ' + (type === 'error' ? 'error' : 'success');
-      statusEl.style.display = 'block';
-      setTimeout(()=> statusEl.style.display = 'none', timeout);
+    if (!courses || courses.length === 0) {
+      container.innerHTML = '<p class="no-data">لا توجد كورسات</p>';
+      return;
     }
 
-    window.addEventListener('offline', () => showStatus('أنت الآن دون اتصال. سيتم استخدام المحتوى المحفوظ.', 'error', 5000));
-    window.addEventListener('online', () => showStatus('تم استعادة الاتصال بالإنترنت.', 'success', 3000));
+    let html = '';
+    for (const course of courses) {
+      // === جلب الوحدات الخاصة بالكورس ===
+      const { data: modules } = await supabaseClient
+        .from('modules')
+        .select('*')
+        .eq('course_id', course.id)
+        .order('created_at', { ascending: true });
 
-  })();
-  </script>
+      // === جلب الدروس الخاصة بالكورس ===
+      const { data: lessons } = await supabaseClient
+        .from('lessons')
+        .select('*')
+        .eq('course_id', course.id)
+        .order('date', { ascending: true });
 
+      // === جلب الاختبارات الخاصة بالكورس ===
+      const { data: exams } = await supabaseClient
+        .from('exams')
+        .select('*')
+        .eq('course_id', course.id)
+        .order('date', { ascending: true }); // العمود اسمه date مش exam_date
 
+      // بناء Box الكورس
+      html += `
+        <div class="course-box">
+          <div class="course-title">${course.name}</div>
+          <p style="color: var(--gray); font-size: 0.9rem; margin: 10px 0;">${course.description || 'لا يوجد وصف'}</p>
+          <div style="font-size: 0.85rem; color: var(--gray); margin-bottom:10px;">
+            <i class="fas fa-calendar"></i>
+            ${new Date(course.start_date).toLocaleDateString('ar-EG')} - ${new Date(course.end_date).toLocaleDateString('ar-EG')}
+          </div>
 
-    </body>
+          <!-- الوحدات -->
+          <div class="accordion-section">
+            <div class="accordion-header" onclick="toggleAccordion(this)">
+              🗂️ الوحدات <i class="fas fa-chevron-down"></i>
+            </div>
+            <div class="accordion-body" style="display:none;">
+              ${
+                modules?.length
+                  ? modules.map(m => `<div style="margin:5px 0;">- ${m.title || 'وحدة بدون عنوان'}</div>`).join('')
+                  : '<p style="color:var(--gray); font-size:0.85rem;">لا توجد وحدات</p>'
+              }
+            </div>
+          </div>
+
+          <!-- الدروس -->
+          <div class="accordion-section">
+            <div class="accordion-header" onclick="toggleAccordion(this)">
+              📘 الدروس <i class="fas fa-chevron-down"></i>
+            </div>
+            <div class="accordion-body" style="display:none;">
+              ${
+                lessons?.length
+                  ? lessons.map(l => `<div style="margin:5px 0;">- ${l.title} (${new Date(l.date).toLocaleDateString('ar-EG')})</div>`).join('')
+                  : '<p style="color:var(--gray); font-size:0.85rem;">لا يوجد دروس</p>'
+              }
+            </div>
+          </div>
+
+          <!-- الاختبارات -->
+          <div class="accordion-section">
+            <div class="accordion-header" onclick="toggleAccordion(this)">
+              📝 الاختبارات <i class="fas fa-chevron-down"></i>
+            </div>
+            <div class="accordion-body" style="display:none;">
+              ${
+                exams?.length
+                  ? exams.map(e => `<div style="margin:5px 0;">- ${e.title} (${new Date(e.date).toLocaleDateString('ar-EG')}) | الدرجة: ${e.max_score}</div>`).join('')
+                  : '<p style="color:var(--gray); font-size:0.85rem;">لا يوجد اختبارات</p>'
+              }
+            </div>
+          </div>
+        </div>
+      `;
+    }
+
+    container.innerHTML = html;
+  } catch (error) {
+    console.error('Error loading courses:', error);
+    container.innerHTML = '<p class="no-data">خطأ في التحميل</p>';
+  }
+}
+
+// دالة فتح/قفل الـ accordion
+function toggleAccordion(header) {
+  const body = header.nextElementSibling;
+  if (body.style.display === "none" || body.style.display === "") {
+    body.style.display = "block";
+    header.querySelector("i").classList.replace("fa-chevron-down", "fa-chevron-up");
+  } else {
+    body.style.display = "none";
+    header.querySelector("i").classList.replace("fa-chevron-up", "fa-chevron-down");
+  }
+}
+    
+    async function loadTeacherStudents() {
+      const container = document.getElementById('studentsContainer');
+      container.innerHTML = '<div class="loading"><div class="loading-spinner"></div><p>جاري التحميل...</p></div>';
+      
+      try {
+        const { data: teacherCourses } = await supabaseClient
+          .from('courses')
+          .select('id, name')
+          .eq('teacher_id', currentUserId);
+        
+        const courseIds = (teacherCourses || []).map(c => c.id);
+        
+        if (courseIds.length === 0) {
+          container.innerHTML = '<p class="no-data">لا توجد كورسات</p>';
+          return;
+        }
+        
+        const { data: subscriptions } = await supabaseClient
+          .from('subscriptions')
+          .select('student_id, course_id')
+          .in('course_id', courseIds);
+        
+        const studentIds = [...new Set((subscriptions || []).map(s => s.student_id))];
+        
+        if (studentIds.length === 0) {
+          container.innerHTML = '<p class="no-data">لا يوجد طلاب</p>';
+          return;
+        }
+        
+        const { data: students } = await supabaseClient
+          .from('students')
+          .select('id, full_name, email, phone')
+          .in('id', studentIds);
+        
+        let html = '<input type="text" class="search-box" placeholder="ابحث عن طالب..." id="studentSearch">';
+        
+        (students || []).forEach(student => {
+          html += `
+            <div class="card" data-name="${student.full_name.toLowerCase()}">
+              <div class="card-header">
+                <div class="card-title">${student.full_name}</div>
+              </div>
+              <div style="padding: 10px 0;">
+                <div style="margin: 5px 0;"><strong>البريد:</strong> ${student.email || '-'}</div>
+                <div style="margin: 5px 0;"><strong>الهاتف:</strong> ${student.phone || '-'}</div>
+              </div>
+            </div>
+          `;
+        });
+        
+        container.innerHTML = html;
+        
+        document.getElementById('studentSearch').addEventListener('input', function() {
+          const q = this.value.toLowerCase();
+          document.querySelectorAll('.card[data-name]').forEach(card => {
+            card.style.display = card.dataset.name.includes(q) ? '' : 'none';
+          });
+        });
+      } catch (error) {
+        console.error('Error loading students:', error);
+        container.innerHTML = '<p class="no-data">خطأ في التحميل</p>';
+      }
+    }
+    
+    async function loadTeacherExams() {
+      const container = document.getElementById('examsContainer');
+      container.innerHTML = '<div class="loading"><div class="loading-spinner"></div><p>جاري التحميل...</p></div>';
+      
+      try {
+        const { data: teacherCourses } = await supabaseClient
+          .from('courses')
+          .select('id, name')
+          .eq('teacher_id', currentUserId);
+        
+        const courseIds = (teacherCourses || []).map(c => c.id);
+        
+        if (courseIds.length === 0) {
+          container.innerHTML = '<p class="no-data">لا توجد كورسات</p>';
+          return;
+        }
+        
+        const { data: exams } = await supabaseClient
+          .from('exams')
+          .select('*')
+          .in('course_id', courseIds);
+        
+        if (!exams || exams.length === 0) {
+          container.innerHTML = '<p class="no-data">لا توجد اختبارات</p>';
+          return;
+        }
+        
+        let html = '';
+        exams.forEach(exam => {
+          const course = teacherCourses.find(c => c.id === exam.course_id);
+          html += `
+            <div class="card">
+              <div class="card-header">
+                <div class="card-title">${exam.title}</div>
+              </div>
+              <div style="padding: 10px 0;">
+                <div style="margin: 5px 0;"><strong>الكورس:</strong> ${course?.name || '-'}</div>
+                <div style="margin: 5px 0;"><strong>الدرجة:</strong> ${exam.max_score}</div>
+                <div style="margin: 5px 0;"><strong>التاريخ:</strong> ${new Date(exam.exam_date).toLocaleDateString('ar-EG')}</div>
+              </div>
+            </div>
+          `;
+        });
+        
+        container.innerHTML = html;
+      } catch (error) {
+        console.error('Error loading exams:', error);
+        container.innerHTML = '<p class="no-data">خطأ في التحميل</p>';
+      }
+    }
+
+    async function showCourseDetails(courseId) {
+  const modal = document.getElementById('courseDetailsModal');
+  const body = document.getElementById('courseDetailsBody');
+  modal.style.display = 'flex';
+  body.innerHTML = '<div class="loading"><div class="loading-spinner"></div><p>جاري التحميل...</p></div>';
+
+  try {
+    // جلب الكورس
+    const { data: course } = await supabaseClient
+      .from('courses')
+      .select('*')
+      .eq('id', courseId)
+      .single();
+
+    // جلب الدروس
+    const { data: lessons } = await supabaseClient
+      .from('lessons')
+      .select('*')
+      .eq('course_id', courseId)
+      .order('date', { ascending: true });
+
+    // جلب الاختبارات
+    const { data: exams } = await supabaseClient
+      .from('exams')
+      .select('*')
+      .eq('course_id', courseId)
+      .order('exam_date', { ascending: true });
+
+    let html = `
+      <h3 style="color: var(--primary);">${course.name}</h3>
+      <p>${course.description || 'لا يوجد وصف'}</p>
+      <hr>
+      <h4>الدروس:</h4>
+      ${lessons?.length ? lessons.map(l => `<div>📘 ${l.title} - ${new Date(l.date).toLocaleDateString('ar-EG')}</div>`).join('') : '<p>لا يوجد دروس</p>'}
+      <hr>
+      <h4>الاختبارات:</h4>
+      ${exams?.length ? exams.map(e => `<div>📝 ${e.title} - ${new Date(e.exam_date).toLocaleDateString('ar-EG')}</div>`).join('') : '<p>لا يوجد اختبارات</p>'}
+    `;
+
+    body.innerHTML = html;
+    document.getElementById('courseDetailsTitle').textContent = `تفاصيل الكورس: ${course.name}`;
+  } catch (err) {
+    console.error(err);
+    body.innerHTML = '<p class="no-data">خطأ في تحميل التفاصيل</p>';
+  }
+}
 
     
-    </html>
+    async function loadTeacherAttendances() {
+      const container = document.getElementById('attendancesContainer');
+      container.innerHTML = '<div class="loading"><div class="loading-spinner"></div><p>جاري التحميل...</p></div>';
+      
+      try {
+        const { data: teacherCourses } = await supabaseClient
+          .from('courses')
+          .select('id, name')
+          .eq('teacher_id', currentUserId);
+        
+        const courseIds = (teacherCourses || []).map(c => c.id);
+        
+        if (courseIds.length === 0) {
+          container.innerHTML = '<p class="no-data">لا توجد كورسات</p>';
+          return;
+        }
+        
+        const { data: attendances } = await supabaseClient
+          .from('attendances')
+          .select('*, students(full_name), lessons(title)')
+          .in('course_id', courseIds)
+          .order('date', { ascending: false })
+          .limit(50);
+        
+        if (!attendances || attendances.length === 0) {
+          container.innerHTML = '<p class="no-data">لا توجد سجلات حضور</p>';
+          return;
+        }
+        
+        const groupedByDate = {};
+        attendances.forEach(att => {
+          if (!groupedByDate[att.date]) {
+            groupedByDate[att.date] = [];
+          }
+          groupedByDate[att.date].push(att);
+        });
+        
+        let html = '';
+        Object.keys(groupedByDate).forEach(date => {
+          const records = groupedByDate[date];
+          const presentCount = records.filter(r => r.status === 'present').length;
+          const absentCount = records.filter(r => r.status === 'absent').length;
+          const lateCount = records.filter(r => r.status === 'late').length;
+          
+          html += `
+            <div class="course-box">
+              <div class="course-title" style="display: flex; justify-content: space-between; align-items: center;">
+                <span><i class="fas fa-calendar"></i> ${new Date(date).toLocaleDateString('ar-EG', {weekday: 'long', year: 'numeric', month: 'long', day: 'numeric'})}</span>
+                <div style="font-size: 0.85rem; color: var(--gray);">
+                  <span style="color: var(--success);"><i class="fas fa-check"></i> ${presentCount}</span>
+                  <span style="color: var(--danger); margin: 0 8px;"><i class="fas fa-times"></i> ${absentCount}</span>
+                  <span style="color: #f59e0b;"><i class="fas fa-clock"></i> ${lateCount}</span>
+                </div>
+              </div>
+              <div style="margin-top: 15px; display: grid; gap: 8px;">
+          `;
+          
+          records.forEach(att => {
+            const statusColor = att.status === 'present' ? 'var(--success)' : att.status === 'absent' ? 'var(--danger)' : '#f59e0b';
+            const statusIcon = att.status === 'present' ? 'fa-check-circle' : att.status === 'absent' ? 'fa-times-circle' : 'fa-clock';
+            const statusText = att.status === 'present' ? 'حاضر' : att.status === 'absent' ? 'غائب' : 'متأخر';
+            
+            html += `
+              <div style="background: #fafafa; padding: 10px; border-radius: 8px; display: flex; justify-content: space-between; align-items: center;">
+                <div>
+                  <strong>${att.students?.full_name || 'طالب'}</strong>
+                  <div style="font-size: 0.85rem; color: var(--gray);">
+                    ${att.lessons?.title || 'درس'} ${att.notes ? `- ${att.notes}` : ''}
+                  </div>
+                </div>
+                <div style="color: ${statusColor}; font-weight: bold;">
+                  <i class="fas ${statusIcon}"></i> ${statusText}
+                </div>
+              </div>
+            `;
+          });
+          
+          html += `</div></div>`;
+        });
+        
+        container.innerHTML = html;
+      } catch (error) {
+        console.error('Error loading attendances:', error);
+        container.innerHTML = '<p class="no-data">خطأ في التحميل</p>';
+      }
+    }
+    
+    async function loadReportsData() {
+      const container = document.getElementById('studentReportsContainer');
+      container.innerHTML = '<div class="loading"><div class="loading-spinner"></div><p>جاري التحميل...</p></div>';
+      
+      try {
+        await loadReportFilters();
+        
+        const courseFilter = document.getElementById('reportCourseFilter').value;
+        const monthFilter = document.getElementById('reportMonthFilter').value;
+        
+        const { data: teacherCourses } = await supabaseClient
+          .from('courses')
+          .select('id, name')
+          .eq('teacher_id', currentUserId);
+        
+        let courseIds = (teacherCourses || []).map(c => c.id);
+        
+        if (courseFilter) {
+          courseIds = [courseFilter];
+        }
+        
+        if (courseIds.length === 0) {
+          container.innerHTML = '<p class="no-data">لا توجد كورسات</p>';
+          return;
+        }
+        
+        let query = supabaseClient
+          .from('attendances')
+          .select('*')
+          .in('course_id', courseIds);
+        
+        if (monthFilter) {
+          const startDate = new Date(monthFilter + '-01');
+          const endDate = new Date(startDate.getFullYear(), startDate.getMonth() + 1, 0);
+          query = query.gte('date', startDate.toISOString().split('T')[0])
+                       .lte('date', endDate.toISOString().split('T')[0]);
+        }
+        
+        const { data: attendances } = await query;
+        
+        const totalPresent = (attendances || []).filter(a => a.status === 'present').length;
+        const totalAbsent = (attendances || []).filter(a => a.status === 'absent').length;
+        const totalLate = (attendances || []).filter(a => a.status === 'late').length;
+        const total = totalPresent + totalAbsent + totalLate;
+        const rate = total > 0 ? Math.round((totalPresent / total) * 100) : 0;
+        
+        document.getElementById('totalPresentStudents').textContent = totalPresent;
+        document.getElementById('totalAbsentStudents').textContent = totalAbsent;
+        document.getElementById('totalLateStudents').textContent = totalLate;
+        document.getElementById('attendanceRate').textContent = rate + '%';await loadAttendanceChart(attendances || []);
+        
+        const { data: subscriptions } = await supabaseClient
+          .from('subscriptions')
+          .select('student_id, course_id')
+          .in('course_id', courseIds);
+        
+        const studentIds = [...new Set((subscriptions || []).map(s => s.student_id))];
+        
+        if (studentIds.length === 0) {
+          container.innerHTML = '<p class="no-data">لا يوجد طلاب</p>';
+          return;
+        }
+        
+        const { data: students } = await supabaseClient
+          .from('students')
+          .select('id, full_name')
+          .in('id', studentIds)
+          .order('full_name');
+        
+        let html = '';
+        for (const student of students || []) {
+          const studentAttendances = (attendances || []).filter(a => a.student_id === student.id);
+          const present = studentAttendances.filter(a => a.status === 'present').length;
+          const absent = studentAttendances.filter(a => a.status === 'absent').length;
+          const late = studentAttendances.filter(a => a.status === 'late').length;
+          const studentTotal = present + absent + late;
+          const studentRate = studentTotal > 0 ? Math.round((present / studentTotal) * 100) : 0;
+          
+          html += `
+            <div class="student-report-card" data-student-name="${student.full_name.toLowerCase()}" onclick="showStudentAttendanceDetails('${student.id}', '${student.full_name}')">
+              <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+                <div style="font-weight: bold; font-size: 1.1rem;">${student.full_name}</div>
+                <div style="font-size: 1.2rem; font-weight: bold; color: ${studentRate >= 75 ? 'var(--success)' : studentRate >= 50 ? '#f59e0b' : 'var(--danger)'}">
+                  ${studentRate}%
+                </div>
+              </div>
+              <div style="display: flex; gap: 15px; font-size: 0.9rem;">
+                <span style="color: var(--success);"><i class="fas fa-check-circle"></i> ${present} حاضر</span>
+                <span style="color: var(--danger);"><i class="fas fa-times-circle"></i> ${absent} غائب</span>
+                <span style="color: #f59e0b;"><i class="fas fa-clock"></i> ${late} متأخر</span>
+              </div>
+            </div>
+          `;
+        }
+        
+        container.innerHTML = html || '<p class="no-data">لا توجد بيانات</p>';
+        
+        document.getElementById('studentReportSearch').addEventListener('input', function() {
+          const q = this.value.toLowerCase();
+          document.querySelectorAll('.student-report-card').forEach(card => {
+            const name = card.getAttribute('data-student-name');
+            card.style.display = name && name.includes(q) ? '' : 'none';
+          });
+        });
+      } catch (error) {
+        console.error('Error loading reports:', error);
+        container.innerHTML = '<p class="no-data">خطأ في التحميل</p>';
+      }
+    }
+    
+    async function loadReportFilters() {
+      try {
+        if (courses.length === 0) {
+          const { data } = await supabaseClient
+            .from('courses')
+            .select('*')
+            .eq('teacher_id', currentUserId);
+          courses = data || [];
+        }
+        
+        const courseSelect = document.getElementById('reportCourseFilter');
+        courseSelect.innerHTML = '<option value="">كل الكورسات</option>';
+        courses.forEach(course => {
+          const option = document.createElement('option');
+          option.value = course.id;
+          option.textContent = course.name;
+          courseSelect.appendChild(option);
+        });
+        
+        const monthSelect = document.getElementById('reportMonthFilter');
+        monthSelect.innerHTML = '<option value="">كل الأشهر</option>';
+        const now = new Date();
+        for (let i = 0; i < 12; i++) {
+          const date = new Date(now.getFullYear(), now.getMonth() - i, 1);
+          const value = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
+          const text = date.toLocaleDateString('ar-EG', { year: 'numeric', month: 'long' });
+          const option = document.createElement('option');
+          option.value = value;
+          option.textContent = text;
+          monthSelect.appendChild(option);
+        }
+      } catch (error) {
+        console.error('Error loading report filters:', error);
+      }
+    }
+    
+    async function loadAttendanceChart(attendances) {
+      const chartCtx = document.getElementById('attendanceChart');
+      if (!chartCtx) return;
+      
+      const groupedByDate = {};
+      attendances.forEach(att => {
+        if (!groupedByDate[att.date]) {
+          groupedByDate[att.date] = { present: 0, absent: 0, late: 0 };
+        }
+        if (att.status === 'present') groupedByDate[att.date].present++;
+        else if (att.status === 'absent') groupedByDate[att.date].absent++;
+        else if (att.status === 'late') groupedByDate[att.date].late++;
+      });
+      
+      const dates = Object.keys(groupedByDate).sort().slice(-10);
+      const presentData = dates.map(d => groupedByDate[d].present);
+      const absentData = dates.map(d => groupedByDate[d].absent);
+      const lateData = dates.map(d => groupedByDate[d].late);
+      const labels = dates.map(d => new Date(d).toLocaleDateString('ar-EG', { month: 'short', day: 'numeric' }));
+      
+      if (attendanceChart) attendanceChart.destroy();
+      
+      attendanceChart = new Chart(chartCtx, {
+        type: 'line',
+        data: {
+          labels: labels,
+          datasets: [
+            {
+              label: 'حاضر',
+              data: presentData,
+              borderColor: 'var(--success)',
+              backgroundColor: 'rgba(5, 150, 105, 0.1)',
+              tension: 0.4
+            },
+            {
+              label: 'غائب',
+              data: absentData,
+              borderColor: 'var(--danger)',
+              backgroundColor: 'rgba(239, 68, 68, 0.1)',
+              tension: 0.4
+            },
+            {
+              label: 'متأخر',
+              data: lateData,
+              borderColor: '#f59e0b',
+              backgroundColor: 'rgba(245, 158, 11, 0.1)',
+              tension: 0.4
+            }
+          ]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: {
+            legend: { display: true, position: 'top' }
+          },
+          scales: {
+            y: { beginAtZero: true, ticks: { stepSize: 1 } }
+          }
+        }
+      });
+    }
+    
+    async function showStudentAttendanceDetails(studentId, studentName) {
+      const modal = document.getElementById('studentAttendanceModal');
+      document.getElementById('studentAttendanceModalTitle').textContent = `سجل حضور: ${studentName}`;
+      modal.style.display = 'flex';
+      
+      const container = document.getElementById('studentAttendanceDetailsContainer');
+      container.innerHTML = '<div class="loading"><div class="loading-spinner"></div><p>جاري التحميل...</p></div>';
+      
+      try {
+        const { data: teacherCourses } = await supabaseClient
+          .from('courses')
+          .select('id')
+          .eq('teacher_id', currentUserId);
+        
+        const courseIds = (teacherCourses || []).map(c => c.id);
+        
+        const { data: attendances } = await supabaseClient
+          .from('attendances')
+          .select('*, lessons(title, date), courses(name)')
+          .eq('student_id', studentId)
+          .in('course_id', courseIds)
+          .order('date', { ascending: false });
+        
+        const present = (attendances || []).filter(a => a.status === 'present').length;
+        const absent = (attendances || []).filter(a => a.status === 'absent').length;
+        const late = (attendances || []).filter(a => a.status === 'late').length;
+        const total = present + absent + late;
+        const rate = total > 0 ? Math.round((present / total) * 100) : 0;
+        
+        document.getElementById('modalStudentPresent').textContent = present;
+        document.getElementById('modalStudentAbsent').textContent = absent;
+        document.getElementById('modalStudentLate').textContent = late;
+        document.getElementById('modalStudentRate').textContent = rate + '%';
+        
+        if (!attendances || attendances.length === 0) {
+          container.innerHTML = '<p class="no-data">لا توجد سجلات حضور</p>';
+          return;
+        }
+        
+        let html = '';
+        attendances.forEach(att => {
+          const statusClass = att.status;
+          const statusText = att.status === 'present' ? 'حاضر' : att.status === 'absent' ? 'غائب' : 'متأخر';
+          const statusIcon = att.status === 'present' ? 'fa-check-circle' : att.status === 'absent' ? 'fa-times-circle' : 'fa-clock';
+          
+          html += `
+            <div class="attendance-record ${statusClass}">
+              <div style="display: flex; justify-content: space-between; align-items: center;">
+                <div>
+                  <div style="font-weight: bold;">${att.lessons?.title || 'درس'}</div>
+                  <div style="font-size: 0.85rem; color: var(--gray); margin-top: 4px;">
+                    ${att.courses?.name || 'كورس'} - ${new Date(att.date).toLocaleDateString('ar-EG')}
+                  </div>
+                  ${att.notes ? `<div style="font-size: 0.85rem; margin-top: 4px;">${att.notes}</div>` : ''}
+                </div>
+                <div style="font-weight: bold;">
+                  <i class="fas ${statusIcon}"></i> ${statusText}
+                </div>
+              </div>
+            </div>
+          `;
+        });
+        
+        container.innerHTML = html;
+      } catch (error) {
+        console.error('Error loading student attendance details:', error);
+        container.innerHTML = '<p class="no-data">خطأ في التحميل</p>';
+      }
+    }
+    
+    async function showAddAttendanceModal() {
+      const modal = document.getElementById('attendanceModal');
+      if (!modal) return;
+      
+      await loadCoursesForAttendance();
+      modal.style.display = 'flex';
+    }
+    
+    async function loadCoursesForAttendance() {
+      try {
+        if (courses.length === 0) await loadCourses();
+        
+        const courseSelect = document.getElementById('attendanceCourseFilter');
+        courseSelect.innerHTML = '<option value="">اختر كورساً</option>';
+        courses.forEach(course => {
+          const option = document.createElement('option');
+          option.value = course.id;
+          option.textContent = course.name;
+          courseSelect.appendChild(option);
+        });
+        
+        lessonsByCourse = {};
+        for (const course of courses) {
+          const { data: lessonsData } = await supabaseClient
+            .from('lessons')
+            .select('id, title, date')
+            .eq('course_id', course.id)
+            .order('date', { ascending: true });
+          
+          lessonsByCourse[course.id] = lessonsData || [];
+        }
+      } catch (error) {
+        console.error('Error loading courses for attendance:', error);
+      }
+    }
+    
+    document.getElementById('attendanceCourseFilter').addEventListener('change', function() {
+      const courseId = this.value;
+      const lessonSelect = document.getElementById('attendanceLesson');
+      const dateInput = document.getElementById('attendanceDate');
+      
+      if (courseId && lessonsByCourse[courseId]) {
+        lessonSelect.innerHTML = '<option value="">اختر درساً</option>';
+        lessonsByCourse[courseId].forEach(lesson => {
+          const option = document.createElement('option');
+          option.value = lesson.id;
+          option.textContent = `${lesson.title} (${new Date(lesson.date).toLocaleDateString('ar-EG')})`;
+          lessonSelect.appendChild(option);
+        });
+        lessonSelect.disabled = false;
+      } else {
+        lessonSelect.innerHTML = '<option value="">اختر كورساً أولاً</option>';
+        lessonSelect.disabled = true;
+      }
+      
+      dateInput.value = new Date().toISOString().split('T')[0];
+      dateInput.disabled = false;
+      document.getElementById('studentAttendanceList').innerHTML = '<p class="no-data">اختر درساً أولاً</p>';
+    });
+    
+    document.getElementById('attendanceLesson').addEventListener('change', async function() {
+      const lessonId = this.value;
+      const courseId = document.getElementById('attendanceCourseFilter').value;
+      
+      if (lessonId && courseId) {
+        await loadStudentsForCourse(courseId);
+      } else {
+        document.getElementById('studentAttendanceList').innerHTML = '<p class="no-data">اختر درساً أولاً</p>';
+      }
+    });
+    
+    async function loadStudentsForCourse(courseId) {
+      const listContainer = document.getElementById('studentAttendanceList');
+      listContainer.innerHTML = '<p class="no-data">جاري التحميل...</p>';
+      
+      try {
+        const { data: subscriptions } = await supabaseClient
+          .from('subscriptions')
+          .select('student_id')
+          .eq('course_id', courseId);
+        
+        if (!subscriptions || subscriptions.length === 0) {
+          listContainer.innerHTML = '<p class="no-data">لا يوجد طلاب</p>';
+          return;
+        }
+        
+        const studentIds = subscriptions.map(sub => sub.student_id);
+        
+        const { data: students } = await supabaseClient
+          .from('students')
+          .select('id, full_name')
+          .in('id', studentIds)
+          .order('full_name');
+        
+        if (!students || students.length === 0) {
+          listContainer.innerHTML = '<p class="no-data">لا توجد بيانات طلاب</p>';
+          return;
+        }
+        
+        const searchInput = document.getElementById('studentSearchInModal');
+        if (searchInput) {
+          searchInput.style.display = 'block';
+          searchInput.value = '';
+        }
+        
+        updateStudentListDisplay(students);
+        
+        if (searchInput) {
+          searchInput.oninput = () => updateStudentListDisplay(students);
+        }
+      } catch (error) {
+        console.error('Error loading students:', error);
+        listContainer.innerHTML = '<p class="no-data">خطأ في التحميل</p>';
+      }
+    }
+    
+    function updateStudentListDisplay(students) {
+      const listContainer = document.getElementById('studentAttendanceList');
+      const searchInput = document.getElementById('studentSearchInModal');
+      const searchTerm = searchInput ? searchInput.value.toLowerCase() : '';
+      
+      let html = '';
+      students.forEach(student => {
+        if (searchTerm && !student.full_name.toLowerCase().includes(searchTerm)) return;
+        
+        html += `
+          <div class="student-item">
+            <div class="student-header">
+              <label class="student-name">
+                <input type="checkbox" class="student-checkbox" data-student-id="${student.id}" checked>
+                ${student.full_name}
+              </label>
+            </div>
+            <select class="student-status-select" data-student-id="${student.id}">
+              <option value="present">حاضر</option>
+              <option value="absent" selected>غائب</option>
+              <option value="late">متأخر</option>
+            </select>
+          </div>
+        `;
+      });
+      
+      if (html === '') {
+        html = '<p class="no-data">لا توجد نتائج للبحث</p>';
+      }
+      
+      listContainer.innerHTML = html;
+    }
+    
+    function setAllAttendance(status) {
+      document.querySelectorAll('.student-status-select').forEach(select => {
+        select.value = status;
+      });
+      document.querySelectorAll('.student-checkbox').forEach(checkbox => {
+        checkbox.checked = true;
+      });
+      showStatus(`تم تحديد الحضور "${status === 'present' ? 'حاضر' : status === 'absent' ? 'غائب' : 'متأخر'}" للجميع`);
+    }
+    
+    function clearAllAttendance() {
+      document.querySelectorAll('.student-checkbox').forEach(checkbox => {
+        checkbox.checked = false;
+      });
+      document.querySelectorAll('.student-status-select').forEach(select => {
+        select.value = 'absent';
+      });
+      showStatus('تم مسح جميع الاختيارات');
+    }
+    
+    document.getElementById('attendanceForm').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      
+      const lessonId = document.getElementById('attendanceLesson').value;
+      const courseId = document.getElementById('attendanceCourseFilter').value;
+      const date = document.getElementById('attendanceDate').value;
+      const notes = document.getElementById('attendanceNotes').value;
+      
+      if (!lessonId || !date) {
+        showStatus('من فضلك اختر الدرس وتأكد من التاريخ', 'error');
+        return;
+      }
+      
+      const attendanceRecords = [];
+      document.querySelectorAll('.student-checkbox:checked').forEach(checkbox => {
+        const studentId = checkbox.dataset.studentId;
+        const statusSelect = document.querySelector(`.student-status-select[data-student-id="${studentId}"]`);
+        const status = statusSelect ? statusSelect.value : 'absent';
+        
+        attendanceRecords.push({
+          lesson_id: lessonId,
+          course_id: courseId,
+          student_id: studentId,
+          date: date,
+          status: status,
+          notes: notes || null
+        });
+      });
+      
+      if (attendanceRecords.length === 0) {
+        showStatus('من فضلك اختر على الأقل طالب واحد', 'error');
+        return;
+      }
+      
+      try {
+        const { error } = await supabaseClient
+          .from('attendances')
+          .insert(attendanceRecords);
+        
+        if (error) throw error;
+        
+        showStatus(`تم تسجيل حضور ${attendanceRecords.length} طالب`);
+        closeModal('attendanceModal');
+        loadTeacherAttendances();
+      } catch (error) {
+        console.error('Error adding attendance:', error);
+        showStatus('خطأ في تسجيل الحضور', 'error');
+      }
+    });
+    
+    const startQrBtn = document.getElementById('startQrScan');
+    if (startQrBtn) {
+      const newStartQrBtn = startQrBtn.cloneNode(true);
+      startQrBtn.parentNode.replaceChild(newStartQrBtn, startQrBtn);
+      
+      newStartQrBtn.addEventListener('click', () => {
+        const qrReader = document.getElementById('qr-reader');
+        if (qrReader) qrReader.style.display = 'block';
+        const stopBtn = document.getElementById('stopQrScan');
+        if (stopBtn) stopBtn.style.display = 'inline-block';
+        newStartQrBtn.style.display = 'none';
+        
+        qrScanner = new Html5Qrcode('qr-reader');
+        qrScanner.start(
+          { facingMode: 'environment' },
+          { fps: 10, qrbox: 250 },
+          async (decodedText) => {
+            try {
+              const studentData = JSON.parse(decodedText);
+              const studentSelectElement = document.querySelector(`.student-status-select[data-student-id="${studentData.student_id}"]`);
+              
+              if (!studentSelectElement) {
+                alert('الطالب غير موجود في قائمة الطلاب لهذا الدرس');
+                return;
+              }
+              
+              if (studentSelectElement.value === 'present') {
+                return;
+              }
+              
+              studentSelectElement.value = 'present';
+              const studentCheckboxElement = document.querySelector(`.student-checkbox[data-student-id="${studentData.student_id}"]`);
+              if (studentCheckboxElement && !studentCheckboxElement.checked) {
+                studentCheckboxElement.checked = true;
+              }
+              
+              showStatus(`تم تحديث حالة الطالب إلى حاضر`);
+            } catch (e) {
+              alert('QR غير صالح');
+              console.error('Error parsing QR:', e);
+            }
+          },
+          (err) => console.warn('QR scan error:', err)
+        );
+      });
+    }
+    
+    document.getElementById('stopQrScan').addEventListener('click', () => {
+      if (qrScanner) {
+        qrScanner.stop().then(() => {
+          qrScanner.clear();
+          document.getElementById('qr-reader').style.display = 'none';
+          document.getElementById('startQrScan').style.display = 'inline-block';
+          document.getElementById('stopQrScan').style.display = 'none';
+        });
+      }
+    });
+    
+    function getEgyptTimeISO() {
+      const now = new Date();
+      const utc = now.getTime() + (now.getTimezoneOffset() * 60000);
+      const egyptOffset = 2 * 60 * 60000;
+      const egyptTime = new Date(utc + egyptOffset);
+      return egyptTime.toISOString();
+    }
+    
+    async function recordCheckIn() {
+      const today = new Date().toISOString().split('T')[0];
+      const now = getEgyptTimeISO();
+      
+      try {
+        const { data: exists } = await supabaseClient
+          .from('teacher_attendance')
+          .select('*')
+          .eq('teacher_id', currentUserId)
+          .eq('date', today)
+          .maybeSingle();
+        
+        if (exists) {
+          showStatus('سجلت حضورك بالفعل اليوم', 'error');
+          return;
+        }
+        
+        const { error } = await supabaseClient
+          .from('teacher_attendance')
+          .insert([{ teacher_id: currentUserId, date: today, check_in_time: now }]);
+        
+        if (error) throw error;
+        
+        showStatus('تم تسجيل حضورك بنجاح');
+        document.getElementById('checkInBtn').disabled = true;
+        loadProfileData();
+      } catch (error) {
+        console.error('Error check in:', error);
+        showStatus('خطأ في تسجيل الحضور', 'error');
+      }
+    }
+    
+    async function recordCheckOut() {
+      const today = new Date().toISOString().split('T')[0];
+      const now = getEgyptTimeISO();
+      
+      try {
+        const { data: row } = await supabaseClient
+          .from('teacher_attendance')
+          .select('id, check_out_time')
+          .eq('teacher_id', currentUserId)
+          .eq('date', today)
+          .maybeSingle();
+        
+        if (!row) {
+          showStatus('سجل حضورك أولاً', 'error');
+          return;
+        }
+        
+        if (row.check_out_time) {
+          showStatus('سجلت انصرافك بالفعل', 'error');
+          return;
+        }
+        
+        const { error } = await supabaseClient
+          .from('teacher_attendance')
+          .update({ check_out_time: now })
+          .eq('id', row.id);
+        
+        if (error) throw error;
+        
+        showStatus('تم تسجيل انصرافك بنجاح');
+        document.getElementById('checkOutBtn').disabled = true;
+        loadProfileData();
+      } catch (error) {
+        console.error('Error check out:', error);
+        showStatus('خطأ في تسجيل الانصراف', 'error');
+      }
+    }
+    
+    async function loadProfileData() {
+      try {
+        if (!currentUserData) return;
+        
+        document.getElementById('profileName').textContent = currentUserData.full_name || 'غير محدد';
+        document.getElementById('profileRole').textContent = 'معلم';
+        document.getElementById('fullName').value = currentUserData.full_name || '';
+        document.getElementById('email').value = currentUserData.email || '';
+        document.getElementById('phone').value = currentUserData.phone || '';
+        document.getElementById('specialty').value = currentUserData.specialty || '';
+        
+        const { data } = await supabaseClient
+          .from('teacher_attendance')
+          .select('*')
+          .eq('teacher_id', currentUserId)
+          .order('date', { ascending: false })
+          .limit(5);
+        
+        let html = '';
+        if (data && data.length > 0) {
+          data.forEach(record => {
+            const checkIn = record.check_in_time ? new Date(record.check_in_time).toLocaleTimeString('ar-EG', {hour: '2-digit', minute: '2-digit'}) : '-';
+            const checkOut = record.check_out_time ? new Date(record.check_out_time).toLocaleTimeString('ar-EG', {hour: '2-digit', minute: '2-digit'}) : '-';
+            
+            html += `
+              <div style="padding: 10px; border-bottom: 1px solid #eee;">
+                <div><strong>${record.date}</strong></div>
+                <div style="font-size: 0.85rem; color: var(--gray);">
+                  حضور: ${checkIn} | انصراف: ${checkOut}
+                </div>
+              </div>
+            `;
+          });
+        } else {
+          html = '<p class="no-data">لا توجد سجلات حضور</p>';
+        }
+        
+        document.getElementById('profileAttendanceRecords').innerHTML = html;
+      } catch (error) {
+        console.error('Error loading profile:', error);
+      }
+    }
+    
+    document.getElementById('profileForm').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      
+      try {
+        const { error } = await supabaseClient
+          .from('users')
+          .update({
+            full_name: document.getElementById('fullName').value,
+            email: document.getElementById('email').value,
+            phone: document.getElementById('phone').value,
+            specialty: document.getElementById('specialty').value
+          })
+          .eq('id', currentUserId);
+        
+        if (error) throw error;
+        
+        showStatus('تم حفظ التغييرات بنجاح');
+        await loadUserData();
+      } catch (error) {
+        console.error('Error saving profile:', error);
+        showStatus('خطأ في حفظ التغييرات', 'error');
+      }
+    });
+    
+    const reminders = [
+      "صلِّ على النبي",
+      "لا إله إلا الله",
+      "استغفر الله العظيم",
+      "سبحان الله وبحمده"
+    ];
+    
+    function showReminderBanner() {
+      const banner = document.getElementById("reminderBanner");
+      const randomIndex = Math.floor(Math.random() * reminders.length);
+      banner.textContent = reminders[randomIndex];
+      banner.style.display = "block";
+      banner.style.animation = "slideInDown 0.5s ease forwards";
+      
+      setTimeout(() => {
+        banner.style.animation = "slideOutRight 1s ease forwards";
+      }, 2000);
+      
+      setTimeout(() => {
+        banner.style.display = "none";
+      }, 3000);
+    }
+    
+    document.addEventListener("DOMContentLoaded", async () => {
+      await loadUserData();
+      showReminderBanner();
+      setInterval(showReminderBanner, 300000);
+    });
+  </script>
+</body>
+</html>
