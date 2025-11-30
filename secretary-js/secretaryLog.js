@@ -2,33 +2,40 @@
 async function loadCurrentUser() {
   try {
     const { data, error } = await supabaseClient.auth.getUser();
-    if (error) throw error;
+    if (error) {
+      console.warn("⚠️ Error getting user in secretaryLog:", err);
+      return false;
+    }
 
     if (data?.user) {
       window.userId = data.user.id;
-      console.log("✅ المستخدم الحالي:", window.userId);
+      console.log("✅ المستخدم الحالي في secretaryLog:", window.userId);
       if (typeof window.loadSecretaryStatus === "function") {
         window.loadSecretaryStatus();
       }
+      return true;
     } else {
-      window.location.href = "index.html";
+      console.warn('⚠️ No user data found in secretaryLog - this might be OK if master.js already set it');
+      // Don't redirect - let master.js handle it
+      return false;
     }
   } catch (err) {
-    console.error("❌ خطأ في جلب المستخدم:", err);
-    showStatus?.("فشل التحقق من المستخدم", "error");
-    window.location.href = "index.html";
+    console.warn('⚠️ Error in loadCurrentUser (secretaryLog):', err);
+    // Don't redirect - let master.js handle it
+    return false;
   }
 }
 
 // ✅ تحميل حالة السكرتير
 async function loadSecretaryStatus() {
-  if (!window.userId) return;
+  if (!window.userId || !window.currentAcademyId) return;
 
   const today = new Date().toISOString().split("T")[0];
   const { data: record, error } = await supabaseClient
     .from("secretary_attendance")
     .select("*")
     .eq("secretary_id", window.userId)
+    .eq("academy_id", window.currentAcademyId)
     .eq("attendance_date", today)
     .maybeSingle();
 
@@ -66,7 +73,7 @@ async function loadSecretaryStatus() {
 
 // ✅ تسجيل الحضور
 async function checkInSecretary() {
-  if (!window.userId) return;
+  if (!window.userId || !window.currentAcademyId) return;
 
   const today = new Date().toISOString().split("T")[0];
   const now = new Date().toISOString();
@@ -77,10 +84,11 @@ async function checkInSecretary() {
       .upsert(
         {
           secretary_id: window.userId,
+          academy_id: window.currentAcademyId,
           attendance_date: today,
           check_in: now,
         },
-        { onConflict: ["secretary_id", "attendance_date"] }
+        { onConflict: ["secretary_id", "academy_id", "attendance_date"] }
       );
 
     if (error) throw error;
@@ -94,8 +102,8 @@ async function checkInSecretary() {
 }
 
 async function checkOutSecretary() {
-  if (!window.userId) {
-    showStatus("❌ لم يتم تحميل المستخدم", "error");
+  if (!window.userId || !window.currentAcademyId) {
+    showStatus("❌ لم يتم تحميل البيانات", "error");
     return;
   }
 
@@ -107,6 +115,7 @@ async function checkOutSecretary() {
       .from("secretary_attendance")
       .select("id, check_in, check_out")
       .eq("secretary_id", window.userId)
+      .eq("academy_id", window.currentAcademyId)
       .eq("attendance_date", today)
       .maybeSingle();
 
@@ -124,11 +133,11 @@ async function checkOutSecretary() {
       return;
     }
 
-    // ✅ نستخدم update مباشرةً
     const { error: updateError } = await supabaseClient
       .from("secretary_attendance")
       .update({ check_out: now })
-      .eq("id", existing.id);
+      .eq("id", existing.id)
+      .eq("academy_id", window.currentAcademyId);
 
     if (updateError) throw updateError;
 
@@ -145,7 +154,7 @@ async function checkOutSecretary() {
 async function renderSecretaryLog() {
   const logEl = document.getElementById("secretaryLog");
   const statusEl = document.getElementById("secretaryStatus");
-  if (!logEl || typeof supabaseClient === "undefined" || !window.userId) return;
+  if (!logEl || typeof supabaseClient === "undefined" || !window.userId || !window.currentAcademyId) return;
 
   statusEl.textContent = "جارٍ تحميل سجل السكرتير...";
   try {
@@ -154,6 +163,7 @@ async function renderSecretaryLog() {
       .from("secretary_attendance")
       .select("*")
       .eq("secretary_id", window.userId)
+      .eq("academy_id", window.currentAcademyId)
       .order("attendance_date", { ascending: false })
       .limit(50);
 
@@ -220,5 +230,14 @@ document.addEventListener("DOMContentLoaded", () => {
     }
   });
 
-  loadCurrentUser();
+  // Delay loadCurrentUser to ensure master.js has initialized
+  setTimeout(() => {
+    if (window.userId) {
+      console.log('✅ window.userId already set by master.js');
+      window.loadSecretaryStatus?.();
+    } else {
+      console.log('ℹ️ Attempting to load current user...');
+      loadCurrentUser();
+    }
+  }, 1500);
 });

@@ -1,840 +1,759 @@
 <!DOCTYPE html>
-
 <html dir="rtl" lang="ar">
 <head>
-<meta charset="utf-8"/>
-<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
-<meta content="var(--dark)" name="theme-color"/>
-<title>تسجيل الدخول</title>
-<!-- Manifest -->
-<link href="manifest.json" rel="manifest"/>
-<!-- Favicon -->
-<link href="./logo2.jpg" rel="icon" type="image/jpeg"/>
-<!-- Supabase -->
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-<style>
-:root {
-    --primary: #f97316;
-    --primary-dark: #ea580c;
-    --primary-light: #fed7aa;
-    --secondary: #059669;
-    --secondary-light: #d1fae5;
-    --dark: #1f2937;
-    --light: #f9fafb;
-    --gray: #6b7280;
-    --gray-light: #f3f4f6;
-    --border: #e5e7eb;
-    --success: #10b981;
-    --warning: #f59e0b;
-    --danger: #ef4444;
-    --info: #3b82f6;
-    --waiting: #8b5cf6;
-    --sidebar-width: 280px;
-    --header-height: 70px;
-    --shadow-light: 0 1px 3px rgba(0,0,0,0.1);
-    --shadow-medium: 0 4px 6px rgba(0,0,0,0.15);
-    --shadow-heavy: 0 10px 25px rgba(0,0,0,0.3);
-    --radius-sm: 8px;
-    --radius-md: 12px;
-    --radius-lg: 20px;
-}
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>تسجيل الدخول | نظام الأكاديميات</title>
+  <link rel="icon" href="./logo2.jpg" type="image/jpeg">
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <style>
+    :root {
+      --primary: #f97316;
+      --primary-hover: #ea580c;
+      --success: #10b981;
+      --danger: #ef4444;
+      --warning: #f59e0b;
+      --dark: #0f172a;
+      --dark-light: #1e293b;
+    }
 
-* {
-  box-sizing: border-box;
-  transition: all 0.3s ease;
-}
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    }
 
-body {
-  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-  padding: 20px;
-  background-image: 
-    linear-gradient(rgba(0,0,0,0.55), rgba(0,0,0,0.55)), 
-    url('./images/backraound.jpg');
-  background-size: cover;
-  background-position: center;
-  background-repeat: no-repeat;
-  background-attachment: fixed;
-  margin: 0;
-  direction: rtl;
-  min-height: 100vh;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
+    body {
+      min-height: 100vh;
+      background: linear-gradient(rgba(0,0,0,0.85), rgba(0,0,0,0.85)), 
+                  url('./images/backraound.jpg') center/cover fixed;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: #fff;
+      direction: rtl;
+      padding: 20px;
+    }
 
-.container {
-  max-width: 420px;
-  width: 100%;
-  padding: 40px;
-  border-radius: var(--radius-lg);
-  background: rgba(255, 255, 255, 0.12);
-  border: 1px solid rgba(255, 255, 255, 0.25);
-  backdrop-filter: blur(20px);
-  -webkit-backdrop-filter: blur(20px);
-  box-shadow: var(--shadow-heavy);
-  color: #fff;
-  animation: fadeInUp 0.8s ease both;
-}
+    .container {
+      width: 100%;
+      max-width: 460px;
+      padding: 45px 40px;
+      background: rgba(30, 41, 59, 0.95);
+      border-radius: 20px;
+      backdrop-filter: blur(20px);
+      border: 2px solid rgba(249, 115, 22, 0.3);
+      text-align: center;
+      box-shadow: 0 20px 60px rgba(0, 0, 0, 0.6);
+      animation: slideIn 0.4s ease-out;
+    }
 
-@keyframes fadeInUp {
-  from { opacity: 0; transform: translateY(20px); }
-  to { opacity: 1; transform: translateY(0); }
-}
+    @keyframes slideIn {
+      from {
+        opacity: 0;
+        transform: translateY(-30px);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
 
-h2 {
-  text-align: center;
-  color: #fff;
-  margin-bottom: 25px;
-  font-size: 26px;
-  font-weight: 700;
-  letter-spacing: 1px;
-}
+    .logo-container {
+      margin-bottom: 25px;
+    }
 
-label {
-  display: block;
-  margin: 18px 0 8px;
-  font-weight: 600;
-  color: #f3f4f6;
-  font-size: 14px;
-}
+    .logo {
+      width: 120px;
+      height: 120px;
+      border-radius: 50%;
+      border: 4px solid var(--primary);
+      box-shadow: 0 8px 25px rgba(249, 115, 22, 0.4);
+      object-fit: cover;
+    }
 
-.input-group {
-  position: relative;
-}
+    h2 {
+      color: var(--primary);
+      font-size: 1.8em;
+      margin-bottom: 10px;
+      font-weight: 600;
+    }
 
-.input-group i {
-  position: absolute;
-  top: 50%;
-  left: 14px;
-  transform: translateY(-50%);
-  color: rgba(255,255,255,0.7);
-  pointer-events: none;
-}
+    .subtitle {
+      color: #94a3b8;
+      margin-bottom: 30px;
+      font-size: 0.95em;
+    }
 
-input {
-  width: 100%;
-  padding: 14px 40px 14px 14px;
-  border: 1px solid rgba(255,255,255,0.3);
-  border-radius: var(--radius-md);
-  font-size: 15px;
-  background: rgba(255, 255, 255, 0.15);
-  color: #fff;
-}
+    .form-group {
+      margin-bottom: 20px;
+      text-align: right;
+    }
 
-input::placeholder {
-  color: rgba(255,255,255,0.7);
-}
+    label {
+      display: block;
+      margin-bottom: 8px;
+      color: #cbd5e1;
+      font-size: 0.9em;
+      font-weight: 500;
+    }
 
-input:focus {
-  outline: none;
-  border-color: var(--primary-light);
-  background: rgba(255, 255, 255, 0.25);
-  transform: translateY(-2px);
-  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.3), 0 0 12px var(--primary-light);
-}
+    input {
+      width: 100%;
+      padding: 16px 18px;
+      border-radius: 12px;
+      border: 2px solid rgba(255, 255, 255, 0.1);
+      background: rgba(255, 255, 255, 0.08);
+      color: #fff;
+      font-size: 16px;
+      outline: none;
+      transition: all 0.3s ease;
+    }
 
-button {
-  margin-top: 28px;
-  padding: 14px;
-  background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);
-  color: #fff;
-  border: none;
-  border-radius: var(--radius-md);
-  cursor: pointer;
-  width: 100%;
-  font-size: 16px;
-  font-weight: bold;
-  text-transform: uppercase;
-  letter-spacing: 1px;
-  box-shadow: 0 4px 15px rgba(249, 115, 22, 0.4);
-}
+    input:focus {
+      border-color: var(--primary);
+      background: rgba(255, 255, 255, 0.12);
+      box-shadow: 0 0 0 3px rgba(249, 115, 22, 0.1);
+    }
 
-button:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 12px 28px rgba(0, 0, 0, 0.4), 0 0 20px var(--primary-light);
-}
+    input::placeholder {
+      color: rgba(255, 255, 255, 0.5);
+    }
 
-button:active {
-  transform: translateY(0);
-}
+    button {
+      width: 100%;
+      padding: 16px;
+      margin: 10px 0;
+      border-radius: 12px;
+      border: none;
+      font-size: 16px;
+      font-weight: bold;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      position: relative;
+      overflow: hidden;
+    }
 
-#status, #regStatus, #resetStatus, #changeEmailStatus {
-  margin-top: 20px;
-  padding: 14px;
-  border-radius: var(--radius-md);
-  text-align: center;
-  font-weight: bold;
-  font-size: 14px;
-}
+    button:disabled {
+      opacity: 0.6;
+      cursor: not-allowed;
+    }
 
-.success { 
-  background: linear-gradient(135deg, var(--success) 0%, var(--secondary-light) 100%); 
-  color: white; 
-}
+    .btn-primary {
+      background: linear-gradient(135deg, var(--primary) 0%, var(--primary-hover) 100%);
+      color: white;
+      box-shadow: 0 4px 15px rgba(249, 115, 22, 0.4);
+    }
 
-.error { 
-  background: linear-gradient(135deg, var(--danger) 0%, var(--danger) 100%); 
-  color: white; 
-}
+    .btn-primary:hover:not(:disabled) {
+      transform: translateY(-2px);
+      box-shadow: 0 6px 20px rgba(249, 115, 22, 0.6);
+    }
 
-.info { 
-  background: linear-gradient(135deg, var(--info) 0%, var(--info) 100%); 
-  color: white; 
-}
+    .btn-primary:active:not(:disabled) {
+      transform: translateY(0);
+    }
 
-.loader {
-  display: inline-block;
-  width: 20px;
-  height: 20px;
-  border: 3px solid rgba(255,255,255,0.3);
-  border-radius: 50%;
-  border-top-color: white;
-  animation: spin 1s ease-in-out infinite;
-  margin-left: 10px;
-}
+    .status {
+      padding: 14px 18px;
+      border-radius: 10px;
+      margin: 20px 0;
+      font-weight: 600;
+      font-size: 0.95em;
+      animation: fadeIn 0.3s ease;
+      display: none;
+    }
 
-@keyframes spin {
-  to { transform: rotate(360deg); }
-}
+    .status.show {
+      display: block;
+    }
 
-.register-link {
-  text-align: center;
-  margin-top: 20px;
-  padding: 15px;
-  background: rgba(255,255,255,0.08);
-  border-radius: var(--radius-md);
-  box-shadow: var(--shadow-light);
-}
+    @keyframes fadeIn {
+      from {
+        opacity: 0;
+        transform: translateY(-10px);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
 
-.register-link a {
-  color: var(--primary-light);
-  text-decoration: none;
-  font-weight: 600;
-  transition: all 0.3s ease;
-  display: block;
-  margin: 5px 0;
-}
+    .status.success {
+      background: rgba(16, 185, 129, 0.2);
+      border: 2px solid var(--success);
+      color: var(--success);
+    }
 
-.register-link a:hover {
-  color: #fff;
-  text-decoration: underline;
-}
+    .status.error {
+      background: rgba(239, 68, 68, 0.2);
+      border: 2px solid var(--danger);
+      color: var(--danger);
+    }
 
-.install-btn {
-  position: fixed;
-  bottom: 20px;
-  right: 20px;
-  padding: 10px 20px;
-  background: var(--dark);
-  color: #fff;
-  border: none;
-  border-radius: var(--radius-sm);
-  cursor: pointer;
-  z-index: 10000;
-  box-shadow: var(--shadow-heavy);
-}
+    .status.info {
+      background: rgba(59, 130, 246, 0.2);
+      border: 2px solid #3b82f6;
+      color: #3b82f6;
+    }
 
-@media (max-width: 500px) {
-  .container {
-    padding: 25px;
-  }
-  h2 {
-    font-size: 22px;
-  }
-  input, button {
-    font-size: 14px;
-    padding: 12px;
-  }
-}
-</style>
+    .divider {
+      display: flex;
+      align-items: center;
+      margin: 25px 0;
+      color: #64748b;
+      font-size: 0.9em;
+    }
+
+    .divider::before,
+    .divider::after {
+      content: '';
+      flex: 1;
+      height: 1px;
+      background: rgba(255, 255, 255, 0.1);
+    }
+
+    .divider::before {
+      margin-left: 15px;
+    }
+
+    .divider::after {
+      margin-right: 15px;
+    }
+
+    .link {
+      color: #fbbf24;
+      text-decoration: none;
+      margin-top: 15px;
+      display: inline-block;
+      font-weight: 500;
+      transition: all 0.3s ease;
+    }
+
+    .link:hover {
+      color: var(--primary);
+      text-decoration: underline;
+    }
+
+    .hidden {
+      display: none !important;
+    }
+
+    .loader {
+      display: inline-block;
+      width: 18px;
+      height: 18px;
+      border: 3px solid rgba(255, 255, 255, 0.3);
+      border-top-color: #fff;
+      border-radius: 50%;
+      animation: spin 0.8s linear infinite;
+      margin-left: 10px;
+    }
+
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+
+    .password-toggle {
+      position: relative;
+    }
+
+    .password-toggle input {
+      padding-left: 50px;
+    }
+
+    .toggle-icon {
+      position: absolute;
+      left: 18px;
+      top: 50%;
+      transform: translateY(-50%);
+      cursor: pointer;
+      color: #94a3b8;
+      font-size: 1.2em;
+      user-select: none;
+      transition: color 0.3s;
+    }
+
+    .toggle-icon:hover {
+      color: var(--primary);
+    }
+
+    @media (max-width: 480px) {
+      .container {
+        padding: 35px 25px;
+      }
+
+      h2 {
+        font-size: 1.5em;
+      }
+
+      .logo {
+        width: 100px;
+        height: 100px;
+      }
+    }
+  </style>
 </head>
 <body>
-<div class="container">
-<img alt="Logo" src="./logo2.jpg" style="display:block; margin:0 auto 15px;     width: 100px;
-    height: 100px; border-radius:50%; box-shadow: var(--shadow-medium);"/><h2> تسجيل الدخول</h2>
-<form id="loginForm">
-<label>📧 البريد الإلكتروني:
-        <input autocomplete="email" id="email" placeholder="أدخل بريدك الإلكتروني" required="" type="email"/>
-</label>
-<label>🔒 كلمة المرور:
-        <input autocomplete="current-password" id="password" placeholder="أدخل كلمة المرور" required="" type="password"/>
-</label>
-<button type="submit">دخول</button>
-</form>
-<p id="status"></p>
-<div class="register-link">
-<a href="#" onclick="showRegisterForm()">إنشاء حساب جديد</a>
-<a href="#" onclick="showResetPasswordForm()">نسيت كلمة المرور؟</a>
-<a href="#" onclick="showChangeEmailForm()">تغيير البريد الإلكتروني</a>
+
+<!-- شاشة تسجيل الدخول -->
+<div id="loginScreen" class="container">
+  <div class="logo-container">
+    <img src="./logo2.jpg" alt="logo" class="logo">
+  </div>
+  <h2>مرحباً بعودتك</h2>
+  <p class="subtitle">سجّل دخولك للوصول إلى لوحة التحكم</p>
+  
+  <form id="loginForm">
+    <div class="form-group">
+      <label for="email">البريد الإلكتروني</label>
+      <input type="email" id="email" placeholder="example@domain.com" required autocomplete="email">
+    </div>
+    
+    <div class="form-group password-toggle">
+      <label for="password">كلمة المرور</label>
+      <input type="password" id="password" placeholder="••••••••" required autocomplete="current-password">
+      <span class="toggle-icon" onclick="togglePassword('password')">👁️</span>
+    </div>
+    
+    <button type="submit" class="btn-primary" id="loginBtn">
+      <span id="loginBtnText">تسجيل الدخول</span>
+      <span id="loginBtnLoader" class="hidden"><span class="loader"></span></span>
+    </button>
+  </form>
+  
+  <div class="status" id="loginStatus"></div>
+  
+  <div class="divider">أو</div>
+  
+  <a href="#" class="link" id="toRegister">إنشاء أكاديمية جديدة ←</a>
 </div>
+
+<!-- شاشة التسجيل -->
+<div id="registerScreen" class="container hidden">
+  <h2>إنشاء أكاديمية جديدة</h2>
+  <p class="subtitle">املأ البيانات التالية لإنشاء أكاديميتك</p>
+  
+  <div class="form-group">
+    <label for="academyName">اسم الأكاديمية *</label>
+    <input type="text" id="academyName" placeholder="مثال: أكاديمية النجاح التعليمية" required>
+  </div>
+  
+  <div class="form-group">
+    <label for="fullName">اسمك الكامل *</label>
+    <input type="text" id="fullName" placeholder="الاسم الكامل" required>
+  </div>
+  
+  <div class="form-group">
+    <label for="regEmail">البريد الإلكتروني *</label>
+    <input type="email" id="regEmail" placeholder="admin@academy.com" required autocomplete="email">
+  </div>
+  
+  <div class="form-group password-toggle">
+    <label for="regPassword">كلمة المرور * (6 أحرف على الأقل)</label>
+    <input type="password" id="regPassword" placeholder="كلمة مرور قوية" minlength="6" required autocomplete="new-password">
+    <span class="toggle-icon" onclick="togglePassword('regPassword')">👁️</span>
+  </div>
+  
+  <button type="button" class="btn-primary" id="createBtn">
+    <span id="createBtnText">إنشاء الأكاديمية</span>
+    <span id="createBtnLoader" class="hidden"><span class="loader"></span></span>
+  </button>
+  
+  <div class="status" id="regStatus"></div>
+  
+  <div class="divider">أو</div>
+  
+  <a href="#" class="link" id="backToLogin">← العودة لتسجيل الدخول</a>
 </div>
-<!-- نموذج التسجيل -->
-<div id="registerContainer" style="display: none;">
-<div class="container">
-<h2>📝 تسجيل مستخدم جديد</h2>
-<form id="registerForm">
-<label>👤 الاسم الكامل:
-          <input id="regFullName" placeholder="أدخل اسمك الكامل" required="" type="text"/>
-</label>
-<label>📧 البريد الإلكتروني:
-          <input id="regEmail" placeholder="أدخل بريدك الإلكتروني" required="" type="email"/>
-</label>
-<label>🔒 كلمة المرور:
-          <input id="regPassword" minlength="6" placeholder="أدخل كلمة مرور قوية" required="" type="password"/>
-</label>
-<label>👔 الدور:
-          <select id="regRole" style="padding: 15px; border: 2px solid var(--border); border-radius: 10px; font-size: 16px; background: var(--light);">
-<option value="admin">مشرف</option>
-<option value="teacher">معلم</option>
-<option value="secretary">مسؤول الطلاب (السيكرتير)</option>
-</select>
-</label>
-<button type="submit">تسجيل</button>
-</form>
-<p id="regStatus"></p>
-<div class="register-link">
-<a href="#" onclick="showLoginForm()">العودة لتسجيل الدخول</a>
-</div>
-</div>
-</div>
-<!-- نموذج إعادة تعيين كلمة المرور -->
-<div id="resetPasswordContainer" style="display: none;">
-<div class="container">
-<h2>🔄 إعادة تعيين كلمة المرور</h2>
-<form id="resetPasswordForm">
-<label>📧 البريد الإلكتروني:
-          <input id="resetEmail" placeholder="أدخل بريدك الإلكتروني" required="" type="email"/>
-</label>
-<button type="submit">إرسال رابط إعادة التعيين</button>
-</form>
-<p id="resetStatus"></p>
-<div class="register-link">
-<a href="#" onclick="showLoginForm()">العودة لتسجيل الدخول</a>
-</div>
-</div>
-</div>
-<!-- نموذج تغيير البريد الإلكتروني -->
-<div id="changeEmailContainer" style="display: none;">
-<div class="container">
-<h2>✉️ تغيير البريد الإلكتروني</h2>
-<div id="changeEmailFormContainer">
-<form id="changeEmailForm">
-<label>📧 البريد الإلكتروني الحالي:
-            <input id="currentEmail" placeholder="أدخل بريدك الإلكتروني الحالي" readonly="" required="" type="email"/>
-</label>
-<label>📧 البريد الإلكتروني الجديد:
-            <input id="newEmail" placeholder="أدخل البريد الإلكتروني الجديد" required="" type="email"/>
-</label>
-<button type="submit">إرسال رابط التأكيد</button>
-</form>
-</div>
-<p id="changeEmailStatus"></p>
-<div class="register-link">
-<a href="#" onclick="showLoginForm()">العودة لتسجيل الدخول</a>
-</div>
-</div>
-</div>
+
 <script>
-    // تهيئة العميل
-    const supabaseClient = supabase.createClient(
-      "https://zefsmckaihzfiqqbdake.supabase.co",
-      "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InplZnNtY2thaWh6ZmlxcWJkYWtlIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTQyMzUzNTgsImV4cCI6MjA2OTgxMTM1OH0.vktk2VkEPtMclb6jb_pFa1DbrqWX9SOZRsBR577o5mc"
-    );
+  // إعداد Supabase
+  const SUPABASE_URL = 'https://nhzbnzcdsebepsmrtona.supabase.co'
+  const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im5oemJuemNkc2ViZXBzbXJ0b25hIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjM2NjU4MTEsImV4cCI6MjA3OTI0MTgxMX0.wNSf49MpQjCCopByd3zCz4-TJ2EGGABc3-ICEsAPaFo'
+  const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY)
 
-    // متغيرات للتخزين المؤقت في الذاكرة (بدلاً من localStorage)
-    let currentUser = null;
-    let signupEmail = null;
-
-    // عرض نموذج التسجيل
-    function showRegisterForm() {
-      document.querySelector('.container').style.display = 'none';
-      document.getElementById('registerContainer').style.display = 'block';
-      document.getElementById('resetPasswordContainer').style.display = 'none';
-      document.getElementById('changeEmailContainer').style.display = 'none';
-    }
-
-    // عرض نموذج إعادة تعيين كلمة المرور
-    function showResetPasswordForm() {
-      document.querySelector('.container').style.display = 'none';
-      document.getElementById('registerContainer').style.display = 'none';
-      document.getElementById('resetPasswordContainer').style.display = 'block';
-      document.getElementById('changeEmailContainer').style.display = 'none';
-    }
-
-    // عرض نموذج تغيير البريد الإلكتروني
-    function showChangeEmailForm() {
-      document.querySelector('.container').style.display = 'none';
-      document.getElementById('registerContainer').style.display = 'none';
-      document.getElementById('resetPasswordContainer').style.display = 'none';
-      document.getElementById('changeEmailContainer').style.display = 'block';
-      
-      // التحقق من حالة المستخدم وملء البريد الإلكتروني الحالي
-      checkUserAndFillEmail();
-    }
-
-    // التحقق من حالة المستخدم وملء البريد الإلكتروني الحالي
-    async function checkUserAndFillEmail() {
-      try {
-        // التحقق من حالة الجلسة أولاً
-        const { data: { session }, error: sessionError } = await supabaseClient.auth.getSession();
-        
-        if (sessionError) {
-          throw sessionError;
-        }
-        
-        if (!session || !session.user) {
-          document.getElementById('changeEmailFormContainer').style.display = 'none';
-          document.getElementById('changeEmailStatus').className = 'error';
-          document.getElementById('changeEmailStatus').textContent = '❌ يجب تسجيل الدخول أولاً لتغيير البريد الإلكتروني.';
-          return;
-        }
-
-        // الحصول على بيانات المستخدم
-        const { data: { user }, error: userError } = await supabaseClient.auth.getUser();
-        
-        if (userError) {
-          throw userError;
-        }
-        
-        if (user && user.email) {
-          document.getElementById('currentEmail').value = user.email;
-          document.getElementById('changeEmailFormContainer').style.display = 'block';
-          document.getElementById('changeEmailStatus').className = 'info';
-          document.getElementById('changeEmailStatus').textContent = '✅ تم العثور على حسابك. يمكنك الآن تغيير البريد الإلكتروني.';
-        } else {
-          document.getElementById('changeEmailFormContainer').style.display = 'none';
-          document.getElementById('changeEmailStatus').className = 'error';
-          document.getElementById('changeEmailStatus').textContent = '❌ يجب تسجيل الدخول أولاً لتغيير البريد الإلكتروني.';
-        }
-      } catch (error) {
-        console.error('Error checking user:', error);
-        document.getElementById('changeEmailFormContainer').style.display = 'none';
-        document.getElementById('changeEmailStatus').className = 'error';
-        document.getElementById('changeEmailStatus').textContent = '❌ خطأ في التحقق من الحساب: ' + error.message;
-      }
-    }
-
-    // عرض نموذج تسجيل الدخول
-    function showLoginForm() {
-      document.getElementById('registerContainer').style.display = 'none';
-      document.getElementById('resetPasswordContainer').style.display = 'none';
-      document.getElementById('changeEmailContainer').style.display = 'none';
-      document.querySelector('.container').style.display = 'block';
-    }
-
-    // معالج تسجيل الدخول
-    document.getElementById('loginForm').addEventListener('submit', async function(e) {
-      e.preventDefault();
-      const status = document.getElementById('status');
-      const email = document.getElementById('email').value;
-      const password = document.getElementById('password').value;
-
-      status.textContent = '';
-      status.className = 'info';
-      status.innerHTML = '<span class="loader"></span> جاري تسجيل الدخول...';
-
-      try {
-        // تسجيل الدخول
-        const { data, error } = await supabaseClient.auth.signInWithPassword({
-          email,
-          password
-        });
-
-        if (error) {
-          status.className = 'error';
-          status.textContent = 'فشل في الدخول: ' + error.message;
-          return;
-        }
-
-        if (!data.user) {
-          status.className = 'error';
-          status.textContent = 'لم يتم استلام بيانات المستخدم.';
-          return;
-        }
-
-        // محاولة جلب البيانات من user_metadata أولاً
-        let full_name = data.user.user_metadata?.full_name;
-        let role = data.user.user_metadata?.role;
-
-        // إذا لم توجد البيانات في user_metadata، نحاول جلبها من جدول users
-        if (!full_name || !role) {
-          console.log('محاولة جلب البيانات من جدول users...');
-          const { data: userData, error: userError } = await supabaseClient
-            .from('users')
-            .select('full_name, role')
-            .eq('id', data.user.id)
-            .maybeSingle();
-
-          if (userError) {
-            console.error('Database error:', userError);
-            status.className = 'error';
-            status.textContent = 'خطأ في قاعدة البيانات: ' + userError.message;
-            return;
-          }
-
-          if (userData) {
-            full_name = userData.full_name;
-            role = userData.role;
-          }
-        }
-
-        // التحقق من وجود البيانات المطلوبة
-        if (!full_name || !role) {
-          status.className = 'error';
-          status.textContent = 'لم يتم العثور على بيانات المستخدم الكاملة. الاسم: ' + (full_name || 'غير محدد') + '، الدور: ' + (role || 'غير محدد');
-          return;
-        }
-        currentUser = { ...data.user, full_name, role };
-
-        status.className = 'success';
-
-        if (role === 'admin') {
-          status.textContent = `🎉 مرحباً ${full_name}! تحويل إلى لوحة المشرف...`;
-          setTimeout(() => {
-            alert('سيتم توجيهك إلى لوحة المشرف');
-            window.location.href = 'admin-dashboard.html';
-          }, 1500);
-        } else if (role === 'teacher') {
-          status.textContent = `🎉 مرحباً ${full_name}! تحويل إلى لوحة المعلم...`;
-          setTimeout(() => {
-            alert('سيتم توجيهك إلى لوحة المعلم');
-            window.location.href = 'dashboard-teacher.html';
-          }, 1500);
-        } else if (role === 'secretary') {
-          status.textContent = `🎉 مرحباً ${full_name}! تحويل إلى لوحة مسؤول الطلاب...`;
-          setTimeout(() => {
-            window.location.href = 'dashboard-secretary.html';
-          }, 1500);
-        } else {
-          status.className = 'error';
-          status.textContent = 'دور غير مشهور: ' + role;
-        }
-
-      } catch (err) {
-        console.error('Unexpected error:', err);
-        status.className = 'error';
-        status.textContent = 'خطأ غير متوقع: ' + err.message;
-      }
-    });
-
-// check if user came from supabase auth link
-window.addEventListener("load", () => {
-  const params = new URLSearchParams(window.location.hash.substring(1));
-  if (params.has("access_token")) {
-    // ✅ إعادة التوجيه للصفحة الرئيسية للمشروع
-    window.location.href = "https://apdla-coder.github.io/Assiut-Academy/?" + window.location.hash.substring(1);
-  }
-});
-
-
-// معالج التسجيل الجديد
-document.getElementById('registerForm').addEventListener('submit', async function(e) {
-  e.preventDefault();
-
-  const status = document.getElementById('regStatus');
-  status.textContent = '';
-  status.className = '';
-
-  const fullName = document.getElementById('regFullName').value;
-  const email = document.getElementById('regEmail').value;
-  const password = document.getElementById('regPassword').value;
-  const role = document.getElementById('regRole').value;
-
-  status.className = 'info';
-  status.innerHTML = '<span class="loader"></span> جاري إنشاء الحساب...';
-
-  try {
-    // ✅ تحقق من الحد الأقصى للمستخدمين (6)
-    const { count, error: countError } = await supabaseClient
-      .from('users')
-      .select('id', { count: 'exact', head: true });
-
-    if (countError) {
-      status.textContent = '❌ خطأ أثناء التحقق من عدد المستخدمين: ' + countError.message;
-      status.className = 'error';
-      return;
-    }
-
-    if (count >= 6) {
-      status.textContent = '🚫 تم الوصول إلى الحد الأقصى (6 مستخدمين). برجاء التواصل مع المشرف لإضافة مستخدم جديد.';
-      status.className = 'error';
-      return;
-    }
-
-    // ✅ تحقق من البريد لو موجود قبل كده
-    const { data: existingUser, error: checkError } = await supabaseClient
-      .from('users')
-      .select('email')
-      .eq('email', email)
-      .maybeSingle();
-
-    if (checkError) {
-      status.textContent = 'خطأ في التحقق من البريد الإلكتروني: ' + checkError.message;
-      status.className = 'error';
-      return;
-    }
-
-    if (existingUser) {
-      status.textContent = '❌ هذا البريد الإلكتروني مسجل مسبقاً.';
-      status.className = 'error';
-      return;
-    }
-
-// إنشاء الحساب
-const { data, error } = await supabaseClient.auth.signUp({
-  email,
-  password,
-  options: {
-    emailRedirectTo: 'https://apdla-coder.github.io/Assiut-Academy/',
-    data: {
-      full_name: fullName,
-      role: role
-    }
-  }
-});
-
-
-    if (error) {
-      console.error("خطأ في التسجيل:", error.message);
-      status.className = 'error';
-      status.textContent = 'خطأ في التسجيل: ' + error.message;
-      return;
-    }
-
-    console.log("تم إنشاء المستخدم:", data.user);
-
-    if (data && data.user) {
-      status.textContent = '✅ تم إنشاء الحساب بنجاح! يرجى تفعيل حسابك من خلال الرابط المرسل إلى بريدك الإلكتروني.';
-      status.className = 'success';
+  // دالة عرض الرسائل
+  function showStatus(elementId, message, type = 'info') {
+    const el = document.getElementById(elementId)
+    el.textContent = message
+    el.className = `status ${type} show`
+    
+    if (type === 'success' || type === 'error') {
       setTimeout(() => {
-        showLoginForm();
-      }, 3000);
-    } else {
-      status.textContent = '📬 تم إرسال رابط التفعيل إلى بريدك.';
-      status.className = 'success';
-      setTimeout(() => {
-        showLoginForm();
-      }, 2000);
+        el.classList.remove('show')
+      }, type === 'error' ? 6000 : 4000)
     }
-
-  } catch (err) {
-    status.textContent = '❌ خطأ غير متوقع: ' + err.message;
-    status.className = 'error';
-    console.error("Unexpected error:", err);
   }
-});
 
+  // دالة إخفاء الرسائل
+  function hideStatus(elementId) {
+    const el = document.getElementById(elementId)
+    el.classList.remove('show')
+  }
 
-    // معالج إعادة تعيين كلمة المرور
-    document.getElementById('resetPasswordForm').addEventListener('submit', async function(e) {
-      e.preventDefault();
-      const status = document.getElementById('resetStatus');
-      const email = document.getElementById('resetEmail').value;
+  // دالة تبديل إظهار كلمة المرور
+  function togglePassword(inputId) {
+    const input = document.getElementById(inputId)
+    input.type = input.type === 'password' ? 'text' : 'password'
+  }
+  window.togglePassword = togglePassword
 
-      status.textContent = '';
-      status.className = 'info';
-      status.innerHTML = '<span class="loader"></span> جاري إرسال الرابط...';
+  // تبديل بين شاشات الدخول والتسجيل
+  document.getElementById('toRegister').onclick = (e) => {
+    e.preventDefault()
+    document.getElementById('loginScreen').classList.add('hidden')
+    document.getElementById('registerScreen').classList.remove('hidden')
+    hideStatus('loginStatus')
+  }
 
-      try {
-        const { error } = await supabaseClient.auth.resetPasswordForEmail(email, {
-          redirectTo: 'https://apdla-coder.github.io/Assiut-Academy/update-password.html'
-        });
+  document.getElementById('backToLogin').onclick = (e) => {
+    e.preventDefault()
+    document.getElementById('registerScreen').classList.add('hidden')
+    document.getElementById('loginScreen').classList.remove('hidden')
+    hideStatus('regStatus')
+  }
 
-        if (error) throw error;
-
-        status.className = 'success';
-        status.textContent = '📬 تم إرسال رابط إعادة تعيين كلمة المرور إلى بريدك الإلكتروني.';
-      } catch (err) {
-        status.className = 'error';
-        status.textContent = '❌ حدث خطأ: ' + err.message;
-      }
-    });
-
-    // معالج تغيير البريد الإلكتروني
-    document.getElementById('changeEmailForm').addEventListener('submit', async function(e) {
-      e.preventDefault();
-      const status = document.getElementById('changeEmailStatus');
-      const currentEmail = document.getElementById('currentEmail').value;
-      const newEmail = document.getElementById('newEmail').value;
-
-      // التحقق من أن البريد الإلكتروني الجديد مختلف عن الحالي
-      if (currentEmail === newEmail) {
-        status.className = 'error';
-        status.textContent = '❌ البريد الإلكتروني الجديد يجب أن يكون مختلفًا عن الحالي';
-        return;
-      }
-
-      status.textContent = '';
-      status.className = 'info';
-      status.innerHTML = '<span class="loader"></span> جاري إرسال رابط التأكيد...';
-
-      try {
-        // التحقق من أن المستخدم مسجل دخول
-        const { data: { session }, error: sessionError } = await supabaseClient.auth.getSession();
-        
-        if (sessionError) {
-          throw sessionError;
-        }
-        
-        if (!session || !session.user) {
-          status.className = 'error';
-          status.textContent = '❌ يجب تسجيل الدخول أولاً';
-          return;
-        }
-
-        const { data: { user }, error: userError } = await supabaseClient.auth.getUser();
-        
-        if (userError) {
-          throw userError;
-        }
-        
-        if (!user) {
-          status.className = 'error';
-          status.textContent = '❌ يجب تسجيل الدخول أولاً';
-          return;
-        }
-
-        // التحقق من أن البريد الإلكتروني الحالي صحيح
-        if (user.email !== currentEmail) {
-          status.className = 'error';
-          status.textContent = '❌ هناك مشكلة في التحقق من البريد الإلكتروني الحالي';
-          return;
-        }
-
-        // إرسال رابط تأكيد البريد الإلكتروني الجديد
-        const { error } = await supabaseClient.auth.updateUser({ email: newEmail });
-
-        if (error) throw error;
-
-        status.className = 'success';
-        status.textContent = '📬 تم إرسال رابط تأكيد البريد الإلكتروني الجديد إلى العنوان الجديد. يرجى التحقق من بريدك والضغط على الرابط للتأكيد.';
-
-        // إعادة تعيين النموذج بعد نجاح العملية
-        setTimeout(() => {
-          document.getElementById('newEmail').value = '';
-        }, 3000);
-
-      } catch (err) {
-        status.className = 'error';
-        status.textContent = '❌ حدث خطأ: ' + err.message;
-      }
-    });
-
-    // فحص حالة المصادقة عند تحميل الصفحة
-    window.addEventListener('load', async () => {
-      try {
-        const { data: { session }, error } = await supabaseClient.auth.getSession();
-        if (session && !error) {
-          console.log('المستخدم مسجل دخول مسبقاً:', session.user);
-          currentUser = session.user;
-        }
-      } catch (err) {
-        console.error('Error checking session:', err);
-      }
-    });
-  </script>
-<!-- تسجيل Service Worker + زر التثبيت -->
-<script>
-    // سجل SW مرة واحدة (الملف: sw.js)
-    if ('serviceWorker' in navigator) {
-      navigator.serviceWorker.register('./sw.js')
-        .then(reg => console.log('✅ Service Worker Registered', reg.scope))
-        .catch(err => console.error('❌ Service Worker Error:', err));
+  // تسجيل الدخول
+  document.getElementById('loginForm').onsubmit = async (e) => {
+    e.preventDefault()
+    
+    const email = document.getElementById('email').value.trim()
+    const password = document.getElementById('password').value
+    const loginBtn = document.getElementById('loginBtn')
+    
+    if (!email || !password) {
+      showStatus('loginStatus', 'الرجاء إدخال البريد الإلكتروني وكلمة المرور', 'error')
+      return
     }
 
-    // قبل حدث التثبيت: اعرض زر التثبيت للمستخدم
-    let deferredPrompt;
-    window.addEventListener('beforeinstallprompt', (e) => {
-      e.preventDefault();
-      deferredPrompt = e;
+    // تعطيل الزر وعرض التحميل
+    loginBtn.disabled = true
+    document.getElementById('loginBtnText').classList.add('hidden')
+    document.getElementById('loginBtnLoader').classList.remove('hidden')
+    showStatus('loginStatus', 'جاري تسجيل الدخول...', 'info')
 
-      const installBtn = document.createElement('button');
-      installBtn.className = 'install-btn';
-      installBtn.textContent = '📲 تثبيت التطبيق';
-      document.body.appendChild(installBtn);
+    try {
+      const { data, error } = await supabase.auth.signInWithPassword({
+        email,
+        password
+      })
 
-      installBtn.addEventListener('click', async () => {
-        installBtn.disabled = true;
-        deferredPrompt.prompt();
-        const choiceResult = await deferredPrompt.userChoice;
-        if (choiceResult.outcome === 'accepted') {
-          console.log('تم التثبيت بنجاح');
-        } else {
-          console.log('تم إلغاء التثبيت');
+      if (error) {
+        let errorMsg = 'حدث خطأ في تسجيل الدخول'
+        
+        if (error.message.includes('Invalid login credentials')) {
+          errorMsg = 'البريد الإلكتروني أو كلمة المرور غير صحيحة'
+        } else if (error.message.includes('Email not confirmed')) {
+          errorMsg = 'البريد الإلكتروني غير مفعّل. تحقق من بريدك الإلكتروني'
+        } else if (error.message.includes('Invalid email')) {
+          errorMsg = 'البريد الإلكتروني غير صحيح'
         }
-        deferredPrompt = null;
-        installBtn.remove();
-      });
-    });
-
-    // optional: تحكّم في حدث التثبيت الفعلي (بعد التثبيت)
-    window.addEventListener('appinstalled', () => {
-      console.log('App installed');
-    });
-
-    window.addEventListener('beforeinstallprompt', (e) => {
-      e.preventDefault();
-      deferredPrompt = e;
-      
-      // إظهار زر أو رسالة للمستخدم
-      const installBtn = document.createElement('button');
-      installBtn.innerText = '📲 ثبّت التطبيق';
-      installBtn.style.position = 'fixed';
-      installBtn.style.bottom = '20px';
-      installBtn.style.right = '20px';
-      installBtn.style.padding = '10px 20px';
-      installBtn.style.zIndex = '9999';
-      
-      document.body.appendChild(installBtn);
-      
-      installBtn.addEventListener('click', async () => {
-        installBtn.remove();
-        deferredPrompt.prompt();
-        const { outcome } = await deferredPrompt.userChoice;
-        console.log(`User response to install: ${outcome}`);
-        deferredPrompt = null;
-      });
-    });
-
-    // استماع لرسائل من الـ Service Worker
-    navigator.serviceWorker.addEventListener('message', (evt) => {
-      const msg = evt.data;
-      if (!msg) return;
-
-      if (msg.type === 'SW_UPDATED') {
-        // هنا تعرض للمستخدم نافذة/توست تخبره أن هناك تحديث
-        // مثال بسيط: انشئ زر فورّي لإعادة تحميل الصفحة وتفعيل النسخة الجديدة
-        const updateBar = document.createElement('div');
-        updateBar.style.position = 'fixed';
-        updateBar.style.left = '0';
-        updateBar.style.right = '0';
-        updateBar.style.bottom = '0';
-        updateBar.style.padding = '12px';
-        updateBar.style.background = 'var(--dark)';
-        updateBar.style.color = '#fff';
-        updateBar.style.textAlign = 'center';
-        updateBar.style.zIndex = '10000';
-        updateBar.textContent = 'يوجد تحديث متاح — اضغط للتحديث الآن';
-        updateBar.style.cursor = 'pointer';
-        document.body.appendChild(updateBar);
-
-        updateBar.addEventListener('click', async () => {
-          // اطلب من الـ SW تفعيل نفسه فوراً، ثم أعد تحميل الصفحة
-          const registration = await navigator.serviceWorker.getRegistration();
-          if (registration && registration.waiting) {
-            // أخبر الـ SW الانتظار أنه يرغب في التفعيل فوراً
-            registration.waiting.postMessage({ type: 'SKIP_WAITING' });
-          }
-          // انتظر قليلاً ثم أعد تحميل الصفحة لتستخدم النسخة الجديدة
-          setTimeout(() => location.reload(true), 500);
-        });
-
-        // اختفاء الزر بعد 20 ثانية تلقائياً
-        setTimeout(() => {
-          updateBar.remove();
-        }, 20000);
+        
+        showStatus('loginStatus', errorMsg, 'error')
+        return
       }
-    });
-  </script>
+
+      if (!data.user) {
+        showStatus('loginStatus', 'فشل تسجيل الدخول. حاول مرة أخرى', 'error')
+        return
+      }
+
+      showStatus('loginStatus', 'تم تسجيل الدخول بنجاح! جاري التحقق من الصلاحيات...', 'success')
+      
+      // التحقق من الصلاحيات والتوجيه
+      await checkUserRoleAndRedirect(data.user)
+
+    } catch (err) {
+      console.error('خطأ:', err)
+      showStatus('loginStatus', 'حدث خطأ غير متوقع. حاول مرة أخرى', 'error')
+    } finally {
+      // إعادة تفعيل الزر
+      loginBtn.disabled = false
+      document.getElementById('loginBtnText').classList.remove('hidden')
+      document.getElementById('loginBtnLoader').classList.add('hidden')
+    }
+  }
+
+  // دالة التحقق من الصلاحيات والتوجيه
+  async function checkUserRoleAndRedirect(user) {
+    try {
+      console.log('🔍 البحث عن المستخدم:', user.id)
+      
+      // البحث في جدول academy_members مع استعلام أكثر مرونة
+      const { data: memberships, error: memberError } = await supabase
+        .from('academy_members')
+        .select('academy_id, role, user_id')
+        .eq('user_id', user.id)
+
+      console.log('📋 العضويات:', memberships)
+      console.log('⚠️ خطأ العضوية:', memberError)
+
+      if (memberError && memberError.code !== 'PGRST116') {
+        console.error('خطأ في الاستعلام:', memberError)
+      }
+
+      // إذا وُجد العضو في أكاديمية
+      if (memberships && memberships.length > 0) {
+        const member = memberships[0]
+        
+        console.log('✅ تم العثور على العضوية:', member)
+        
+        // جلب معلومات الأكاديمية بشكل منفصل
+        const { data: academy, error: acadError } = await supabase
+          .from('academies')
+          .select('id, name, slug')
+          .eq('id', member.academy_id)
+          .single()
+
+        console.log('🏫 معلومات الأكاديمية:', academy)
+
+        if (acadError) {
+          console.error('خطأ في جلب الأكاديمية:', acadError)
+        }
+
+        const academyName = academy?.name || 'أكاديمية غير معروفة'
+        const academySlug = academy?.slug || ''
+        
+        // حفظ البيانات
+        localStorage.setItem('user_id', user.id)
+        localStorage.setItem('user_email', user.email)
+        localStorage.setItem('user_role', member.role.toLowerCase())
+        localStorage.setItem('current_academy_id', member.academy_id)
+        localStorage.setItem('current_academy_name', academyName)
+        
+        if (academySlug) {
+          localStorage.setItem('current_academy_slug', academySlug)
+        }
+
+        console.log('💾 تم حفظ البيانات:', {
+          role: member.role,
+          academy_id: member.academy_id,
+          academy_name: academyName
+        })
+
+        // التوجيه حسب الدور (مع دعم جميع الحالات)
+        const role = member.role.toLowerCase().trim()
+        const redirectMap = {
+          'admin': 'admin-dashboard.html',
+          'owner': 'admin-dashboard.html',
+          'teacher': 'dashboard-teacher.html',
+          'secretary': 'dashboard-secretary.html',
+          'student': 'student-dashboard.html'
+        }
+
+        const redirectPage = redirectMap[role]
+        
+        console.log('🎯 التوجيه إلى:', redirectPage, 'للدور:', role)
+        
+        if (redirectPage) {
+          showStatus('loginStatus', 
+            `تم تسجيل الدخول بنجاح كـ ${role}! جاري التوجيه...`, 
+            'success'
+          )
+          
+          setTimeout(() => {
+            window.location.href = redirectPage
+          }, 1000)
+          return
+        } else {
+          console.error('⚠️ دور غير معروف:', role)
+          showStatus('loginStatus', 
+            `دورك في النظام (${member.role}) غير مدعوم حالياً. تواصل مع الدعم`, 
+            'error'
+          )
+          return
+        }
+      }
+
+      // إذا لم يُعثر على عضوية - البحث في profiles
+      console.log('🔍 لم يُعثر على عضوية، البحث في profiles...')
+      
+      const { data: profile, error: profileError } = await supabase
+        .from('profiles')
+        .select('id, email, role, full_name')
+        .eq('id', user.id)
+        .single()
+
+      console.log('👤 معلومات Profile:', profile)
+
+      if (profile && profile.role) {
+        console.log('⚠️ المستخدم موجود في profiles لكن ليس في academy_members')
+        showStatus('loginStatus', 
+          `حسابك موجود لكن غير مرتبط بأكاديمية. تواصل مع مدير الأكاديمية لإضافتك إلى النظام`, 
+          'error'
+        )
+      } else {
+        showStatus('loginStatus', 
+          'عذراً، حسابك غير مرتبط بأي أكاديمية. تواصل مع مدير الأكاديمية لإضافتك', 
+          'error'
+        )
+      }
+      
+      // تسجيل خروج تلقائي
+      console.log('🚪 تسجيل خروج تلقائي...')
+      await supabase.auth.signOut()
+      
+    } catch (err) {
+      console.error('❌ خطأ في التحقق من الصلاحيات:', err)
+      showStatus('loginStatus', 
+        `حدث خطأ في التحقق من صلاحياتك: ${err.message}`, 
+        'error'
+      )
+    }
+  }
+
+  // إنشاء أكاديمية جديدة
+  document.getElementById('createBtn').onclick = async () => {
+    const academyName = document.getElementById('academyName').value.trim()
+    const fullName = document.getElementById('fullName').value.trim()
+    const email = document.getElementById('regEmail').value.trim()
+    const password = document.getElementById('regPassword').value
+    const createBtn = document.getElementById('createBtn')
+
+    // التحقق من البيانات
+    if (!academyName || !fullName || !email || !password) {
+      showStatus('regStatus', 'الرجاء ملء جميع الحقول المطلوبة', 'error')
+      return
+    }
+
+    if (password.length < 6) {
+      showStatus('regStatus', 'كلمة المرور يجب أن تكون 6 أحرف على الأقل', 'error')
+      return
+    }
+
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
+    if (!emailRegex.test(email)) {
+      showStatus('regStatus', 'البريد الإلكتروني غير صحيح', 'error')
+      return
+    }
+
+    // تعطيل الزر وعرض التحميل
+    createBtn.disabled = true
+    document.getElementById('createBtnText').classList.add('hidden')
+    document.getElementById('createBtnLoader').classList.remove('hidden')
+    showStatus('regStatus', 'جاري إنشاء الأكاديمية...', 'info')
+
+    try {
+      // 1. تسجيل المستخدم
+      const { data: authData, error: authError } = await supabase.auth.signUp({
+        email,
+        password,
+        options: {
+          data: {
+            full_name: fullName
+          }
+        }
+      })
+
+      if (authError) {
+        let errorMsg = 'فشل إنشاء الحساب'
+        
+        if (authError.message.includes('already registered')) {
+          errorMsg = 'هذا البريد الإلكتروني مسجل مسبقاً. استخدم بريد آخر أو سجل دخول'
+        } else if (authError.message.includes('Invalid email')) {
+          errorMsg = 'البريد الإلكتروني غير صحيح'
+        } else if (authError.message.includes('Password')) {
+          errorMsg = 'كلمة المرور ضعيفة. استخدم كلمة مرور أقوى'
+        }
+        
+        showStatus('regStatus', errorMsg, 'error')
+        return
+      }
+
+      if (!authData.user) {
+        showStatus('regStatus', 'فشل إنشاء الحساب. حاول مرة أخرى', 'error')
+        return
+      }
+
+      const userId = authData.user.id
+
+      // 2. إنشاء الأكاديمية
+      const slug = academyName
+        .toLowerCase()
+        .trim()
+        .replace(/\s+/g, '-')
+        .replace(/[^\w\-\u0600-\u06FF]/g, '')
+        .substring(0, 50)
+
+      const { data: academy, error: acadError } = await supabase
+        .from('academies')
+        .insert({
+          name: academyName,
+          slug: slug,
+          owner_id: userId,
+          created_at: new Date().toISOString()
+        })
+        .select()
+        .single()
+
+      if (acadError) {
+        showStatus('regStatus', 
+          'فشل إنشاء الأكاديمية. قد يكون الاسم مكرراً', 
+          'error'
+        )
+        return
+      }
+
+      // 3. إضافة المستخدم كـ profile
+      await supabase.from('profiles').upsert({
+        id: userId,
+        email: email,
+        full_name: fullName,
+        role: 'admin'
+      })
+
+      // 4. ربط المستخدم بالأكاديمية كـ admin
+      const { error: memberError } = await supabase
+        .from('academy_members')
+        .insert({
+          academy_id: academy.id,
+          user_id: userId,
+          role: 'admin'
+        })
+
+      if (memberError) {
+        showStatus('regStatus', 
+          'تم إنشاء الأكاديمية لكن فشلت إضافة الصلاحيات. تواصل مع الدعم', 
+          'error'
+        )
+        return
+      }
+
+      // حفظ البيانات
+      localStorage.setItem('user_id', userId)
+      localStorage.setItem('user_email', email)
+      localStorage.setItem('user_role', 'admin')
+      localStorage.setItem('current_academy_id', academy.id)
+      localStorage.setItem('current_academy_name', academyName)
+      localStorage.setItem('current_academy_slug', slug)
+
+      showStatus('regStatus', 
+        'تم إنشاء الأكاديمية بنجاح! جاري التوجيه إلى لوحة التحكم...', 
+        'success'
+      )
+
+      // التوجيه بعد ثانيتين
+      setTimeout(() => {
+        window.location.href = 'admin-dashboard.html'
+      }, 2000)
+
+    } catch (err) {
+      console.error('خطأ:', err)
+      showStatus('regStatus', 
+        'حدث خطأ غير متوقع. حاول مرة أخرى', 
+        'error'
+      )
+    } finally {
+      // إعادة تفعيل الزر
+      createBtn.disabled = false
+      document.getElementById('createBtnText').classList.remove('hidden')
+      document.getElementById('createBtnLoader').classList.add('hidden')
+    }
+  }
+</script>
 </body>
 </html>

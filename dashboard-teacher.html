@@ -5,2274 +5,2085 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <title>لوحة التحكم - المعلم</title>
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-  <link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@300;400;700&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@300;400;500;600;700&display=swap" rel="stylesheet">
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-  <script src="https://unpkg.com/html5-qrcode"></script>
+  <script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
+  <link rel="icon" href="/images/logo2.jpg" type="image/jpeg">
   <style>
     :root {
-      --primary: #f97316;
-      --primary-dark: #ea580c;
-      --secondary: #059669;
-      --dark: #1f2937;
-      --light: #f9fafb;
-      --gray: #6b7280;
-      --success: #059669;
-      --danger: #ef4444;
-      --sidebar-width: 250px;
-      --header-height: 60px;
-      --sidebar-collapsed-width: 60px;
+      --primary: #5B8DEE; --primary-dark: #3D5ACE; --primary-light: #E8F0FF;
+      --success: #81C995; --danger: #FC8181; --warning: #F6AD55; --gray: #718096;
+      --border: #E2E8F0; --light: #F7FAFC; --dark: #2D3748;
+      --sidebar-width: 280px; --header-height: 70px;
+      --radius-md: 12px; --radius-lg: 16px;
+    }
+    * { margin:0; padding:0; box-sizing:border-box; font-family:'Tajawal',sans-serif; }
+    body { 
+      background:linear-gradient(135deg,#f8fafc,#e2e8f0); 
+      color:var(--dark); 
+      display:flex; 
+      min-height:100vh; 
+      overflow-x:hidden;
     }
     
-    * { box-sizing: border-box; margin: 0; padding: 0; }
-    
-    body {
-      font-family: 'Tajawal', sans-serif;
-      background: linear-gradient(180deg, #fbfbfc 0%, #f0f4f8 100%);
-      display: flex;
-      min-height: 100vh;
-      color: #333;
-      overflow-x: hidden;
-    }
-    
+    /* Mobile-first design */
     .sidebar {
-      width: var(--sidebar-width);
-      background: linear-gradient(180deg, var(--primary) 0%, var(--primary-dark) 100%);
-      color: white;
-      position: fixed;
-      top: 0;
-      right: 0;
-      height: 100%;
-      overflow-y: auto;
-      transition: all 0.3s ease;
-      z-index: 1000;
-      padding-top: 20px;
-      box-shadow: -2px 0 10px rgba(0,0,0,0.1);
+      width:100%;
+      background:#fff; 
+      position:fixed; 
+      height:100vh; 
+      overflow-y:auto; 
+      box-shadow:0 4px 12px rgba(0,0,0,0.08); 
+      z-index:100; 
+      top:0;
+      right:0;
+      transform:translateX(100%);
+      transition:transform 0.3s ease;
+      padding-top:var(--header-height);
     }
     
-    .sidebar.collapsed { width: var(--sidebar-collapsed-width); }
-    .sidebar.collapsed h3 { font-size: 0; padding: 5px 0; }
-    .sidebar.collapsed .sidebar-menu span { display: none; }
-    
-    .sidebar img {
-      max-width: 150px;
-      height: 150px;
-      margin: 15px auto;
-      display: block;
-      border-radius: 50%;
-      border: 3px solid rgba(255, 255, 255, 0.3);
-      object-fit: cover;
-      background: white;
+    .sidebar.active {
+      transform:translateX(0);
     }
     
-    .sidebar h3 {
-      text-align: center;
-      margin: 0 0 20px;
-      padding: 10px 0;
-      border-bottom: 1px solid rgba(255, 255, 255, 0.2);
-      font-size: 1.1rem;
+    .sidebar h3 { 
+      padding:25px 20px; 
+      text-align:center; 
+      font-size:1.6rem; 
+      font-weight:700; 
+      background:var(--primary);
+      color:white;
+      margin:0;
     }
     
-    .sidebar-menu {
-      list-style: none;
-      padding: 0;
+    .nav-link { 
+      display:flex; 
+      align-items:center; 
+      padding:14px 20px; 
+      color:var(--gray); 
+      text-decoration:none; 
+      transition:.3s; 
+      border-radius:0 var(--radius-md) var(--radius-md) 0; 
     }
     
-    .sidebar-menu li a {
-      display: flex;
-      align-items: center;
-      color: rgba(255,255,255,0.9);
-      padding: 14px 20px;
-      text-decoration: none;
-      transition: all 0.3s;
-      font-size: 0.95rem;
-      border-radius: 0 25px 25px 0;
-      margin: 5px 0;
+    .nav-link:hover, .nav-link.active { 
+      background:var(--primary-light); 
+      color:var(--primary); 
+      border-right:4px solid var(--primary); 
     }
     
-    .sidebar-menu li a:hover,
-    .sidebar-menu li a.active {
-      background-color: rgba(255, 255, 255, 0.2);
-      color: white;
+    .nav-link i { 
+      margin-left:12px; 
+      width:20px; 
     }
     
-    .sidebar-menu i {
-      margin-left: 12px;
-      width: 20px;
-      text-align: center;
-      font-size: 1.1rem;
+    .main-content { 
+      flex:1; 
+      transition:.4s; 
+      width:100%;
     }
     
-    .content {
-      flex: 1;
-      margin-right: var(--sidebar-width);
-      padding: 20px;
-      transition: margin 0.3s ease;
-      margin-top: var(--header-height);
-    }
-    
-    .content.sidebar-collapsed {
-      margin-right: var(--sidebar-collapsed-width);
-    }
-    
-    .app-header {
-      position: fixed;
-      top: 0;
-      right: var(--sidebar-width);
-      left: 0;
-      height: var(--header-height);
-      background: white;
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      padding: 0 20px;
-      box-shadow: 0 2px 10px rgba(0, 0, 0, 0.06);
-      z-index: 999;
-      transition: right 0.3s ease;
-      border-bottom: 1px solid rgba(15, 23, 42, 0.04);
+    .header { 
+      height:var(--header-height); 
+      background:#fff; 
+      box-shadow:0 1px 3px rgba(0,0,0,0.1); 
+      padding:0 15px; 
+      display:flex; 
+      justify-content:space-between; 
+      align-items:center; 
+      position:sticky; 
+      top:0; 
+      z-index:99; 
     }
     
     .menu-toggle {
-      background: none;
-      border: none;
-      color: var(--primary);
-      font-size: 1.5rem;
-      cursor: pointer;
-      padding: 8px;
-      transition: transform 0.3s;
+      background:none;
+      border:none;
+      font-size:1.5rem;
+      color:var(--primary);
+      cursor:pointer;
     }
     
-    .menu-toggle:hover { transform: rotate(90deg); }
-    
-    .header-content {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      width: 100%;
-      gap: 15px;
+    .content { 
+      padding:20px; 
     }
     
-    .header-greeting {
-      font-weight: 700;
-      color: var(--dark);
-      font-size: 1rem;
+    .card { 
+      background:#fff; 
+      border-radius:var(--radius-lg); 
+      padding:20px; 
+      box-shadow:0 2px 10px rgba(0,0,0,0.07); 
+      border:1px solid var(--border); 
+      margin-bottom:20px; 
     }
     
-    .header-buttons {
-      display: flex;
-      gap: 10px;
+    .grid-3, .grid-4, .grid-2 { 
+      display:grid; 
+      grid-template-columns:1fr; 
+      gap:15px; 
     }
     
-    .btn {
-      padding: 10px 16px;
-      border: none;
-      border-radius: 10px;
-      cursor: pointer;
-      color: white;
-      font-weight: 700;
-      display: inline-flex;
-      align-items: center;
-      gap: 8px;
-      transition: all 0.2s ease;
-      font-size: 0.9rem;
-      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+    .stat-card { 
+      background:#fff; 
+      border-radius:var(--radius-lg); 
+      padding:20px; 
+      text-align:center; 
+      box-shadow:0 2px 10px rgba(0,0,0,0.07); 
+      position:relative; 
+      overflow:hidden; 
+      transition:.3s; 
     }
     
-    .btn:hover {
-      transform: translateY(-2px);
-      box-shadow: 0 6px 16px rgba(0, 0, 0, 0.12);
+    .stat-card:hover { 
+      transform:translateY(-5px); 
+      box-shadow:0 8px 15px rgba(0,0,0,0.12); 
     }
     
-    .btn-success { background-color: var(--success); }
-    .btn-danger { background-color: var(--danger); }
-    .btn-primary { background-color: var(--primary); }
-    .btn-secondary { background-color: var(--gray); }
-    .btn-warning { background-color: #f59e0b; }
-    .btn-sm { padding: 6px 12px; font-size: 0.85rem; }
-    .btn-xs { padding: 4px 8px; font-size: 0.75rem; }
-    
-    .tab-content {
-      display: none;
-      animation: fadeIn 0.4s ease;
+    .stat-card::before { 
+      content:''; 
+      position:absolute; 
+      top:0; 
+      right:0; 
+      width:100%; 
+      height:4px; 
+      background:linear-gradient(90deg,var(--primary),var(--primary-dark)); 
     }
     
-    @keyframes fadeIn {
-      from { opacity: 0; transform: translateY(10px); }
-      to { opacity: 1; transform: translateY(0); }
+    .stat-card-icon { 
+      font-size:2rem; 
+      color:var(--primary); 
+      margin-bottom:10px; 
     }
     
-    .quick-actions {
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
-      gap: 15px;
-      margin-bottom: 25px;
+    .stat-card-value { 
+      font-size:1.8rem; 
+      font-weight:700; 
+      margin:5px 0 0; 
     }
     
-    .quick-action-btn {
-      background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);
-      color: white;
-      padding: 20px;
-      border-radius: 14px;
-      border: none;
-      cursor: pointer;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      justify-content: center;
-      gap: 10px;
-      min-height: 100px;
-      transition: all 0.3s ease;
-      box-shadow: 0 6px 20px rgba(249, 115, 22, 0.2);
+    .btn { 
+      padding:10px 15px; 
+      border:none; 
+      border-radius:var(--radius-md); 
+      cursor:pointer; 
+      font-weight:600; 
+      display:inline-flex; 
+      align-items:center; 
+      gap:6px; 
+      transition:.3s; 
+      font-size:0.9rem;
     }
     
-    .quick-action-btn:hover {
-      transform: translateY(-4px);
-      box-shadow: 0 10px 30px rgba(249, 115, 22, 0.3);
+    .btn-primary { 
+      background:linear-gradient(135deg,var(--primary),var(--primary-dark)); 
+      color:#fff; 
     }
     
-    .quick-action-btn i {
-      font-size: 2.2rem;
-      color: white;
+    .btn-primary:hover { 
+      transform:translateY(-2px); 
+      box-shadow:0 8px 15px rgba(91,141,238,0.3); 
     }
     
-    .quick-action-btn span {
-      font-weight: 700;
-      font-size: 0.9rem;
+    .btn-danger { 
+      background:#fc8181; 
+      color:#fff; 
     }
     
-    .stats-container {
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
-      gap: 15px;
-      margin-bottom: 25px;
+    .btn-sm { 
+      padding:6px 12px; 
+      font-size:0.8rem; 
     }
     
-    .stat-card {
-      background: white;
-      padding: 25px 15px;
-      border-radius: 14px;
-      text-align: center;
-      box-shadow: 0 6px 20px rgba(0, 0, 0, 0.06);
-      border-bottom: 3px solid var(--primary);
-      transition: all 0.3s ease;
+    .loading { 
+      text-align:center; 
+      padding:40px 20px; 
     }
     
-    .stat-card:hover {
-      transform: translateY(-5px);
-      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+    .loading-spinner { 
+      border:4px solid #f3f3f3; 
+      border-top:4px solid var(--primary); 
+      border-radius:50%; 
+      width:40px; 
+      height:40px; 
+      animation:spin 1s linear infinite; 
+      margin:0 auto 15px; 
     }
     
-    .stat-card i {
-      font-size: 3rem;
-      margin-bottom: 10px;
-      color: var(--primary);
+    @keyframes spin { 
+      0%{transform:rotate(0)} 
+      100%{transform:rotate(360deg)} 
     }
     
-    .stat-card .stat-value {
-      font-size: 1.8rem;
-      font-weight: bold;
-      margin: 8px 0;
-      color: var(--dark);
+    .alert { 
+      position:fixed; 
+      top:20px; 
+      right:20px; 
+      padding:15px 20px; 
+      border-radius:var(--radius-md); 
+      color:#fff; 
+      font-weight:600; 
+      z-index:9999; 
+      box-shadow:0 10px 20px rgba(0,0,0,0.2); 
+      max-width:90%;
+      font-size:0.9rem;
     }
     
-    .stat-card .stat-label {
-      color: var(--gray);
-      font-size: 0.9rem;
+    .alert-success { 
+      background:#81C995; 
     }
     
-    .card {
-      background: white;
-      border-radius: 12px;
-      padding: 20px;
-      margin-bottom: 15px;
-      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.06);
+    .alert-danger { 
+      background:#FC8181; 
     }
     
-    .card-header {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      margin-bottom: 15px;
-      padding-bottom: 12px;
-      border-bottom: 2px solid #f0f0f0;
+    .alert-warning { 
+      background:#F6AD55; 
     }
     
-    .card-title {
-      font-size: 1.1rem;
-      font-weight: bold;
-      color: var(--dark);
-    }
-    
-    .course-box {
-      background: white;
-      border-radius: 12px;
-      padding: 18px;
-      margin-bottom: 15px;
-      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.06);
-      cursor: pointer;
-      transition: all 0.3s ease;
-    }
-    
-    .course-box:hover {
-      transform: translateY(-3px);
-      box-shadow: 0 8px 20px rgba(0, 0, 0, 0.1);
-    }
-    
-    .course-title {
-      font-size: 1.1rem;
-      font-weight: bold;
-      color: var(--primary);
-      margin-bottom: 10px;
-    }
-    
-    .no-data {
-      text-align: center;
-      color: var(--gray);
-      padding: 40px 20px;
-      font-size: 0.95rem;
-    }
-    
-    .loading {
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      justify-content: center;
-      padding: 40px 20px;
-      color: var(--gray);
-    }
-    
-    .loading-spinner {
-      border: 4px solid rgba(0, 0, 0, 0.1);
-      border-left-color: var(--primary);
-      border-radius: 50%;
-      width: 40px;
-      height: 40px;
-      animation: spin 1s linear infinite;
-      margin-bottom: 15px;
-    }
-    
-    @keyframes spin {
-      to { transform: rotate(360deg); }
-    }
-    
-    .status-message {
-      position: fixed;
-      top: 70px;
-      left: 50%;
-      transform: translateX(-50%);
-      padding: 15px 30px;
-      border-radius: 10px;
-      font-weight: bold;
-      z-index: 2000;
-      display: none;
-      box-shadow: 0 4px 12px rgba(0,0,0,0.2);
-    }
-    
-    .status-message.success {
-      background: #d1fae5;
-      color: var(--success);
-    }
-    
-    .status-message.error {
-      background: #fee2e2;
-      color: var(--danger);
-    }
-    
-    .chart-container {
-      background: white;
-      padding: 20px;
-      border-radius: 12px;
-      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.06);
-      height: 250px;
-      margin-bottom: 20px;
-    }
-    
-    .search-box {
-      width: 100%;
-      padding: 10px 15px;
-      border: 1px solid #ddd;
-      border-radius: 8px;
-      margin-bottom: 15px;
-      font-family: 'Tajawal', sans-serif;
-      font-size: 0.9rem;
-    }
-    
+    /* Modal styles */
     .modal {
-      display: none;
-      position: fixed;
-      z-index: 2000;
-      left: 0;
-      top: 0;
-      width: 100%;
-      height: 100%;
-      background-color: rgba(0, 0, 0, 0.6);
-      justify-content: center;
-      align-items: center;
-      padding: 20px;
+      position:fixed; 
+      inset:0; 
+      background:rgba(0,0,0,0.6); 
+      backdrop-filter:blur(8px); 
+      align-items:center; 
+      justify-content:center; 
+      z-index:1000;
+      padding:15px;
     }
     
     .modal-content {
-      background-color: white;
-      border-radius: 14px;
-      width: 100%;
-      max-width: 700px;
-      max-height: 90vh;
-      display: flex;
-      flex-direction: column;
-      overflow: scroll;
-      box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3);
+      background:#fff; 
+      border-radius:16px; 
+      width:100%; 
+      max-height:90vh; 
+      overflow-y:auto;
     }
     
     .modal-header {
-      padding: 20px;
-      background: linear-gradient(135deg, var(--primary), var(--primary-dark));
-      color: white;
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
+      padding:20px; 
+      border-bottom:1px solid #eee; 
+      display:flex; 
+      justify-content:space-between; 
+      align-items:center;
     }
     
-    .modal-title {
-      margin: 0;
-      font-size: 1.2rem;
-    }
-    
-    .close {
-      color: white;
-      font-size: 1.5rem;
-      font-weight: bold;
-      cursor: pointer;
-      padding: 5px 10px;
-      transition: transform 0.2s;
-    }
-    
-    .close:hover {
-      transform: rotate(90deg);
+    .modal-header h2 {
+      font-size:1.3rem;
+      margin:0;
     }
     
     .modal-body {
-      padding: 20px;
-      overflow-y: auto;
-      flex: 1;
+      padding:20px;
     }
     
     .modal-footer {
-      padding: 15px 20px;
-      background-color: #f9fafb;
-      border-top: 1px solid #eee;
-      display: flex;
-      justify-content: flex-start;
-      gap: 10px;
+      padding:15px 20px;
+      display:flex; 
+      gap:10px; 
+      justify-content:flex-end;
+      border-top:1px solid #eee;
     }
     
-    .student-item {
-      background-color: #fafafa;
-      border-radius: 8px;
-      margin-bottom: 10px;
-      padding: 12px;
-      display: flex;
-      align-items: center;
-      gap: 10px;
-      justify-content: space-between;
+    .form-group {
+      margin-bottom:15px;
     }
     
-    .student-header {
-      display: flex;
-      align-items: center;
-      gap: 8px;
+    .form-group label {
+      display:block; 
+      margin-bottom:5px; 
+      font-weight:600;
     }
     
-    .student-name {
-      font-weight: bold;
-      font-size: 0.9rem;
+    .form-control {
+      width:100%; 
+      padding:10px; 
+      border:2px solid #ddd; 
+      border-radius:8px; 
+      margin-top:5px;
+      font-size:0.9rem;
     }
     
-    .student-checkbox {
-      transform: scale(1.2);
+    .form-row {
+      display:grid; 
+      grid-template-columns:1fr; 
+      gap:15px; 
+      margin-bottom:15px;
     }
     
-    .student-status-select {
-      padding: 6px 10px;
-      border: 1px solid #ddd;
-      border-radius: 6px;
-      font-size: 0.85rem;
-      min-width: 100px;
+    /* Overlay for mobile menu */
+    .overlay {
+      position:fixed;
+      top:0;
+      left:0;
+      right:0;
+      bottom:0;
+      background:rgba(0,0,0,0.5);
+      z-index:99;
+      display:none;
     }
     
-    .student-report-card {
-      background: white;
-      border-radius: 10px;
-      padding: 15px;
-      margin-bottom: 12px;
-      box-shadow: 0 2px 8px rgba(0,0,0,0.06);
-      transition: all 0.3s ease;
-      cursor: pointer;
+    .overlay.active {
+      display:block;
     }
     
-    .student-report-card:hover {
-      transform: translateY(-2px);
-      box-shadow: 0 4px 12px rgba(0,0,0,0.1);
-    }
-
-    .accordion-header {
-  padding: 10px;
-  background: #f9fafb;
-  border-radius: 8px;
-  cursor: pointer;
-  margin: 5px 0;
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  font-weight: bold;
-  color: var(--primary);
-  transition: background 0.2s ease;
-}
-
-.accordion-header:hover {
-  background: #f3f4f6;
-}
-
-.accordion-body {
-  padding: 8px 12px;
-  border-right: 3px solid var(--primary);
-  background: #fafafa;
-  border-radius: 6px;
-  margin-bottom: 10px;
-}
-
-    
-    .attendance-record {
-      background: #f9fafb;
-      padding: 10px;
-      border-radius: 6px;
-      margin-bottom: 8px;
-      border-right: 3px solid #ddd;
-    }
-    
-    .attendance-record.present { border-right-color: var(--success); }
-    .attendance-record.absent { border-right-color: var(--danger); }
-    .attendance-record.late { border-right-color: #f59e0b; }
-    
-    #reminderBanner {
-      position: fixed;
-      top: 80px;
-      left: 50%;
-      transform: translateX(-50%);
-      background: linear-gradient(90deg, #ff7b00, #ffb300);
-      color: white;
-      font-size: 1.1rem;
-      font-weight: bold;
-      padding: 15px 35px;
-      border-radius: 12px;
-      box-shadow: 0 6px 20px rgba(0,0,0,0.3);
-      z-index: 1500;
-      display: none;
+    /* Responsive adjustments */
+    @media (min-width: 768px) {
+      .sidebar {
+        width:var(--sidebar-width);
+        transform:translateX(0);
+        position:fixed;
+        height:100vh;
+        padding-top:0;
+      }
+      
+      .main-content {
+        margin-right:var(--sidebar-width);
+      }
+      
+      .menu-toggle {
+        display:none;
+      }
+      
+      .grid-3 { 
+        grid-template-columns:repeat(3,1fr); 
+        gap:20px; 
+      }
+      
+      .grid-2 { 
+        grid-template-columns:repeat(2,1fr); 
+        gap:20px; 
+      }
+      
+      .stat-card-value { 
+        font-size:2.2rem; 
+      }
+      
+      .stat-card-icon { 
+        font-size:2.5rem; 
+      }
+      
+      .modal-content {
+        max-width:700px;
+      }
+      
+      .form-row {
+        grid-template-columns:1fr 1fr;
+      }
     }
     
-    @keyframes slideInDown {
-      from { opacity: 0; transform: translate(-50%, -50px); }
-      to { opacity: 1; transform: translate(-50%, 0); }
+    @media (min-width: 992px) {
+      .grid-4 { 
+        grid-template-columns:repeat(4,1fr); 
+        gap:25px; 
+      }
+      
+      .grid-3 { 
+        grid-template-columns:repeat(3,1fr); 
+        gap:25px; 
+      }
+      
+      .grid-2 { 
+        grid-template-columns:repeat(2,1fr); 
+        gap:25px; 
+      }
+      
+      .stat-card-value { 
+        font-size:2.6rem; 
+      }
+      
+      .stat-card-icon { 
+        font-size:2.8rem; 
+      }
+      
+      .content {
+        padding:30px;
+      }
+      
+      .card {
+        padding:30px;
+      }
     }
     
-    @keyframes slideOutRight {
-      from { opacity: 1; transform: translate(-50%, 0); }
-      to { opacity: 0; transform: translateX(200%); }
-    }
-    
-    @media (max-width: 768px) {
-      :root { --header-height: 55px; }
-      .sidebar { transform: translateX(100%); }
-      .sidebar.active { transform: translateX(0); }
-      .content { margin-right: 0; margin-top: calc(var(--header-height) + 10px); padding: 15px; }
-      .app-header { right: 0; padding: 0 15px; }
-      .stats-container, .quick-actions { grid-template-columns: repeat(2, 1fr); }
+    /* Mobile-specific optimizations */
+    @media (max-width: 767px) {
+      .header {
+        padding:0 10px;
+      }
+      
+      .btn {
+        padding:8px 12px;
+        font-size:0.85rem;
+      }
+      
+      .btn-sm {
+        padding:5px 10px;
+        font-size:0.8rem;
+      }
+      
+      .stat-card {
+        padding:15px;
+      }
+      
+      .stat-card-icon {
+        font-size:1.8rem;
+      }
+      
+      .stat-card-value {
+        font-size:1.6rem;
+      }
+      
+      .card {
+        padding:15px;
+      }
+      
+      .content {
+        padding:15px;
+      }
+      
+      .form-row {
+        grid-template-columns:1fr;
+      }
+      
+      .modal-body {
+        padding:15px;
+      }
+      
+      .modal-header {
+        padding:15px;
+      }
+      
+      .modal-footer {
+        padding:10px 15px;
+      }
     }
   </style>
 </head>
 <body>
+
+  <!-- Mobile menu toggle overlay -->
+  <div class="overlay" id="overlay" onclick="toggleSidebar()"></div>
+
+  <!-- Sidebar -->
   <div class="sidebar" id="sidebar">
-    <img src="logo.png" alt="أكاديمية">
     <h3>أكاديمية أسيوط</h3>
-    <ul class="sidebar-menu">
-      <li><a href="#" class="nav-link active" onclick="switchTab('dashboard')">
-        <i class="fas fa-tachometer-alt"></i><span>نظرة عامة</span>
-      </a></li>
-      <li><a href="#" class="nav-link" onclick="switchTab('profile')">
-        <i class="fas fa-user"></i><span>الملف الشخصي</span>
-      </a></li>
-      <li><a href="#" class="nav-link" onclick="switchTab('courses')">
-        <i class="fas fa-book"></i><span>كورساتي</span>
-      </a></li>
-      <li><a href="#" class="nav-link" onclick="switchTab('students')">
-        <i class="fas fa-users"></i><span>طلابي</span>
-      </a></li>
-      <li><a href="#" class="nav-link" onclick="switchTab('exams')">
-        <i class="fas fa-file-alt"></i><span>اختباراتي</span>
-      </a></li>
-      <li><a href="#" class="nav-link" onclick="switchTab('attendances')">
-        <i class="fas fa-calendar-check"></i><span>حضور الطلاب</span>
-      </a></li>
-      <li><a href="#" class="nav-link" onclick="switchTab('reports')">
-        <i class="fas fa-chart-bar"></i><span>التقارير والإحصائيات</span>
-      </a></li>
+    <ul style="list-style:none; padding:20px 0;">
+      <li><a href="#" class="nav-link active" onclick="switchTab('dashboard')"><i class="fas fa-tachometer-alt"></i> نظرة عامة</a></li>
+      <li><a href="#" class="nav-link" onclick="switchTab('profile')"><i class="fas fa-user"></i> الملف الشخصي</a></li>
+      <li><a href="#" class="nav-link" onclick="switchTab('courses')"><i class="fas fa-book"></i> كورساتي</a></li>
+      <li><a href="#" class="nav-link" onclick="switchTab('students')"><i class="fas fa-users"></i> طلابي</a></li>
+      <li><a href="#" class="nav-link" onclick="switchTab('exams')"><i class="fas fa-file-alt"></i> اختباراتي</a></li>
+      <li><a href="#" class="nav-link" onclick="switchTab('attendances')"><i class="fas fa-calendar-check"></i> حضور الطلاب</a></li>
+      <li><a href="#" class="nav-link" onclick="switchTab('reports')"><i class="fas fa-chart-bar"></i> التقارير</a></li>
     </ul>
   </div>
-  
-  <div class="content" id="mainContent">
-    <div class="app-header">
-      <button class="menu-toggle" id="menuToggle">
+
+  <div class="main-content">
+    <div class="header">
+      <button class="menu-toggle" id="menuToggle" onclick="toggleSidebar()">
         <i class="fas fa-bars"></i>
       </button>
-      <div class="header-content">
-        <div class="header-greeting">
-          <span id="userNameHeader">مرحباً</span>
-        </div>
-        <div class="header-buttons">
-          <button id="checkInBtn" class="btn btn-success" onclick="recordCheckIn()">
-            <i class="fas fa-sign-in-alt"></i> حضور
-          </button>
-          <button id="checkOutBtn" class="btn btn-danger" onclick="recordCheckOut()">
-            <i class="fas fa-sign-out-alt"></i> انصراف
-          </button>
-        </div>
+      <div style="font-size:1.2rem; font-weight:700; color:var(--primary);" id="userNameHeader">مرحباً</div>
+      <div>
+        <button class="btn btn-primary btn-sm" onclick="recordCheckIn()"><i class="fas fa-sign-in-alt"></i> حضور</button>
+        <button class="btn btn-danger btn-sm" onclick="recordCheckOut()"><i class="fas fa-sign-out-alt"></i> انصراف</button>
       </div>
     </div>
-    
-    <div id="statusMessage" class="status-message"></div>
-    
-    <div id="dashboardContent" class="tab-content" style="display:block;">
-      <div class="quick-actions">
-        <button class="quick-action-btn" onclick="switchTab('courses')">
-          <i class="fas fa-book"></i>
-          <span>كورساتي</span>
-        </button>
-        <button class="quick-action-btn" onclick="switchTab('students')">
-          <i class="fas fa-users"></i>
-          <span>طلابي</span>
-        </button>
-        <button class="quick-action-btn" onclick="switchTab('exams')">
-          <i class="fas fa-file-alt"></i>
-          <span>اختباراتي</span>
-        </button>
-        <button class="quick-action-btn" onclick="switchTab('attendances')">
-          <i class="fas fa-calendar-check"></i>
-          <span>الحضور</span>
-        </button>
-        <button class="quick-action-btn" onclick="switchTab('reports')">
-          <i class="fas fa-chart-bar"></i>
-          <span>التقارير</span>
-        </button>
-      </div>
-      
-      <div class="stats-container">
-        <div class="stat-card">
-          <i class="fas fa-book"></i>
-          <div class="stat-value" id="totalCourses">0</div>
-          <div class="stat-label">الكورسات</div>
+
+    <div class="content">
+
+      <!-- Dashboard -->
+      <div id="dashboardContent" style="display:block;">
+        <div class="grid-3">
+          <div class="stat-card"><i class="stat-card-icon fas fa-book"></i><p>الكورسات</p><h3 id="totalCourses">0</h3></div>
+          <div class="stat-card"><i class="stat-card-icon fas fa-chalkboard"></i><p>الدروس</p><h3 id="totalLessons">0</h3></div>
+          <div class="stat-card"><i class="stat-card-icon fas fa-users"></i><p>الطلاب</p><h3 id="totalStudents">0</h3></div>
         </div>
-        <div class="stat-card">
-          <i class="fas fa-chalkboard-teacher"></i>
-          <div class="stat-value" id="totalLessons">0</div>
-          <div class="stat-label">الدروس</div>
-        </div>
-        <div class="stat-card">
-          <i class="fas fa-users"></i>
-          <div class="stat-value" id="totalStudents">0</div>
-          <div class="stat-label">الطلاب</div>
+        <div class="card" style="margin-top:20px;">
+          <h3 style="margin-bottom:15px;">توزيع الدروس على الكورسات</h3>
+          <canvas id="lessonsChart" height="200"></canvas>
         </div>
       </div>
-      
-      <div class="chart-container">
-        <canvas id="lessonsPerCourseChart"></canvas>
-      </div>
-    </div>
-    
-    <div id="profileContent" class="tab-content">
-      <div class="card">
-        <div class="card-header">
-          <div class="card-title" id="profileName">الملف الشخصي</div>
-          <div id="profileRole">معلم</div>
-        </div>
-        <div id="profileAttendanceRecords">
-          <div class="loading">
-            <div class="loading-spinner"></div>
-            <p>جاري التحميل...</p>
-          </div>
-        </div>
-        <form id="profileForm" style="margin-top: 20px;">
-          <div style="margin-bottom: 15px;">
-            <label style="display: block; margin-bottom: 5px; font-weight: bold;">الاسم الكامل</label>
-            <input type="text" id="fullName" style="width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 5px;">
-          </div>
-          <div style="margin-bottom: 15px;">
-            <label style="display: block; margin-bottom: 5px; font-weight: bold;">البريد الإلكتروني</label>
-            <input type="email" id="email" style="width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 5px;">
-          </div>
-          <div style="margin-bottom: 15px;">
-            <label style="display: block; margin-bottom: 5px; font-weight: bold;">رقم الهاتف</label>
-            <input type="tel" id="phone" style="width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 5px;">
-          </div>
-          <div style="margin-bottom: 15px;">
-            <label style="display: block; margin-bottom: 5px; font-weight: bold;">التخصص</label>
-            <input type="text" id="specialty" style="width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 5px;">
-          </div>
-          <button type="submit" class="btn btn-primary">
-            <i class="fas fa-save"></i> حفظ التغييرات
-          </button>
-        </form>
-      </div>
-    </div>
-    
-    <div id="coursesContent" class="tab-content">
-      <h2 style="text-align: center; color: var(--primary); margin-bottom: 20px;">كورساتي</h2>
-      <div id="coursesContainer">
-        <div class="loading">
-          <div class="loading-spinner"></div>
-          <p>جاري التحميل...</p>
+
+      <!-- باقي التبويبات مخفية وستظهر عند الضغط -->
+      <div id="profileContent" style="display:none;">
+        <div class="card">
+          <h2 style="margin-bottom:15px;">الملف الشخصي</h2>
+          <div id="profileContainer" class="loading"><div class="loading-spinner"></div><p>جاري التحميل...</p></div>
         </div>
       </div>
-    </div>
-    
-    <div id="studentsContent" class="tab-content">
-      <h2 style="text-align: center; color: var(--primary); margin-bottom: 20px;">طلابي</h2>
-      <div id="studentsContainer">
-        <div class="loading">
-          <div class="loading-spinner"></div>
-          <p>جاري التحميل...</p>
+      <div id="coursesContent" style="display:none;"><div id="coursesContainer" class="loading"><div class="loading-spinner"></div><p>جاري التحميل...</p></div></div>
+      <div id="studentsContent" style="display:none;"><div id="studentsContainer" class="loading"><div class="loading-spinner"></div><p>جاري التحميل...</p></div></div>
+      <div id="examsContent" style="display:none;">
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:15px;">
+          <h2>الاختبارات</h2>
+          <button class="btn btn-primary" onclick="showAddExamModal()"><i class="fas fa-plus"></i> إضافة اختبار</button>
         </div>
+        <div id="examsContainer" class="loading"><div class="loading-spinner"></div><p>جاري التحميل...</p></div>
       </div>
-    </div>
-    
-    <div id="examsContent" class="tab-content">
-      <h2 style="text-align: center; color: var(--primary); margin-bottom: 20px;">اختباراتي</h2>
-      <div id="examsContainer">
-        <div class="loading">
-          <div class="loading-spinner"></div>
-          <p>جاري التحميل...</p>
+      <div id="attendancesContent" style="display:none;">
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:15px;">
+          <h2>حضور الطلاب</h2>
+          <button class="btn btn-primary" onclick="showAddAttendanceModal()">تسجيل حضور</button>
         </div>
+        <div id="attendancesContainer" class="loading"><div class="loading-spinner"></div><p>جاري التحميل...</p></div>
       </div>
-    </div>
-    
-    <div id="attendancesContent" class="tab-content">
-      <h2 style="text-align: center; color: var(--primary); margin-bottom: 20px;">حضور الطلاب</h2>
-      <button class="btn btn-primary" onclick="showAddAttendanceModal()" style="margin-bottom: 15px;">
-        <i class="fas fa-plus"></i> تسجيل حضور
-      </button>
-      <div id="attendancesContainer">
-        <div class="loading">
-          <div class="loading-spinner"></div>
-          <p>جاري التحميل...</p>
-        </div>
+      <div id="reportsContent" style="display:none;">
+        <div id="reportsContainer" class="loading"><div class="loading-spinner"></div><p>جاري التحميل...</p></div>
       </div>
-    </div>
-    
-    <div id="reportsContent" class="tab-content">
-      <h2 style="text-align: center; color: var(--primary); margin-bottom: 20px;">التقارير والإحصائيات</h2>
-      
-      <div style="margin-bottom: 20px;">
-        <div style="display: flex; gap: 10px; flex-wrap: wrap; margin-bottom: 15px;">
-          <select id="reportCourseFilter" class="search-box" style="max-width: 250px;">
-            <option value="">كل الكورسات</option>
-          </select>
-          <select id="reportMonthFilter" class="search-box" style="max-width: 250px;">
-            <option value="">كل الأشهر</option>
-          </select>
-          <button class="btn btn-primary btn-sm" onclick="loadReportsData()">
-            <i class="fas fa-filter"></i> تطبيق الفلتر
-          </button>
-        </div>
-      </div>
-      
-      <div class="stats-container" style="margin-bottom: 25px;">
-        <div class="stat-card">
-          <i class="fas fa-user-check"></i>
-          <div class="stat-value" id="totalPresentStudents">0</div>
-          <div class="stat-label">إجمالي الحضور</div>
-        </div>
-        <div class="stat-card">
-          <i class="fas fa-user-times"></i>
-          <div class="stat-value" id="totalAbsentStudents">0</div>
-          <div class="stat-label">إجمالي الغياب</div>
-        </div>
-        <div class="stat-card">
-          <i class="fas fa-user-clock"></i>
-          <div class="stat-value" id="totalLateStudents">0</div>
-          <div class="stat-label">إجمالي التأخر</div>
-        </div>
-        <div class="stat-card">
-          <i class="fas fa-percentage"></i>
-          <div class="stat-value" id="attendanceRate">0%</div>
-          <div class="stat-label">نسبة الحضور</div>
-        </div>
-      </div>
-      
-      <div class="chart-container" style="height: 300px;">
-        <canvas id="attendanceChart"></canvas>
-      </div>
-      
-      <div class="card">
-        <div class="card-header">
-          <div class="card-title">سجل حضور الطلاب التفصيلي</div>
-          <input type="text" id="studentReportSearch" class="search-box" placeholder="ابحث عن طالب..." style="max-width: 300px; margin: 0;">
-        </div>
-        <div id="studentReportsContainer">
-          <div class="loading">
-            <div class="loading-spinner"></div>
-            <p>جاري التحميل...</p>
-          </div>
-        </div>
-      </div>
+
     </div>
   </div>
-  
-  <!-- Attendance Modal -->
-  <div id="attendanceModal" class="modal">
+
+  <div id="statusMessage" class="alert" style="display:none;"></div>
+
+  <!-- Modal إضافة/تعديل اختبار -->
+  <div id="examModal" class="modal" style="display:none;">
     <div class="modal-content">
       <div class="modal-header">
-        <h2 class="modal-title">تسجيل حضور الدرس</h2>
-        <span class="close" onclick="closeModal('attendanceModal')">&times;</span>
+        <h2 id="examModalTitle">إضافة اختبار</h2>
+        <button onclick="closeModal('examModal')" style="background:none; border:none; font-size:1.5rem; cursor:pointer;">×</button>
       </div>
-      <form id="attendanceForm">
+      <form id="examForm">
         <div class="modal-body">
-          <div style="margin-bottom: 15px;">
-            <label style="display: block; margin-bottom: 5px; font-weight: bold;">اختر الكورس:</label>
-            <select id="attendanceCourseFilter" style="width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 5px;" required>
-              <option value="">جاري التحميل...</option>
+          <div class="form-group">
+            <label><strong>عنوان الاختبار</strong></label>
+            <input type="text" id="examTitle" required class="form-control">
+          </div>
+          <div class="form-group">
+            <label><strong>الكورس</strong></label>
+            <select id="examCourse" required class="form-control"></select>
+          </div>
+          <div class="form-group">
+            <label><strong>الوحدة (اختياري)</strong></label>
+            <select id="examModule" class="form-control">
+              <option value="">لا يوجد</option>
             </select>
           </div>
-          <div style="margin-bottom: 15px;">
-            <label style="display: block; margin-bottom: 5px; font-weight: bold;">اختر الدرس:</label>
-            <select id="attendanceLesson" style="width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 5px;" disabled required>
-              <option value="">اختر كورساً أولاً</option>
-            </select>
-          </div>
-          <div style="margin-bottom: 15px;">
-            <label style="display: block; margin-bottom: 5px; font-weight: bold;">تاريخ الحضور:</label>
-            <input type="date" id="attendanceDate" style="width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 5px;" disabled required>
-          </div>
-          <div style="margin-bottom: 15px;">
-            <label style="display: block; margin-bottom: 5px; font-weight: bold;">إجراءات جماعية:</label>
-            <div style="display: flex; gap: 8px; flex-wrap: wrap;">
-              <button type="button" class="btn btn-success btn-sm" onclick="setAllAttendance('present')">
-                <i class="fas fa-user-check"></i> الجميع حاضر
-              </button>
-              <button type="button" class="btn btn-danger btn-sm" onclick="setAllAttendance('absent')">
-                <i class="fas fa-user-times"></i> الجميع غائب
-              </button>
-              <button type="button" class="btn btn-warning btn-sm" onclick="setAllAttendance('late')">
-                <i class="fas fa-user-clock"></i> الجميع متأخر
-              </button>
-              <button type="button" class="btn btn-secondary btn-sm" onclick="clearAllAttendance()">
-                <i class="fas fa-eraser"></i> مسح الكل
-              </button>
+          <div class="form-row">
+            <div class="form-group">
+              <label><strong>التاريخ</strong></label>
+              <input type="date" id="examDate" required class="form-control">
+            </div>
+            <div class="form-group">
+              <label><strong>الدرجة الكاملة</strong></label>
+              <input type="number" id="examMaxScore" value="100" min="1" required class="form-control">
             </div>
           </div>
-          <div style="margin-bottom: 15px;">
-            <label style="display: block; margin-bottom: 5px; font-weight: bold;">الطلاب:</label>
-            <input type="text" id="studentSearchInModal" class="search-box" placeholder="بحث في أسماء الطلاب..." style="display: none;">
-            <div id="studentAttendanceList">
-              <p class="no-data">اختر درساً أولاً</p>
+          <div class="form-row">
+            <div class="form-group">
+              <label><strong>درجة النجاح</strong></label>
+              <input type="number" id="examPassScore" value="50" min="0" step="0.1" class="form-control">
+            </div>
+            <div class="form-group">
+              <label><strong>عدد الأسئلة</strong></label>
+              <input type="number" id="examTotalQuestions" value="0" min="0" class="form-control">
             </div>
           </div>
-          <div style="margin-bottom: 15px;">
-            <label style="display: block; margin-bottom: 5px; font-weight: bold;">تسجيل حضور بالـ QR:</label>
-            <div style="margin-bottom: 10px;">
-              <button type="button" id="startQrScan" class="btn btn-secondary btn-sm">
-                <i class="fas fa-qrcode"></i> تشغيل الكاميرا
-              </button>
-              <button type="button" id="stopQrScan" class="btn btn-danger btn-sm" style="display:none;">
-                <i class="fas fa-stop"></i> إيقاف الكاميرا
-              </button>
+          <div class="form-row">
+            <div class="form-group">
+              <label><strong>نوع الاختبار</strong></label>
+              <select id="examType" class="form-control">
+                <option value="multiple_choice">اختيار من متعدد</option>
+                <option value="essay">مقالي</option>
+                <option value="mixed">مختلط</option>
+              </select>
             </div>
-            <div id="qr-reader" style="width:100%; max-width:400px; margin:auto; display:none;"></div>
+            <div class="form-group">
+              <label><strong>مستوى الصعوبة</strong></label>
+              <select id="examDifficulty" class="form-control">
+                <option value="easy">سهل</option>
+                <option value="medium" selected>متوسط</option>
+                <option value="hard">صعب</option>
+              </select>
+            </div>
           </div>
-          <div style="margin-bottom: 15px;">
-            <label style="display: block; margin-bottom: 5px; font-weight: bold;">ملاحظات:</label>
-            <textarea id="attendanceNotes" placeholder="ملاحظات عامة..." style="width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 5px; min-height: 60px;"></textarea>
+          <div class="form-group">
+            <label><strong>الوقت المحدد (بالدقائق) - اختياري</strong></label>
+            <input type="number" id="examTimeLimit" min="0" class="form-control">
+          </div>
+          <div class="form-group">
+            <label><strong>الوصف</strong></label>
+            <textarea id="examDescription" rows="3" class="form-control"></textarea>
           </div>
         </div>
         <div class="modal-footer">
-          <button type="submit" class="btn btn-primary">
-            <i class="fas fa-save"></i> تسجيل الحضور
-          </button>
-          <button type="button" class="btn btn-secondary" onclick="closeModal('attendanceModal')">
-            <i class="fas fa-times"></i> إلغاء
-          </button>
+          <button type="submit" class="btn btn-primary">حفظ</button>
+          <button type="button" class="btn" style="background:#eee;" onclick="closeModal('examModal')">إلغاء</button>
         </div>
       </form>
     </div>
   </div>
-  
-  <!-- Student Attendance Details Modal -->
-  <div id="studentAttendanceModal" class="modal">
+
+  <!-- Modal إدخال درجات الطلاب -->
+  <div id="examScoresModal" class="modal" style="display:none;">
     <div class="modal-content">
       <div class="modal-header">
-        <h2 class="modal-title" id="studentAttendanceModalTitle">سجل حضور الطالب</h2>
-        <span class="close" onclick="closeModal('studentAttendanceModal')">&times;</span>
+        <h2 id="examScoresModalTitle">إدخال درجات الطلاب</h2>
+        <button onclick="closeModal('examScoresModal')" style="background:none; border:none; font-size:1.5rem; cursor:pointer;">×</button>
       </div>
       <div class="modal-body">
-        <div class="stats-container" style="grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)); margin-bottom: 20px;">
-          <div class="stat-card">
-            <i class="fas fa-calendar-check" style="font-size: 2rem;"></i>
-            <div class="stat-value" id="modalStudentPresent">0</div>
-            <div class="stat-label">حاضر</div>
-          </div>
-          <div class="stat-card">
-            <i class="fas fa-calendar-times" style="font-size: 2rem;"></i>
-            <div class="stat-value" id="modalStudentAbsent">0</div>
-            <div class="stat-label">غائب</div>
-          </div>
-          <div class="stat-card">
-            <i class="fas fa-calendar-alt" style="font-size: 2rem;"></i>
-            <div class="stat-value" id="modalStudentLate">0</div>
-            <div class="stat-label">متأخر</div>
-          </div>
-          <div class="stat-card">
-            <i class="fas fa-chart-line" style="font-size: 2rem;"></i>
-            <div class="stat-value" id="modalStudentRate">0%</div>
-            <div class="stat-label">نسبة الحضور</div>
-          </div>
+        <div id="examScoresInfo" style="background:#f8f9fa; padding:15px; border-radius:8px; margin-bottom:15px;"></div>
+        <div id="examScoresList" style="max-height:300px; overflow-y:auto; margin-bottom:15px;"></div>
+        <div class="modal-footer">
+          <button class="btn btn-primary" onclick="saveExamScores()">حفظ الدرجات</button>
+          <button class="btn" style="background:#eee;" onclick="closeModal('examScoresModal')">إلغاء</button>
         </div>
-        
-        <div id="studentAttendanceDetailsContainer">
-          <div class="loading">
-            <div class="loading-spinner"></div>
-            <p>جاري التحميل...</p>
-          </div>
-        </div>
-      </div>
-      <div class="modal-footer">
-        <button type="button" class="btn btn-secondary" onclick="closeModal('studentAttendanceModal')">
-          <i class="fas fa-times"></i> إغلاق
-        </button>
       </div>
     </div>
   </div>
 
-  <div id="courseDetailsModal" class="modal">
-  <div class="modal-content">
-    <div class="modal-header">
-      <h2 class="modal-title" id="courseDetailsTitle">تفاصيل الكورس</h2>
-      <span class="close" onclick="closeModal('courseDetailsModal')">&times;</span>
-    </div>
-    <div class="modal-body" id="courseDetailsBody">
-      <div class="loading"><div class="loading-spinner"></div><p>جاري التحميل...</p></div>
+  <!-- Modal تسجيل الحضور -->
+  <div id="attendanceModal" class="modal" style="display:none;">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h2 style="margin:0; font-size:1.2em;">تسجيل الحضور</h2>
+        <button onclick="closeModal('attendanceModal')" style="background:none; border:none; font-size:1.5rem; cursor:pointer; color:#666;">×</button>
+      </div>
+      <form id="attendanceForm">
+        <div class="modal-body">
+          <div class="form-group">
+            <label style="display:block; margin-bottom:5px; font-weight:600;">الكورس</label>
+            <select id="attendanceCourseFilter" required class="form-control"></select>
+          </div>
+          <div class="form-group">
+            <label style="display:block; margin-bottom:5px; font-weight:600;">الدرس</label>
+            <select id="attendanceLesson" required disabled class="form-control"></select>
+          </div>
+          <div class="form-group">
+            <label style="display:block; margin-bottom:5px; font-weight:600;">التاريخ</label>
+            <input type="date" id="attendanceDate" required class="form-control">
+          </div>
+          <div class="form-group">
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
+              <label style="margin:0; font-weight:600;">الطلاب</label>
+              <button type="button" id="startQrScan" class="btn btn-primary" style="padding:6px 12px; font-size:0.85em;">
+                <i class="fas fa-qrcode"></i> مسح QR
+              </button>
+              <button type="button" id="stopQrScan" class="btn btn-danger" style="padding:6px 12px; font-size:0.85em; display:none;">
+                <i class="fas fa-stop"></i> إيقاف
+              </button>
+            </div>
+            <div id="qr-reader" style="display:none; margin-bottom:10px; border:2px solid #667eea; border-radius:8px; padding:10px; background:#f9f9f9;"></div>
+            <div id="studentAttendanceList" style="max-height:200px; overflow-y:auto; border:1px solid #ddd; border-radius:6px; padding:8px; background:#fafafa;">
+              <p style="text-align:center; color:#999; margin:20px 0;">اختر الدرس أولاً</p>
+            </div>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn" style="background:#eee; padding:10px 20px;" onclick="closeModal('attendanceModal')">إلغاء</button>
+          <button type="submit" class="btn btn-primary" style="padding:10px 20px;">حفظ</button>
+        </div>
+      </form>
     </div>
   </div>
-</div>
 
-  
-  <div id="reminderBanner"></div>
-  
-<script>
-    const supabaseUrl = "https://zefsmckaihzfiqqbdake.supabase.co";
-    const supabaseKey = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InplZnNtY2thaWh6ZmlxcWJkYWtlIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTQyMzUzNTgsImV4cCI6MjA2OTgxMTM1OH0.vktk2VkEPtMclb6jb_pFa1DbrqWX9SOZRsBR577o5mc";
-    const supabaseClient = supabase.createClient(supabaseUrl, supabaseKey);
-    let currentUserId = null;
-    let currentUserData = null;
-    let courses = [];
-    let lessonsPerCourseChart = null;
-    let attendanceChart = null;
-    let lessonsByCourse = {};
-    let qrScanner = null;
+  <script>
+    const SUPABASE_URL = 'https://nhzbnzcdsebepsmrtona.supabase.co'
+    const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im5oemJuemNkc2ViZXBzbXJ0b25hIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjM2NjU4MTEsImV4cCI6MjA3OTI0MTgxMX0.wNSf49MpQjCCopByd3zCz4-TJ2EGGABc3-ICEsAPaFo'
+    const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY)
 
-    // تعريف المتغيرات الجديدة لحالة QR Scanner
-    let isQrScannerActive = false;
+    let currentUserId = null
+    let currentAcademyId = null
+    let currentUserName = 'المعلم'
+    let coursesList = []
+    let lessonsChart = null
+    let qrScanner = null
+    
+    // Simple cache for teacher dashboard
+    let teacherDataCache = {
+      courses: { data: null, timestamp: 0 },
+      students: { data: null, timestamp: 0 },
+      attendances: { data: null, timestamp: 0 }
+    }
+    const TEACHER_CACHE_DURATION = 3 * 60 * 1000 // 3 minutes
 
-    const menuToggle = document.getElementById('menuToggle');
-    const sidebar = document.getElementById('sidebar');
-    const mainContent = document.getElementById('mainContent');
+    function showAlert(msg, type = 'success') {
+      const el = document.getElementById('statusMessage')
+      el.textContent = msg
+      el.className = `alert alert-${type}`
+      el.style.display = 'block'
+      setTimeout(() => el.style.display = 'none', 4000)
+    }
 
-    menuToggle.addEventListener('click', () => {
-      if (window.innerWidth <= 768) {
-        sidebar.classList.toggle('active');
+    function closeModal(id) {
+      document.getElementById(id).style.display = 'none'
+    }
+
+    function toggleSidebar() {
+      const sidebar = document.getElementById('sidebar')
+      const overlay = document.getElementById('overlay')
+      
+      sidebar.classList.toggle('active')
+      overlay.classList.toggle('active')
+    }
+
+    function switchTab(tab) {
+      document.querySelectorAll('[id$="Content"]').forEach(t => t.style.display = 'none')
+      document.getElementById(tab + 'Content').style.display = 'block'
+      document.querySelectorAll('.nav-link').forEach(l => l.classList.remove('active'))
+      document.querySelector(`[onclick="switchTab('${tab}')"]`).classList.add('active')
+
+      // Close sidebar on mobile after selecting a tab
+      if (window.innerWidth < 768) {
+        toggleSidebar()
+      }
+
+      if (tab === 'dashboard') loadDashboard()
+      if (tab === 'courses') loadCourses()
+      if (tab === 'students') loadStudents()
+      if (tab === 'attendances') loadAttendances()
+      if (tab === 'profile') loadProfile()
+      if (tab === 'exams') loadExams()
+      if (tab === 'reports') loadReports()
+    }
+
+    async function initApp() {
+      const { data: { session } } = await supabase.auth.getSession()
+      if (session?.user) {
+        currentUserId = session.user.id
       } else {
-        sidebar.classList.toggle('collapsed');
-        mainContent.classList.toggle('sidebar-collapsed');
-      }
-    });
-
-    function showStatus(message, type = 'success') {
-      const statusEl = document.getElementById('statusMessage');
-      if (!statusEl) return;
-      statusEl.textContent = message;
-      statusEl.className = `status-message ${type}`;
-      statusEl.style.display = 'block';
-      setTimeout(() => statusEl.style.display = 'none', 3500);
-    }
-
-    function closeModal(modalId) {
-      const modal = document.getElementById(modalId);
-      if (modal) modal.style.display = 'none';
-      // إيقاف QR Scanner فقط إذا كان نشطًا
-      if (isQrScannerActive) {
-        stopQrScanner();
-      }
-    }
-
-    function switchTab(tabName) {
-      document.querySelectorAll('.tab-content').forEach(tab => tab.style.display = 'none');
-      const activeTab = document.getElementById(tabName + 'Content');
-      if (activeTab) activeTab.style.display = 'block';
-      document.querySelectorAll('.nav-link').forEach(link => link.classList.remove('active'));
-      const navLinks = document.querySelectorAll('.nav-link');
-      navLinks.forEach(link => {
-        if (link.getAttribute('onclick') === `switchTab('${tabName}')`) {
-          link.classList.add('active');
+        const saved = localStorage.getItem('current_academy_id')
+        const savedUser = localStorage.getItem('user_id')
+        if (saved && savedUser) {
+          currentAcademyId = saved
+          currentUserId = savedUser
         }
-      });
-      if (tabName === 'dashboard') loadDashboardData();
-      if (tabName === 'courses') loadCourses();
-      if (tabName === 'students') loadTeacherStudents();
-      if (tabName === 'exams') loadTeacherExams();
-      if (tabName === 'attendances') loadTeacherAttendances();
-      if (tabName === 'profile') loadProfileData();
-      if (tabName === 'reports') loadReportsData();
-      if (window.innerWidth <= 768) sidebar.classList.remove('active');
-    }
-
-    async function loadUserData() {
-      try {
-        const { data: { user }, error } = await supabaseClient.auth.getUser();
-        if (error) throw error;
-        if (!user) {
-          window.location.href = 'index.html';
-          return;
-        }
-        currentUserId = user.id;
-        await supabaseClient.from('users').upsert({
-          id: user.id,
-          email: user.email,
-          full_name: user.user_metadata?.full_name || user.email?.split('@')[0] || 'المعلم',
-          role: 'teacher'
-        }, { onConflict: 'id' });
-        const { data: userData } = await supabaseClient
-          .from('users')
-          .select('*')
-          .eq('id', currentUserId)
-          .maybeSingle();
-        if (userData) {
-          currentUserData = userData;
-          document.getElementById('userNameHeader').textContent = `أهلاً بك، ${userData.full_name || 'المعلم'}`;
-          await loadDashboardData();
-        }
-      } catch (error) {
-        console.error('Error loading user data:', error);
-        showStatus('خطأ في تحميل بيانات المستخدم', 'error');
-      }
-    }
-
-    async function loadDashboardData() {
-      try {
-        const { count: coursesCount } = await supabaseClient
-          .from('courses')
-          .select('*', { count: 'exact', head: true })
-          .eq('teacher_id', currentUserId);
-        document.getElementById('totalCourses').textContent = coursesCount || 0;
-
-        const { data: teacherCourses } = await supabaseClient
-          .from('courses')
-          .select('id')
-          .eq('teacher_id', currentUserId);
-        const courseIds = (teacherCourses || []).map(c => c.id);
-
-        let lessonsCount = 0;
-        if (courseIds.length > 0) {
-          const { count } = await supabaseClient
-            .from('lessons')
-            .select('*', { count: 'exact', head: true })
-            .in('course_id', courseIds);
-          lessonsCount = count || 0;
-        }
-        document.getElementById('totalLessons').textContent = lessonsCount;
-
-        let studentsCount = 0;
-        if (courseIds.length > 0) {
-          const { data: subs } = await supabaseClient
-            .from('subscriptions')
-            .select('student_id')
-            .in('course_id', courseIds);
-          studentsCount = [...new Set((subs || []).map(s => s.student_id))].length;
-        }
-        document.getElementById('totalStudents').textContent = studentsCount;
-
-        await loadLessonsPerCourseChart();
-      } catch (error) {
-        console.error('Error loading dashboard:', error);
-      }
-    }
-
-    async function loadLessonsPerCourseChart() {
-      const chartCtx = document.getElementById('lessonsPerCourseChart');
-      if (!chartCtx) return;
-
-      const { data: teacherCourses } = await supabaseClient
-        .from('courses')
-        .select('id, name')
-        .eq('teacher_id', currentUserId);
-      const courseIds = (teacherCourses || []).map(c => c.id);
-      const courseNames = (teacherCourses || []).map(c => c.name);
-
-      const lessonsPerCourse = {};
-      if (courseIds.length > 0) {
-        const { data: lessonsData } = await supabaseClient
-          .from('lessons')
-          .select('course_id')
-          .in('course_id', courseIds);
-        (lessonsData || []).forEach(lesson => {
-          lessonsPerCourse[lesson.course_id] = (lessonsPerCourse[lesson.course_id] || 0) + 1;
-        });
       }
 
-      const lessonCounts = courseIds.map(id => lessonsPerCourse[id] || 0);
+      if (!currentUserId) {
+        showAlert('يرجى تسجيل الدخول أولاً', 'danger')
+        return
+      }
 
-      if (lessonsPerCourseChart) lessonsPerCourseChart.destroy();
-      lessonsPerCourseChart = new Chart(chartCtx, {
+      // جلب academy_id من profiles
+      const { data: profile } = await supabase.from('profiles').select('full_name,academy_id').eq('id', currentUserId).single()
+      if (profile) {
+        currentAcademyId = profile.academy_id
+        currentUserName = profile.full_name || 'المعلم'
+        localStorage.setItem('current_academy_id', currentAcademyId)
+      }
+
+      document.getElementById('userNameHeader').textContent = `أهلاً، ${currentUserName}`
+      await loadDashboard()
+    }
+
+    async function loadDashboard() {
+      if (!currentAcademyId || !currentUserId) return
+
+      const now = Date.now()
+      const cache = teacherDataCache.courses
+      let myCourses = null
+
+      // Use cache if available
+      if (cache.data && (now - cache.timestamp) < TEACHER_CACHE_DURATION) {
+        myCourses = cache.data
+      } else {
+        // Load courses once
+        const { data } = await supabase.from('courses').select('id,name').eq('teacher_id', currentUserId).eq('academy_id', currentAcademyId)
+        myCourses = data || []
+        teacherDataCache.courses = { data: myCourses, timestamp: now }
+      }
+
+      const courseIds = myCourses?.map(c => c.id) || []
+      document.getElementById('totalCourses').textContent = myCourses.length || 0
+
+      // Load counts in parallel
+      const [lessonsRes, subsRes] = await Promise.all([
+        supabase.from('lessons').select('*', { count: 'exact', head: true }).in('course_id', courseIds).eq('academy_id', currentAcademyId),
+        supabase.from('subscriptions').select('student_id').in('course_id', courseIds).eq('academy_id', currentAcademyId)
+      ])
+
+      document.getElementById('totalLessons').textContent = lessonsRes.count || 0
+      const uniqueStudents = [...new Set(subsRes.data?.map(s => s.student_id) || [])].length
+      document.getElementById('totalStudents').textContent = uniqueStudents
+
+      // رسم بياني - use cached courses
+      const labels = myCourses?.map(c => c.name) || []
+      const dataCounts = await Promise.all((myCourses || []).map(async c => {
+        const { count } = await supabase.from('lessons').select('*', { count: 'exact', head: true }).eq('course_id', c.id)
+        return count || 0
+      }))
+
+      if (lessonsChart) lessonsChart.destroy()
+      lessonsChart = new Chart(document.getElementById('lessonsChart'), {
         type: 'bar',
-        data: {
-          labels: courseNames,
-          datasets: [{
-            label: 'عدد الدروس',
-            data: lessonCounts,
-            backgroundColor: 'rgba(249, 115, 22, 0.7)',
-            borderColor: 'rgba(249, 115, 22, 1)',
-            borderWidth: 1
-          }]
-        },
-        options: {
-          responsive: true,
-          maintainAspectRatio: false,
-          scales: { y: { beginAtZero: true, ticks: { stepSize: 1 } } },
-          plugins: { legend: { display: false } }
+        data: { labels, datasets: [{ label: 'عدد الدروس', data: dataCounts, backgroundColor: '#5B8DEE' }] },
+        options: { 
+          responsive: true, 
+          plugins: { legend: { display: false } },
+          scales: {
+            y: {
+              beginAtZero: true
+            }
+          }
         }
-      });
+      })
     }
 
     async function loadCourses() {
-      const container = document.getElementById('coursesContainer');
-      container.innerHTML = '<div class="loading"><div class="loading-spinner"></div><p>جاري التحميل...</p></div>';
+      const container = document.getElementById('coursesContainer')
+      container.innerHTML = '<div class="loading"><div class="loading-spinner"></div><p>جاري التحميل...</p></div>'
+      const { data } = await supabase.from('courses').select('*').eq('teacher_id', currentUserId).order('created_at', { ascending: false })
+      if (!data || data.length === 0) { container.innerHTML = '<p style="text-align:center;color:#888;">لا توجد كورسات</p>'; return }
+
+      let html = '<div class="grid-2">'
+      for (const c of data) {
+        const { count: lessons } = await supabase.from('lessons').select('*', { count: 'exact', head: true }).eq('course_id', c.id)
+        html += `<div class="card"><h3>${c.name}</h3><p>${c.description || 'لا يوجد وصف'}</p><p><strong>عدد الدروس:</strong> ${lessons || 0}</p></div>`
+      }
+      html += '</div>'
+      container.innerHTML = html
+    }
+
+    async function loadStudents() {
+      const container = document.getElementById('studentsContainer')
+      container.innerHTML = '<div class="loading"><div class="loading-spinner"></div><p>جاري التحميل...</p></div>'
+      const { data: myCourses } = await supabase.from('courses').select('id').eq('teacher_id', currentUserId)
+      const courseIds = myCourses?.map(c => c.id) || []
+      if (courseIds.length === 0) { container.innerHTML = '<p style="text-align:center;color:#888;">لا يوجد طلاب</p>'; return }
+
+      const { data: subs } = await supabase.from('subscriptions').select('student_id').in('course_id', courseIds)
+      const studentIds = [...new Set(subs?.map(s => s.student_id) || [])]
+      const { data: students } = await supabase.from('students').select('full_name,email,phone').in('id', studentIds)
+
+      let html = '<div class="grid-2">'
+      students?.forEach(s => {
+        html += `<div class="card"><h3>${s.full_name}</h3><p>${s.email || 'لا يوجد بريد'}</p><p>${s.phone || 'لا يوجد هاتف'}</p></div>`
+      })
+      html += '</div>'
+      container.innerHTML = html || '<p style="text-align:center;color:#888;">لا يوجد طلاب</p>'
+    }
+
+    async function loadAttendances() {
+      const container = document.getElementById('attendancesContainer')
+      container.innerHTML = '<div class="loading"><div class="loading-spinner"></div><p>جاري التحميل...</p></div>'
+      if (!currentAcademyId || !currentUserId) {
+        container.innerHTML = '<p style="text-align:center;color:#888;">لا يمكن تحميل البيانات</p>'
+        return
+      }
+      
+      const { data: myCourses } = await supabase.from('courses').select('id').eq('teacher_id', currentUserId).eq('academy_id', currentAcademyId)
+      const courseIds = myCourses?.map(c => c.id) || []
+      if (courseIds.length === 0) {
+        container.innerHTML = '<p style="text-align:center;color:#888;">لا توجد كورسات</p>'
+        return
+      }
+      
+      // جلب سجلات الحضور
+      const { data: attendances, error: attendancesError } = await supabase.from('attendances')
+        .select('*')
+        .eq('academy_id', currentAcademyId)
+        .in('course_id', courseIds)
+        .order('date', { ascending: false })
+        .limit(50)
+      
+      if (attendancesError) {
+        console.error('Attendance query error:', attendancesError)
+        container.innerHTML = `<p style="text-align:center;color:#FC8181;">خطأ في تحميل البيانات: ${attendancesError.message}</p>`
+        return
+      }
+
+      if (!attendances || attendances.length === 0) {
+        container.innerHTML = '<p style="text-align:center;color:#888;">لا توجد سجلات حضور</p>'
+        return
+      }
+
+      // جلب بيانات الطلاب
+      const studentIds = [...new Set(attendances.map(a => a.student_id).filter(Boolean))]
+      const { data: students } = studentIds.length > 0 
+        ? await supabase.from('students').select('id,full_name').in('id', studentIds).eq('academy_id', currentAcademyId)
+        : { data: [] }
+      
+      // جلب بيانات الدروس
+      const lessonIds = [...new Set(attendances.map(a => a.lesson_id).filter(Boolean))]
+      const { data: lessons } = lessonIds.length > 0
+        ? await supabase.from('lessons').select('id,title').in('id', lessonIds).eq('academy_id', currentAcademyId)
+        : { data: [] }
+
+      // إنشاء خرائط للبحث السريع
+      const studentsMap = new Map(students?.map(s => [s.id, s.full_name]) || [])
+      const lessonsMap = new Map(lessons?.map(l => [l.id, l.title]) || [])
+
+      // دمج البيانات
+      const enrichedData = attendances.map(a => ({
+        ...a,
+        studentName: studentsMap.get(a.student_id) || 'غير محدد',
+        lessonTitle: lessonsMap.get(a.lesson_id) || 'درس'
+      }))
+
+      let html = ''
+      const grouped = enrichedData.reduce((g, a) => {
+        const dateKey = a.date || a.attendance_date
+        g[dateKey] = g[dateKey] || []
+        g[dateKey].push(a)
+        return g
+      }, {})
+
+      Object.keys(grouped).sort().reverse().forEach(date => {
+        const day = grouped[date]
+        const present = day.filter(r => r.status === 'present').length
+        const absent = day.filter(r => r.status === 'absent').length
+        const late = day.filter(r => r.status === 'late').length
+        html += `<div class="card" style="margin-bottom:15px;">
+          <div style="background:#f8f9fa; padding:12px; border-radius:8px; margin-bottom:10px; display:flex; justify-content:space-between; flex-wrap:wrap; gap:5px;">
+            <strong>${new Date(date).toLocaleDateString('ar-EG')}</strong>
+            <div style="font-size:0.9rem;">حاضر: ${present} | غائب: ${absent} | متأخر: ${late}</div>
+          </div>
+          <div style="display:grid; gap:8px;">`
+        day.forEach(r => {
+          const color = r.status === 'present' ? '#81C995' : r.status === 'absent' ? '#FC8181' : '#F6AD55'
+          const label = r.status === 'present' ? 'حاضر' : r.status === 'absent' ? 'غائب' : 'متأخر'
+          html += `<div style="padding:10px; background:#f8f9fa; border-radius:8px; border-right:3px solid ${color}; display:flex; justify-content:space-between; flex-wrap:wrap; gap:5px; font-size:0.9rem;">
+            <span>${r.studentName}</span>
+            <span>${r.lessonTitle} - <strong>${label}</strong></span>
+          </div>`
+        })
+        html += `</div></div>`
+      })
+      container.innerHTML = html
+    }
+
+    async function loadProfile() {
+      const container = document.getElementById('profileContainer')
+      if (!container) return
+      
+      container.innerHTML = '<div class="loading"><div class="loading-spinner"></div><p>جاري التحميل...</p></div>'
+      
+      if (!currentUserId) {
+        container.innerHTML = '<p style="text-align:center;color:#888;">يرجى تسجيل الدخول</p>'
+        return
+      }
+
       try {
-        const { data: courses, error } = await supabaseClient
-          .from('courses')
+        const { data: profile, error } = await supabase
+          .from('profiles')
+          .select('*')
+          .eq('id', currentUserId)
+          .single()
+
+        if (error) throw error
+
+        if (!profile) {
+          container.innerHTML = '<p style="text-align:center;color:#888;">لا توجد بيانات</p>'
+          return
+        }
+
+        // جلب سجل الحضور الأخير
+        const { data: attendance } = await supabase
+          .from('teacher_attendance')
           .select('*')
           .eq('teacher_id', currentUserId)
-          .order('created_at', { ascending: false });
-        if (error) throw error;
-        if (!courses || courses.length === 0) {
-          container.innerHTML = '<p class="no-data">لا توجد كورسات</p>';
-          return;
-        }
-        let html = '';
-        for (const course of courses) {
-          // === جلب الوحدات الخاصة بالكورس ===
-          const { data: modules } = await supabaseClient
-            .from('modules')
-            .select('*')
-            .eq('course_id', course.id)
-            .order('created_at', { ascending: true });
-          // === جلب الدروس الخاصة بالكورس ===
-          const { data: lessons } = await supabaseClient
-            .from('lessons')
-            .select('*')
-            .eq('course_id', course.id)
-            .order('date', { ascending: true });
-          // === جلب الاختبارات الخاصة بالكورس ===
-          const { data: exams } = await supabaseClient
-            .from('exams')
-            .select('*')
-            .eq('course_id', course.id)
-            .order('date', { ascending: true }); // العمود اسمه date مش exam_date
-
-          // بناء Box الكورس
-          html += `
-            <div class="course-box">
-              <div class="course-title">${course.name}</div>
-              <p style="color: var(--gray); font-size: 0.9rem; margin: 10px 0;">${course.description || 'لا يوجد وصف'}</p>
-              <div style="font-size: 0.85rem; color: var(--gray); margin-bottom:10px;">
-                <i class="fas fa-calendar"></i>
-                ${new Date(course.start_date).toLocaleDateString('ar-EG')} - ${new Date(course.end_date).toLocaleDateString('ar-EG')}
-              </div>
-              <!-- الوحدات -->
-              <div class="accordion-section">
-                <div class="accordion-header" onclick="toggleAccordion(this)">
-                  🗂️ الوحدات <i class="fas fa-chevron-down"></i>
-                </div>
-                <div class="accordion-body" style="display:none;">
-                  ${
-                    modules?.length
-                      ? modules.map(m => `<div style="margin:5px 0;">- ${m.title || 'وحدة بدون عنوان'}</div>`).join('')
-                      : '<p style="color:var(--gray); font-size:0.85rem;">لا توجد وحدات</p>'
-                  }
-                </div>
-              </div>
-              <!-- الدروس -->
-              <div class="accordion-section">
-                <div class="accordion-header" onclick="toggleAccordion(this)">
-                  📘 الدروس <i class="fas fa-chevron-down"></i>
-                </div>
-                <div class="accordion-body" style="display:none;">
-                  ${
-                    lessons?.length
-                      ? lessons.map(l => `<div style="margin:5px 0;">- ${l.title} (${new Date(l.date).toLocaleDateString('ar-EG')})</div>`).join('')
-                      : '<p style="color:var(--gray); font-size:0.85rem;">لا يوجد دروس</p>'
-                  }
-                </div>
-              </div>
-              <!-- الاختبارات -->
-              <div class="accordion-section">
-                <div class="accordion-header" onclick="toggleAccordion(this)">
-                  📝 الاختبارات <i class="fas fa-chevron-down"></i>
-                </div>
-                <div class="accordion-body" style="display:none;">
-                  ${
-                    exams?.length
-                      ? exams.map(e => `<div style="margin:5px 0;">- ${e.title} (${new Date(e.date).toLocaleDateString('ar-EG')}) | الدرجة: ${e.max_score}</div>`).join('')
-                      : '<p style="color:var(--gray); font-size:0.85rem;">لا يوجد اختبارات</p>'
-                  }
-                </div>
-              </div>
-            </div>
-          `;
-        }
-        container.innerHTML = html;
-      } catch (error) {
-        console.error('Error loading courses:', error);
-        container.innerHTML = '<p class="no-data">خطأ في التحميل</p>';
-      }
-    }
-
-    // دالة فتح/قفل الـ accordion
-    function toggleAccordion(header) {
-      const body = header.nextElementSibling;
-      if (body.style.display === "none" || body.style.display === "") {
-        body.style.display = "block";
-        header.querySelector("i").classList.replace("fa-chevron-down", "fa-chevron-up");
-      } else {
-        body.style.display = "none";
-        header.querySelector("i").classList.replace("fa-chevron-up", "fa-chevron-down");
-      }
-    }
-
-    async function loadTeacherStudents() {
-      const container = document.getElementById('studentsContainer');
-      container.innerHTML = '<div class="loading"><div class="loading-spinner"></div><p>جاري التحميل...</p></div>';
-      try {
-        const { data: teacherCourses } = await supabaseClient
-          .from('courses')
-          .select('id, name')
-          .eq('teacher_id', currentUserId);
-        const courseIds = (teacherCourses || []).map(c => c.id);
-        if (courseIds.length === 0) {
-          container.innerHTML = '<p class="no-data">لا توجد كورسات</p>';
-          return;
-        }
-        const { data: subscriptions } = await supabaseClient
-          .from('subscriptions')
-          .select('student_id, course_id')
-          .in('course_id', courseIds);
-        const studentIds = [...new Set((subscriptions || []).map(s => s.student_id))];
-        if (studentIds.length === 0) {
-          container.innerHTML = '<p class="no-data">لا يوجد طلاب</p>';
-          return;
-        }
-        const { data: students } = await supabaseClient
-          .from('students')
-          .select('id, full_name, email, phone')
-          .in('id', studentIds);
-
-        let html = '<input type="text" class="search-box" placeholder="ابحث عن طالب..." id="studentSearch">';
-        (students || []).forEach(student => {
-          html += `
-            <div class="card" data-name="${student.full_name.toLowerCase()}">
-              <div class="card-header">
-                <div class="card-title">${student.full_name}</div>
-              </div>
-              <div style="padding: 10px 0;">
-                <div style="margin: 5px 0;"><strong>البريد:</strong> ${student.email || '-'}</div>
-                <div style="margin: 5px 0;"><strong>الهاتف:</strong> ${student.phone || '-'}</div>
-              </div>
-            </div>
-          `;
-        });
-        container.innerHTML = html;
-        document.getElementById('studentSearch').addEventListener('input', function() {
-          const q = this.value.toLowerCase();
-          document.querySelectorAll('.card[data-name]').forEach(card => {
-            card.style.display = card.dataset.name.includes(q) ? '' : 'none';
-          });
-        });
-      } catch (error) {
-        console.error('Error loading students:', error);
-        container.innerHTML = '<p class="no-data">خطأ في التحميل</p>';
-      }
-    }
-
-    async function loadTeacherExams() {
-      const container = document.getElementById('examsContainer');
-      container.innerHTML = '<div class="loading"><div class="loading-spinner"></div><p>جاري التحميل...</p></div>';
-      try {
-        const { data: teacherCourses } = await supabaseClient
-          .from('courses')
-          .select('id, name')
-          .eq('teacher_id', currentUserId);
-        const courseIds = (teacherCourses || []).map(c => c.id);
-        if (courseIds.length === 0) {
-          container.innerHTML = '<p class="no-data">لا توجد كورسات</p>';
-          return;
-        }
-        const { data: exams } = await supabaseClient
-          .from('exams')
-          .select('*')
-          .in('course_id', courseIds);
-
-        if (!exams || exams.length === 0) {
-          container.innerHTML = '<p class="no-data">لا توجد اختبارات</p>';
-          return;
-        }
-        let html = '';
-        exams.forEach(exam => {
-          const course = teacherCourses.find(c => c.id === exam.course_id);
-          html += `
-            <div class="card">
-              <div class="card-header">
-                <div class="card-title">${exam.title}</div>
-              </div>
-              <div style="padding: 10px 0;">
-                <div style="margin: 5px 0;"><strong>الكورس:</strong> ${course?.name || '-'}</div>
-                <div style="margin: 5px 0;"><strong>الدرجة:</strong> ${exam.max_score}</div>
-                <div style="margin: 5px 0;"><strong>التاريخ:</strong> ${new Date(exam.exam_date).toLocaleDateString('ar-EG')}</div>
-              </div>
-            </div>
-          `;
-        });
-        container.innerHTML = html;
-      } catch (error) {
-        console.error('Error loading exams:', error);
-        container.innerHTML = '<p class="no-data">خطأ في التحميل</p>';
-      }
-    }
-
-    async function showCourseDetails(courseId) {
-      const modal = document.getElementById('courseDetailsModal');
-      const body = document.getElementById('courseDetailsBody');
-      modal.style.display = 'flex';
-      body.innerHTML = '<div class="loading"><div class="loading-spinner"></div><p>جاري التحميل...</p></div>';
-      try {
-        // جلب الكورس
-        const { data: course } = await supabaseClient
-          .from('courses')
-          .select('*')
-          .eq('id', courseId)
-          .single();
-        // جلب الدروس
-        const { data: lessons } = await supabaseClient
-          .from('lessons')
-          .select('*')
-          .eq('course_id', courseId)
-          .order('date', { ascending: true });
-        // جلب الاختبارات
-        const { data: exams } = await supabaseClient
-          .from('exams')
-          .select('*')
-          .eq('course_id', courseId)
-          .order('exam_date', { ascending: true });
+          .order('date', { ascending: false })
+          .limit(5)
 
         let html = `
-          <h3 style="color: var(--primary);">${course.name}</h3>
-          <p>${course.description || 'لا يوجد وصف'}</p>
-          <hr>
-          <h4>الدروس:</h4>
-          ${lessons?.length ? lessons.map(l => `<div>📘 ${l.title} - ${new Date(l.date).toLocaleDateString('ar-EG')}</div>`).join('') : '<p>لا يوجد دروس</p>'}
-          <hr>
-          <h4>الاختبارات:</h4>
-          ${exams?.length ? exams.map(e => `<div>📝 ${e.title} - ${new Date(e.exam_date).toLocaleDateString('ar-EG')}</div>`).join('') : '<p>لا يوجد اختبارات</p>'}
-        `;
-        body.innerHTML = html;
-        document.getElementById('courseDetailsTitle').textContent = `تفاصيل الكورس: ${course.name}`;
-      } catch (err) {
-        console.error(err);
-        body.innerHTML = '<p class="no-data">خطأ في تحميل التفاصيل</p>';
-      }
-    }
-
-    async function loadTeacherAttendances() {
-      const container = document.getElementById('attendancesContainer');
-      container.innerHTML = '<div class="loading"><div class="loading-spinner"></div><p>جاري التحميل...</p></div>';
-      try {
-        const { data: teacherCourses } = await supabaseClient
-          .from('courses')
-          .select('id, name')
-          .eq('teacher_id', currentUserId);
-        const courseIds = (teacherCourses || []).map(c => c.id);
-        if (courseIds.length === 0) {
-          container.innerHTML = '<p class="no-data">لا توجد كورسات</p>';
-          return;
-        }
-        const { data: attendances } = await supabaseClient
-          .from('attendances')
-          .select('*, students(full_name), lessons(title)')
-          .in('course_id', courseIds)
-          .order('date', { ascending: false })
-          .limit(50);
-
-        if (!attendances || attendances.length === 0) {
-          container.innerHTML = '<p class="no-data">لا توجد سجلات حضور</p>';
-          return;
-        }
-        const groupedByDate = {};
-        attendances.forEach(att => {
-          if (!groupedByDate[att.date]) {
-            groupedByDate[att.date] = [];
-          }
-          groupedByDate[att.date].push(att);
-        });
-
-        let html = '';
-        Object.keys(groupedByDate).forEach(date => {
-          const records = groupedByDate[date];
-          const presentCount = records.filter(r => r.status === 'present').length;
-          const absentCount = records.filter(r => r.status === 'absent').length;
-          const lateCount = records.filter(r => r.status === 'late').length;
-          html += `
-            <div class="course-box">
-              <div class="course-title" style="display: flex; justify-content: space-between; align-items: center;">
-                <span><i class="fas fa-calendar"></i> ${new Date(date).toLocaleDateString('ar-EG', {weekday: 'long', year: 'numeric', month: 'long', day: 'numeric'})}</span>
-                <div style="font-size: 0.85rem; color: var(--gray);">
-                  <span style="color: var(--success);"><i class="fas fa-check"></i> ${presentCount}</span>
-                  <span style="color: var(--danger); margin: 0 8px;"><i class="fas fa-times"></i> ${absentCount}</span>
-                  <span style="color: #f59e0b;"><i class="fas fa-clock"></i> ${lateCount}</span>
-                </div>
+          <div style="display:grid; gap:20px;">
+            <div style="background:#f8f9fa; padding:20px; border-radius:12px;">
+              <h3 style="margin-bottom:15px;">المعلومات الشخصية</h3>
+              <div style="display:grid; gap:12px;">
+                <div><strong>الاسم الكامل:</strong> ${profile.full_name || 'غير محدد'}</div>
+                <div><strong>البريد الإلكتروني:</strong> ${profile.email || 'غير محدد'}</div>
+                <div><strong>رقم الهاتف:</strong> ${profile.phone || 'غير محدد'}</div>
+                <div><strong>التخصص:</strong> ${profile.specialty || 'غير محدد'}</div>
+                <div><strong>الدور:</strong> ${profile.role === 'teacher' ? 'معلم' : profile.role || 'غير محدد'}</div>
               </div>
-              <div style="margin-top: 15px; display: grid; gap: 8px;">
-          `;
-          records.forEach(att => {
-            const statusColor = att.status === 'present' ? 'var(--success)' : att.status === 'absent' ? 'var(--danger)' : '#f59e0b';
-            const statusIcon = att.status === 'present' ? 'fa-check-circle' : att.status === 'absent' ? 'fa-times-circle' : 'fa-clock';
-            const statusText = att.status === 'present' ? 'حاضر' : att.status === 'absent' ? 'غائب' : 'متأخر';
+            </div>
+            
+            <div style="background:#f8f9fa; padding:20px; border-radius:12px;">
+              <h3 style="margin-bottom:15px;">سجل الحضور الأخير</h3>
+        `
+
+        if (attendance && attendance.length > 0) {
+          html += '<div style="display:grid; gap:8px;">'
+          attendance.forEach(record => {
+            const checkIn = record.check_in_time ? new Date(record.check_in_time).toLocaleTimeString('ar-EG') : '-'
+            const checkOut = record.check_out_time ? new Date(record.check_out_time).toLocaleTimeString('ar-EG') : '-'
             html += `
-              <div style="background: #fafafa; padding: 10px; border-radius: 8px; display: flex; justify-content: space-between; align-items: center;">
-                <div>
-                  <strong>${att.students?.full_name || 'طالب'}</strong>
-                  <div style="font-size: 0.85rem; color: var(--gray);">
-                    ${att.lessons?.title || 'درس'} ${att.notes ? `- ${att.notes}` : ''}
-                  </div>
+              <div style="padding:12px; background:#fff; border-radius:8px; border-right:3px solid var(--primary);">
+                <div style="display:flex; justify-content:space-between; margin-bottom:5px; flex-wrap:wrap; gap:5px;">
+                  <strong>${new Date(record.date).toLocaleDateString('ar-EG')}</strong>
                 </div>
-                <div style="color: ${statusColor}; font-weight: bold;">
-                  <i class="fas ${statusIcon}"></i> ${statusText}
+                <div style="color:#666; font-size:0.9rem;">
+                  <div>حضور: ${checkIn}</div>
+                  <div>انصراف: ${checkOut}</div>
                 </div>
               </div>
-            `;
-          });
-          html += `</div></div>`;
-        });
-        container.innerHTML = html;
+            `
+          })
+          html += '</div>'
+        } else {
+          html += '<p style="text-align:center;color:#888;">لا توجد سجلات حضور</p>'
+        }
+
+        html += '</div></div>'
+        container.innerHTML = html
       } catch (error) {
-        console.error('Error loading attendances:', error);
-        container.innerHTML = '<p class="no-data">خطأ في التحميل</p>';
+        console.error('Profile load error:', error)
+        container.innerHTML = `<p style="text-align:center;color:#FC8181;">خطأ في تحميل البيانات: ${error.message}</p>`
       }
     }
-
-    async function loadReportsData() {
-      const container = document.getElementById('studentReportsContainer');
-      container.innerHTML = '<div class="loading"><div class="loading-spinner"></div><p>جاري التحميل...</p></div>';
-      try {
-        await loadReportFilters();
-        const courseFilter = document.getElementById('reportCourseFilter').value;
-        const monthFilter = document.getElementById('reportMonthFilter').value;
-
-        const { data: teacherCourses } = await supabaseClient
-          .from('courses')
-          .select('id, name')
-          .eq('teacher_id', currentUserId);
-        let courseIds = (teacherCourses || []).map(c => c.id);
-        if (courseFilter) {
-          courseIds = [courseFilter];
-        }
-        if (courseIds.length === 0) {
-          container.innerHTML = '<p class="no-data">لا توجد كورسات</p>';
-          return;
-        }
-        let query = supabaseClient
-          .from('attendances')
-          .select('*')
-          .in('course_id', courseIds);
-        if (monthFilter) {
-          const startDate = new Date(monthFilter + '-01');
-          const endDate = new Date(startDate.getFullYear(), startDate.getMonth() + 1, 0);
-          query = query.gte('date', startDate.toISOString().split('T')[0])
-                       .lte('date', endDate.toISOString().split('T')[0]);
-        }
-        const { data: attendances } = await query;
-
-        const totalPresent = (attendances || []).filter(a => a.status === 'present').length;
-        const totalAbsent = (attendances || []).filter(a => a.status === 'absent').length;
-        const totalLate = (attendances || []).filter(a => a.status === 'late').length;
-        const total = totalPresent + totalAbsent + totalLate;
-        const rate = total > 0 ? Math.round((totalPresent / total) * 100) : 0;
-
-        document.getElementById('totalPresentStudents').textContent = totalPresent;
-        document.getElementById('totalAbsentStudents').textContent = totalAbsent;
-        document.getElementById('totalLateStudents').textContent = totalLate;
-        document.getElementById('attendanceRate').textContent = rate + '%';
-        await loadAttendanceChart(attendances || []);
-
-        const { data: subscriptions } = await supabaseClient
-          .from('subscriptions')
-          .select('student_id, course_id')
-          .in('course_id', courseIds);
-        const studentIds = [...new Set((subscriptions || []).map(s => s.student_id))];
-        if (studentIds.length === 0) {
-          container.innerHTML = '<p class="no-data">لا يوجد طلاب</p>';
-          return;
-        }
-        const { data: students } = await supabaseClient
-          .from('students')
-          .select('id, full_name')
-          .in('id', studentIds)
-          .order('full_name');
-
-        let html = '';
-        for (const student of students || []) {
-          const studentAttendances = (attendances || []).filter(a => a.student_id === student.id);
-          const present = studentAttendances.filter(a => a.status === 'present').length;
-          const absent = studentAttendances.filter(a => a.status === 'absent').length;
-          const late = studentAttendances.filter(a => a.status === 'late').length;
-          const studentTotal = present + absent + late;
-          const studentRate = studentTotal > 0 ? Math.round((present / studentTotal) * 100) : 0;
-          html += `
-            <div class="student-report-card" data-student-name="${student.full_name.toLowerCase()}" onclick="showStudentAttendanceDetails('${student.id}', '${student.full_name}')">
-              <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
-                <div style="font-weight: bold; font-size: 1.1rem;">${student.full_name}</div>
-                <div style="font-size: 1.2rem; font-weight: bold; color: ${studentRate >= 75 ? 'var(--success)' : studentRate >= 50 ? '#f59e0b' : 'var(--danger)'}">
-                  ${studentRate}%
-                </div>
-              </div>
-              <div style="display: flex; gap: 15px; font-size: 0.9rem;">
-                <span style="color: var(--success);"><i class="fas fa-check-circle"></i> ${present} حاضر</span>
-                <span style="color: var(--danger);"><i class="fas fa-times-circle"></i> ${absent} غائب</span>
-                <span style="color: #f59e0b;"><i class="fas fa-clock"></i> ${late} متأخر</span>
-              </div>
-            </div>
-          `;
-        }
-        container.innerHTML = html || '<p class="no-data">لا توجد بيانات</p>';
-        document.getElementById('studentReportSearch').addEventListener('input', function() {
-          const q = this.value.toLowerCase();
-          document.querySelectorAll('.student-report-card').forEach(card => {
-            const name = card.getAttribute('data-student-name');
-            card.style.display = name && name.includes(q) ? '' : 'none';
-          });
-        });
-      } catch (error) {
-        console.error('Error loading reports:', error);
-        container.innerHTML = '<p class="no-data">خطأ في التحميل</p>';
-      }
-    }
-
-    async function loadReportFilters() {
-      try {
-        if (courses.length === 0) {
-          const { data } = await supabaseClient
-            .from('courses')
-            .select('*')
-            .eq('teacher_id', currentUserId);
-          courses = data || [];
-        }
-        const courseSelect = document.getElementById('reportCourseFilter');
-        courseSelect.innerHTML = '<option value="">كل الكورسات</option>';
-        courses.forEach(course => {
-          const option = document.createElement('option');
-          option.value = course.id;
-          option.textContent = course.name;
-          courseSelect.appendChild(option);
-        });
-        const monthSelect = document.getElementById('reportMonthFilter');
-        monthSelect.innerHTML = '<option value="">كل الأشهر</option>';
-        const now = new Date();
-        for (let i = 0; i < 12; i++) {
-          const date = new Date(now.getFullYear(), now.getMonth() - i, 1);
-          const value = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
-          const text = date.toLocaleDateString('ar-EG', { year: 'numeric', month: 'long' });
-          const option = document.createElement('option');
-          option.value = value;
-          option.textContent = text;
-          monthSelect.appendChild(option);
-        }
-      } catch (error) {
-        console.error('Error loading report filters:', error);
-      }
-    }
-
-    async function loadAttendanceChart(attendances) {
-      const chartCtx = document.getElementById('attendanceChart');
-      if (!chartCtx) return;
-
-      const groupedByDate = {};
-      attendances.forEach(att => {
-        if (!groupedByDate[att.date]) {
-          groupedByDate[att.date] = { present: 0, absent: 0, late: 0 };
-        }
-        if (att.status === 'present') groupedByDate[att.date].present++;
-        else if (att.status === 'absent') groupedByDate[att.date].absent++;
-        else if (att.status === 'late') groupedByDate[att.date].late++;
-      });
-
-      const dates = Object.keys(groupedByDate).sort().slice(-10);
-      const presentData = dates.map(d => groupedByDate[d].present);
-      const absentData = dates.map(d => groupedByDate[d].absent);
-      const lateData = dates.map(d => groupedByDate[d].late);
-      const labels = dates.map(d => new Date(d).toLocaleDateString('ar-EG', { month: 'short', day: 'numeric' }));
-
-      if (attendanceChart) attendanceChart.destroy();
-      attendanceChart = new Chart(chartCtx, {
-        type: 'line',
-        data: {
-          labels: labels,
-          datasets: [
-            {
-              label: 'حاضر',
-              data: presentData,
-              borderColor: 'var(--success)',
-              backgroundColor: 'rgba(5, 150, 105, 0.1)',
-              tension: 0.4
-            },
-            {
-              label: 'غائب',
-              data: absentData,
-              borderColor: 'var(--danger)',
-              backgroundColor: 'rgba(239, 68, 68, 0.1)',
-              tension: 0.4
-            },
-            {
-              label: 'متأخر',
-              data: lateData,
-              borderColor: '#f59e0b',
-              backgroundColor: 'rgba(245, 158, 11, 0.1)',
-              tension: 0.4
-            }
-          ]
-        },
-        options: {
-          responsive: true,
-          maintainAspectRatio: false,
-          plugins: {
-            legend: { display: true, position: 'top' }
-          },
-          scales: {
-            y: { beginAtZero: true, ticks: { stepSize: 1 } }
-          }
-        }
-      });
-    }
-
-    async function showStudentAttendanceDetails(studentId, studentName) {
-      const modal = document.getElementById('studentAttendanceModal');
-      document.getElementById('studentAttendanceModalTitle').textContent = `سجل حضور: ${studentName}`;
-      modal.style.display = 'flex';
-      const container = document.getElementById('studentAttendanceDetailsContainer');
-      container.innerHTML = '<div class="loading"><div class="loading-spinner"></div><p>جاري التحميل...</p></div>';
-      try {
-        const { data: teacherCourses } = await supabaseClient
-          .from('courses')
-          .select('id')
-          .eq('teacher_id', currentUserId);
-        const courseIds = (teacherCourses || []).map(c => c.id);
-        const { data: attendances } = await supabaseClient
-          .from('attendances')
-          .select('*, lessons(title, date), courses(name)')
-          .eq('student_id', studentId)
-          .in('course_id', courseIds)
-          .order('date', { ascending: false });
-
-        const present = (attendances || []).filter(a => a.status === 'present').length;
-        const absent = (attendances || []).filter(a => a.status === 'absent').length;
-        const late = (attendances || []).filter(a => a.status === 'late').length;
-        const total = present + absent + late;
-        const rate = total > 0 ? Math.round((present / total) * 100) : 0;
-
-        document.getElementById('modalStudentPresent').textContent = present;
-        document.getElementById('modalStudentAbsent').textContent = absent;
-        document.getElementById('modalStudentLate').textContent = late;
-        document.getElementById('modalStudentRate').textContent = rate + '%';
-
-        if (!attendances || attendances.length === 0) {
-          container.innerHTML = '<p class="no-data">لا توجد سجلات حضور</p>';
-          return;
-        }
-        let html = '';
-        attendances.forEach(att => {
-          const statusClass = att.status;
-          const statusText = att.status === 'present' ? 'حاضر' : att.status === 'absent' ? 'غائب' : 'متأخر';
-          const statusIcon = att.status === 'present' ? 'fa-check-circle' : att.status === 'absent' ? 'fa-times-circle' : 'fa-clock';
-          html += `
-            <div class="attendance-record ${statusClass}">
-              <div style="display: flex; justify-content: space-between; align-items: center;">
-                <div>
-                  <div style="font-weight: bold;">${att.lessons?.title || 'درس'}</div>
-                  <div style="font-size: 0.85rem; color: var(--gray); margin-top: 4px;">
-                    ${att.courses?.name || 'كورس'} - ${new Date(att.date).toLocaleDateString('ar-EG')}
-                  </div>
-                  ${att.notes ? `<div style="font-size: 0.85rem; margin-top: 4px;">${att.notes}</div>` : ''}
-                </div>
-                <div style="font-weight: bold;">
-                  <i class="fas ${statusIcon}"></i> ${statusText}
-                </div>
-              </div>
-            </div>
-          `;
-        });
-        container.innerHTML = html;
-      } catch (error) {
-        console.error('Error loading student attendance details:', error);
-        container.innerHTML = '<p class="no-data">خطأ في التحميل</p>';
-      }
-    }
-
-    // جلب الكورسات وتخزينها في المصفوفة courses
-    async function fetchCourses() {
-      try {
-        const { data, error } = await supabaseClient
-          .from('courses')
-          .select('*')
-          .eq('teacher_id', currentUserId);
-        if (error) throw error;
-        courses = data || [];
-      } catch (err) {
-        console.error("Error fetching courses:", err);
-        courses = [];
-      }
-    }
-
-    // تحميل الكورسات والدروس الخاصة بكل كورس
-    async function loadCoursesForAttendance() {
-      try {
-        // نجيب الكورسات من قاعدة البيانات
-        await fetchCourses();
-        const courseSelect = document.getElementById('attendanceCourseFilter');
-        courseSelect.innerHTML = '<option value="">اختر كورساً</option>';
-        // نضيف الكورسات للـ select
-        courses.forEach(course => {
-          const option = document.createElement('option');
-          option.value = course.id;
-          option.textContent = course.name;
-          courseSelect.appendChild(option);
-        });
-        // نحضر الدروس لكل كورس ونخزنها في lessonsByCourse
-        lessonsByCourse = {};
-        for (const course of courses) {
-          const { data: lessonsData, error } = await supabaseClient
-            .from('lessons')
-            .select('id, title, date')
-            .eq('course_id', course.id)
-            .order('date', { ascending: true });
-          if (error) console.error(error);
-          lessonsByCourse[course.id] = lessonsData || [];
-        }
-      } catch (error) {
-        console.error('Error loading courses for attendance:', error);
-      }
-    }
-
-    // عند اختيار كورس → نعرض دروسه
-    document.getElementById('attendanceCourseFilter').addEventListener('change', function() {
-      const courseId = this.value;
-      const lessonSelect = document.getElementById('attendanceLesson');
-      const dateInput = document.getElementById('attendanceDate');
-      if (courseId && lessonsByCourse[courseId]) {
-        lessonSelect.innerHTML = '<option value="">اختر درساً</option>';
-        lessonsByCourse[courseId].forEach(lesson => {
-          const option = document.createElement('option');
-          option.value = lesson.id;
-          option.textContent = `${lesson.title} (${new Date(lesson.date).toLocaleDateString('ar-EG')})`;
-          lessonSelect.appendChild(option);
-        });
-        lessonSelect.disabled = false;
-      } else {
-        lessonSelect.innerHTML = '<option value="">اختر كورساً أولاً</option>';
-        lessonSelect.disabled = true;
-      }
-      dateInput.value = new Date().toISOString().split('T')[0];
-      dateInput.disabled = false;
-      document.getElementById('studentAttendanceList').innerHTML = '<p class="no-data">اختر درساً أولاً</p>';
-    });
 
     async function showAddAttendanceModal() {
-      const modal = document.getElementById('attendanceModal');
-      if (!modal) return;
-      await loadCoursesForAttendance();
-      modal.style.display = 'flex';
+      document.getElementById('attendanceModal').style.display = 'flex'
+      document.getElementById('attendanceDate').value = new Date().toISOString().split('T')[0]
+
+      const { data: courses } = await supabase.from('courses').select('id,name').eq('teacher_id', currentUserId)
+      const sel = document.getElementById('attendanceCourseFilter')
+      sel.innerHTML = '<option value="">اختر الكورس</option>'
+      courses?.forEach(c => sel.innerHTML += `<option value="${c.id}">${c.name}</option>`)
     }
 
-    async function loadCoursesForAttendance() {
-      try {
-        // نجيب الكورسات من قاعدة البيانات
-        await fetchCourses();
-        const courseSelect = document.getElementById('attendanceCourseFilter');
-        courseSelect.innerHTML = '<option value="">اختر كورساً</option>';
-        courses.forEach(course => {
-          const option = document.createElement('option');
-          option.value = course.id;
-          option.textContent = course.name;
-          courseSelect.appendChild(option);
-        });
-        // تحميل الدروس الخاصة بكل كورس
-        lessonsByCourse = {};
-        for (const course of courses) {
-          const { data: lessonsData } = await supabaseClient
-            .from('lessons')
-            .select('id, title, date')
-            .eq('course_id', course.id)
-            .order('date', { ascending: true });
-          lessonsByCourse[course.id] = lessonsData || [];
-        }
-      } catch (error) {
-        console.error('Error loading courses for attendance:', error);
+    document.getElementById('attendanceCourseFilter').addEventListener('change', async function () {
+      const courseId = this.value
+      const lessonSel = document.getElementById('attendanceLesson')
+      if (!courseId) {
+        lessonSel.innerHTML = '<option>اختر الكورس أولاً</option>'
+        lessonSel.disabled = true
+        return
       }
-    }
+      const { data: lessons } = await supabase.from('lessons').select('id,title,date').eq('course_id', courseId).order('date')
+      lessonSel.innerHTML = '<option value="">اختر الدرس</option>'
+      lessons?.forEach(l => {
+        const d = new Date(l.date).toLocaleDateString('ar-EG')
+        lessonSel.innerHTML += `<option value="${l.id}">${l.title} (${d})</option>`
+      })
+      lessonSel.disabled = false
+    })
 
-    // عند اختيار درس → حمّل الطلاب بتوع الكورس
-    document.getElementById('attendanceLesson').addEventListener('change', async function() {
-      const lessonId = this.value;
-      const courseId = document.getElementById('attendanceCourseFilter').value;
-      if (lessonId && courseId) {
-        await loadStudentsForCourse(courseId);
+    document.getElementById('attendanceLesson').addEventListener('change', async function () {
+      const lessonId = this.value
+      const courseId = document.getElementById('attendanceCourseFilter').value
+      if (!lessonId || !courseId) return
+
+      const { data: subs } = await supabase.from('subscriptions').select('student_id').eq('course_id', courseId).eq('academy_id', currentAcademyId).eq('status', 'active')
+      const studentIds = subs?.map(s => s.student_id) || []
+      if (studentIds.length === 0) {
+        document.getElementById('studentAttendanceList').innerHTML = '<p style="text-align:center;color:#888;">لا يوجد طلاب مسجلين في هذا الكورس</p>'
+        return
+      }
+      const { data: students } = await supabase.from('students').select('id,full_name').in('id', studentIds).eq('academy_id', currentAcademyId)
+
+      let html = ''
+      students?.forEach(s => {
+        html += `<div style="padding:10px; background:#fff; border-radius:6px; margin:6px 0; display:flex; justify-content:space-between; align-items:center; border:1px solid #e0e0e0;" data-student-id="${s.id}">
+          <span style="font-weight:500; color:#333; font-size:0.9rem;">${s.full_name}</span>
+          <select class="student-status-select" data-student-id="${s.id}" style="padding:6px 10px; border-radius:6px; border:1px solid #ddd; min-width:100px; font-size:0.9rem;">
+            <option value="absent" selected>غائب</option>
+            <option value="present">حاضر</option>
+            <option value="late">متأخر</option>
+          </select>
+        </div>`
+      })
+      document.getElementById('studentAttendanceList').innerHTML = html || '<p style="text-align:center; color:#999;">لا يوجد طلاب</p>'
+    })
+
+    document.getElementById('attendanceForm').addEventListener('submit', async e => {
+      e.preventDefault()
+      const lessonId = document.getElementById('attendanceLesson').value
+      const date = document.getElementById('attendanceDate').value
+      const courseId = document.getElementById('attendanceCourseFilter').value
+
+      const records = []
+      document.querySelectorAll('#studentAttendanceList .student-status-select').forEach(select => {
+        const studentId = select.getAttribute('data-student-id')
+        const status = select.value
+        if (studentId) {
+          records.push({ 
+            academy_id: currentAcademyId, 
+            course_id: courseId, 
+            lesson_id: lessonId, 
+            student_id: studentId, 
+            date, 
+            status: status || 'absent' 
+          })
+        }
+      })
+
+      if (records.length === 0) {
+        showAlert('لا يوجد طلاب لتسجيل الحضور', 'warning')
+        return
+      }
+
+      const { error } = await supabase.from('attendances').insert(records)
+      if (error) {
+        console.error('Insert attendance error:', error)
+        showAlert('فشل في التسجيل: ' + error.message, 'danger')
       } else {
-        document.getElementById('studentAttendanceList').innerHTML = '<p class="no-data">اختر درساً أولاً</p>';
+        showAlert(`تم تسجيل حضور ${records.length} طالب بنجاح`)
+        closeModal('attendanceModal')
+        loadAttendances()
       }
-    });
+    })
 
-    // دالة تجيب الطلاب من جدول subscriptions + students
-    async function loadStudentsForCourse(courseId) {
-      const listContainer = document.getElementById('studentAttendanceList');
-      listContainer.innerHTML = '<p class="no-data">جاري التحميل...</p>';
-      try {
-        // نجيب اشتراكات الطلاب في الكورس
-        const { data: subscriptions, error: subsError } = await supabaseClient
-          .from('subscriptions')
-          .select('student_id')
-          .eq('course_id', courseId);
-        if (subsError) throw subsError;
-        if (!subscriptions || subscriptions.length === 0) {
-          listContainer.innerHTML = '<p class="no-data">لا يوجد طلاب مشتركين في هذا الكورس</p>';
-          return;
-        }
-        const studentIds = subscriptions.map(sub => sub.student_id);
-        // نجيب بيانات الطلاب
-        const { data: students, error: studentsError } = await supabaseClient
-          .from('students')
-          .select('id, full_name')
-          .in('id', studentIds)
-          .order('full_name', { ascending: true });
-        if (studentsError) throw studentsError;
-        if (!students || students.length === 0) {
-          listContainer.innerHTML = '<p class="no-data">لا توجد بيانات طلاب</p>';
-          return;
-        }
-        // نعرض الطلاب
-        let html = '';
-        students.forEach(student => {
-          html += `
-            <div class="student-item">
-              <div class="student-header">
-                <label class="student-name">
-                  <input type="checkbox" class="student-checkbox" data-student-id="${student.id}" checked>
-                  ${student.full_name}
-                </label>
-              </div>
-              <select class="student-status-select" data-student-id="${student.id}">
-                <option value="present">حاضر</option>
-                <option value="absent" selected>غائب</option>
-                <option value="late">متأخر</option>
-              </select>
-            </div>
-          `;
-        });
-        listContainer.innerHTML = html;
-      } catch (error) {
-        console.error("Error loading students:", error);
-        listContainer.innerHTML = '<p class="no-data">خطأ في تحميل الطلاب</p>';
-      }
-    }
+    // QR Code Scanner Setup
+    document.getElementById('startQrScan').addEventListener('click', async () => {
+      const qrReader = document.getElementById('qr-reader')
+      const startBtn = document.getElementById('startQrScan')
+      const stopBtn = document.getElementById('stopQrScan')
+      
+      if (!qrReader || !startBtn || !stopBtn) return
 
-    function updateStudentListDisplay(students) {
-      const listContainer = document.getElementById('studentAttendanceList');
-      const searchInput = document.getElementById('studentSearchInModal');
-      const searchTerm = searchInput ? searchInput.value.toLowerCase() : '';
-      let html = '';
-      students.forEach(student => {
-        if (searchTerm && !student.full_name.toLowerCase().includes(searchTerm)) return;
-        html += `
-          <div class="student-item">
-            <div class="student-header">
-              <label class="student-name">
-                <input type="checkbox" class="student-checkbox" data-student-id="${student.id}" checked>
-                ${student.full_name}
-              </label>
-            </div>
-            <select class="student-status-select" data-student-id="${student.id}">
-              <option value="present">حاضر</option>
-              <option value="absent" selected>غائب</option>
-              <option value="late">متأخر</option>
-            </select>
-          </div>
-        `;
-      });
-      if (html === '') {
-        html = '<p class="no-data">لا توجد نتائج للبحث</p>';
-      }
-      listContainer.innerHTML = html;
-    }
-
-    function setAllAttendance(status) {
-      document.querySelectorAll('.student-status-select').forEach(select => {
-        select.value = status;
-      });
-      document.querySelectorAll('.student-checkbox').forEach(checkbox => {
-        checkbox.checked = true;
-      });
-      showStatus(`تم تحديد الحضور "${status === 'present' ? 'حاضر' : status === 'absent' ? 'غائب' : 'متأخر'}" للجميع`);
-    }
-
-    function clearAllAttendance() {
-      document.querySelectorAll('.student-checkbox').forEach(checkbox => {
-        checkbox.checked = false;
-      });
-      document.querySelectorAll('.student-status-select').forEach(select => {
-        select.value = 'absent';
-      });
-      showStatus('تم مسح جميع الاختيارات');
-    }
-
-document.getElementById('attendanceForm').addEventListener('submit', async (e) => {
-  e.preventDefault();
-  const submitBtn = e.target.querySelector('button[type="submit"]');
-  if (submitBtn) submitBtn.disabled = true; // تعطيل الزر لمنع الضغط مرتين
-
-  const lessonId = document.getElementById('attendanceLesson').value;
-  const courseId = document.getElementById('attendanceCourseFilter').value;
-  const date = document.getElementById('attendanceDate').value;
-  const notes = document.getElementById('attendanceNotes').value;
-
-  if (!lessonId || !date) {
-    showStatus('من فضلك اختر الدرس وتأكد من التاريخ', 'error');
-    if (submitBtn) submitBtn.disabled = false; // إعادة تفعيل الزر
-    return;
-  }
-
-  const attendanceRecords = [];
-  document.querySelectorAll('.student-checkbox:checked').forEach(checkbox => {
-    const studentId = checkbox.dataset.studentId;
-    const statusSelect = document.querySelector(`.student-status-select[data-student-id="${studentId}"]`);
-    const status = statusSelect ? statusSelect.value : 'absent';
-    attendanceRecords.push({
-      lesson_id: lessonId,
-      course_id: courseId,
-      student_id: studentId,
-      date: date,
-      status: status,
-      notes: notes || null
-    });
-  });
-
-  if (attendanceRecords.length === 0) {
-    showStatus('من فضلك اختر على الأقل طالب واحد', 'error');
-    if (submitBtn) submitBtn.disabled = false;
-    return;
-  }
-
-  try {
-    const { error } = await supabaseClient
-      .from('attendances')
-      .insert(attendanceRecords);
-    if (error) throw error;
-
-    showStatus(`تم تسجيل حضور ${attendanceRecords.length} طالب`);
-    
-    closeModal('attendanceModal'); // يغلق المودال مباشرة بعد النجاح
-    loadTeacherAttendances();
-
-  } catch (error) {
-    console.error('Error adding attendance:', error);
-    showStatus('خطأ في تسجيل الحضور', 'error');
-  } finally {
-    if (submitBtn) submitBtn.disabled = false; // إعادة تفعيل الزر لو حصل خطأ
-  }
-});
-
-    // دالة بدء مسح QR Code بشكل آمن
-    async function startQrScanner() {
-      if (isQrScannerActive) {
-        showStatus('المسح نشط بالفعل', 'info');
-        return;
-      }
-
-      const qrReader = document.getElementById('qr-reader');
-      if (!qrReader) {
-        console.error("Element #qr-reader not found");
-        showStatus('خطأ في بدء المسح', 'error');
-        return;
-      }
-
-      qrReader.style.display = 'block';
-      document.getElementById('startQrScan').style.display = 'none';
-      document.getElementById('stopQrScan').style.display = 'inline-block';
-
-      try {
-        qrScanner = new Html5Qrcode('qr-reader');
-        await qrScanner.start(
-          { facingMode: 'environment' },
-          { fps: 10, qrbox: 250 },
-          onQrCodeScanned,
-          onQrCodeError
-        );
-        isQrScannerActive = true;
-        console.log("QR Scanner started successfully.");
-      } catch (err) {
-        console.error("Html5Qrcode error: ", err);
-        showStatus('خطأ في بدء مسح QR Code', 'error');
-        resetQrScannerUi();
-      }
-    }
-
-    // دالة توقف مسح QR Code بشكل آمن
-    async function stopQrScanner() {
-      if (!isQrScannerActive || !qrScanner) {
-        console.warn("Scanner is not running or paused.");
-        resetQrScannerUi();
-        return;
+      const lessonId = document.getElementById('attendanceLesson')?.value
+      const courseId = document.getElementById('attendanceCourseFilter')?.value
+      const date = document.getElementById('attendanceDate')?.value
+      
+      if (!lessonId || !courseId || !date) {
+        showAlert('⚠️ من فضلك اختر الكورس والدرس والتاريخ قبل استخدام QR', 'warning')
+        return
       }
 
       try {
-        await qrScanner.stop();
-        qrScanner.clear();
-        console.log("QR Scanner stopped successfully.");
-      } catch (err) {
-        console.error("Error stopping QR Scanner: ", err);
-        // حتى لو فشل، نقوم بتحديث UI
-      } finally {
-        isQrScannerActive = false;
-        resetQrScannerUi();
-      }
-    }
+        qrReader.innerHTML = ''
+        qrReader.style.display = 'block'
+        startBtn.style.display = 'none'
+        stopBtn.style.display = 'inline-block'
 
-    // دالة إعادة تعيين واجهة QR Scanner
-    function resetQrScannerUi() {
-      const qrReader = document.getElementById('qr-reader');
-      if (qrReader) qrReader.style.display = 'none';
-      const startBtn = document.getElementById('startQrScan');
-      const stopBtn = document.getElementById('stopQrScan');
-      if (startBtn) startBtn.style.display = 'inline-block';
-      if (stopBtn) stopBtn.style.display = 'none';
-      isQrScannerActive = false;
-    }
+        if (typeof Html5Qrcode !== 'undefined') {
+          qrScanner = new Html5Qrcode('qr-reader')
+          await qrScanner.start(
+            { facingMode: 'environment' },
+            { fps: 10, qrbox: { width: 200, height: 200 } },
+            async (decodedText) => {
+              try {
+                const studentData = JSON.parse(decodedText)
+                const scannedStudentId = studentData.student_id
 
-    // دالة معالجة النص المشفر من QR Code
-    function onQrCodeScanned(decodedText) {
-        console.log("QR Code detected: ", decodedText);
-        try {
-            const studentData = JSON.parse(decodedText);
-            if (!studentData.student_id) {
-                throw new Error("Missing student_id in QR data");
-            }
-
-            const studentSelectElement = document.querySelector(`.student-status-select[data-student-id="${studentData.student_id}"]`);
-            if (!studentSelectElement) {
-                showStatus('الطالب غير موجود في قائمة الطلاب لهذا الدرس', 'error');
-                return;
-            }
-
-            // نقوم بتحديث الحالة فقط إذا كانت مختلفة
-            if (studentSelectElement.value !== 'present') {
-                studentSelectElement.value = 'present';
-                const studentCheckboxElement = document.querySelector(`.student-checkbox[data-student-id="${studentData.student_id}"]`);
-                if (studentCheckboxElement && !studentCheckboxElement.checked) {
-                    studentCheckboxElement.checked = true;
+                if (!scannedStudentId) {
+                  showAlert('⚠️ QR Code غير صالح', 'warning')
+                  return
                 }
-                showStatus(`تم تحديث حالة الطالب إلى حاضر`);
+
+                // التحقق من وجود الطالب في القائمة
+                const statusSelect = document.querySelector(`#studentAttendanceList .student-status-select[data-student-id="${scannedStudentId}"]`)
+                if (!statusSelect) {
+                  showAlert('⚠️ الطالب غير موجود في قائمة الطلاب لهذا الدرس', 'warning')
+                  return
+                }
+
+                // تحديث حالة الطالب إلى حاضر
+                const studentDiv = statusSelect.closest('div[data-student-id]')
+                const studentName = studentDiv.querySelector('span').textContent.trim()
+                
+                statusSelect.value = 'present'
+                
+                // إضافة تأثير بصري
+                studentDiv.style.background = '#c8e6c9'
+                studentDiv.style.borderColor = '#4caf50'
+                setTimeout(() => {
+                  studentDiv.style.background = '#fff'
+                  studentDiv.style.borderColor = '#e0e0e0'
+                }, 1500)
+                
+                showAlert(`✅ ${studentName} - حاضر`, 'success')
+              } catch (e) {
+                console.error('Error parsing QR:', e)
+                showAlert('⚠️ QR Code غير صالح', 'warning')
+              }
+            },
+            (errorMessage) => {
+              // تجاهل أخطاء القراءة المستمرة
             }
-        } catch (e) {
-            console.error("QR code parse error:", e);
-            showStatus('QR غير صالح أو غير مكتمل', 'error');
+          )
+        } else {
+          showAlert('مكتبة QR Scanner غير محملة', 'danger')
         }
-    }
+      } catch (error) {
+        console.error('QR Scanner error:', error)
+        showAlert('خطأ في تشغيل الكاميرا: ' + error.message, 'danger')
+        qrReader.style.display = 'none'
+        startBtn.style.display = 'inline-block'
+        stopBtn.style.display = 'none'
+      }
+    })
 
-    // دالة التعامل مع أخطاء QR Code
-    function onQrCodeError(errorMessage) {
-        // هذه الدالة تُستدعى بشكل متكرر أثناء محاولة المسح، لذلك لا نعرض تحذير دائم
-        console.warn("QR scan error:", errorMessage);
-        // مثال: لا تفعل شيئًا، أو سجل الخطأ فقط إذا كان خطأ جسيم
-        // if (errorMessage.includes("MultiFormat")) {
-        //    showStatus("لا يمكن قراءة QR Code", "error");
-        // }
-    }
-
-    // ربط الأزرار بدوالها بعد تحميل DOM
-    document.addEventListener("DOMContentLoaded", () => {
-        const startQrBtn = document.getElementById('startQrScan');
-        const stopQrBtn = document.getElementById('stopQrScan');
-
-        if (startQrBtn) {
-            startQrBtn.addEventListener('click', startQrScanner);
+    document.getElementById('stopQrScan').addEventListener('click', async () => {
+      const qrReader = document.getElementById('qr-reader')
+      const startBtn = document.getElementById('startQrScan')
+      const stopBtn = document.getElementById('stopQrScan')
+      
+      if (qrScanner) {
+        try {
+          await qrScanner.stop()
+          qrScanner.clear()
+          qrScanner = null
+        } catch (error) {
+          console.error('Error stopping scanner:', error)
         }
-
-        if (stopQrBtn) {
-            stopQrBtn.addEventListener('click', stopQrScanner);
-        }
-    });
-
-    function getEgyptTimeISO() {
-      const now = new Date();
-      const utc = now.getTime() + (now.getTimezoneOffset() * 60000);
-      const egyptOffset = 2 * 60 * 60000;
-      const egyptTime = new Date(utc + egyptOffset);
-      return egyptTime.toISOString();
-    }
+      }
+      
+      if (qrReader) qrReader.style.display = 'none'
+      if (startBtn) startBtn.style.display = 'inline-block'
+      if (stopBtn) stopBtn.style.display = 'none'
+    })
 
     async function recordCheckIn() {
-      const today = new Date().toISOString().split('T')[0];
-      const now = getEgyptTimeISO();
-      try {
-        const { data: exists } = await supabaseClient
-          .from('teacher_attendance')
-          .select('*')
-          .eq('teacher_id', currentUserId)
-          .eq('date', today)
-          .maybeSingle();
-        if (exists) {
-          showStatus('سجلت حضورك بالفعل اليوم', 'error');
-          return;
-        }
-        const { error } = await supabaseClient
-          .from('teacher_attendance')
-          .insert([{ teacher_id: currentUserId, date: today, check_in_time: now }]);
-        if (error) throw error;
-        showStatus('تم تسجيل حضورك بنجاح');
-        document.getElementById('checkInBtn').disabled = true;
-        loadProfileData();
-      } catch (error) {
-        console.error('Error check in:', error);
-        showStatus('خطأ في تسجيل الحضور', 'error');
-      }
+      const today = new Date().toISOString().slice(0,10)
+      const now = new Date().toISOString()
+      const { data } = await supabase.from('teacher_attendance').select('id').eq('teacher_id', currentUserId).eq('date', today).single()
+      if (data) return showAlert('سجلت حضورك اليوم بالفعل', 'warning')
+
+      const { error } = await supabase.from('teacher_attendance').insert({
+        teacher_id: currentUserId,
+        academy_id: currentAcademyId,
+        date: today,
+        check_in_time: now
+      })
+      error ? showAlert('خطأ في تسجيل الحضور', 'danger') : showAlert('تم تسجيل الحضور بنجاح')
     }
 
     async function recordCheckOut() {
-      const today = new Date().toISOString().split('T')[0];
-      const now = getEgyptTimeISO();
-      try {
-        const { data: row } = await supabaseClient
-          .from('teacher_attendance')
-          .select('id, check_out_time')
-          .eq('teacher_id', currentUserId)
-          .eq('date', today)
-          .maybeSingle();
-        if (!row) {
-          showStatus('سجل حضورك أولاً', 'error');
-          return;
-        }
-        if (row.check_out_time) {
-          showStatus('سجلت انصرافك بالفعل', 'error');
-          return;
-        }
-        const { error } = await supabaseClient
-          .from('teacher_attendance')
-          .update({ check_out_time: now })
-          .eq('id', row.id);
-        if (error) throw error;
-        showStatus('تم تسجيل انصرافك بنجاح');
-        document.getElementById('checkOutBtn').disabled = true;
-        loadProfileData();
-      } catch (error) {
-        console.error('Error check out:', error);
-        showStatus('خطأ في تسجيل الانصراف', 'error');
-      }
+      const today = new Date().toISOString().slice(0,10)
+      const now = new Date().toISOString()
+      const { data } = await supabase.from('teacher_attendance').select('id,check_out_time').eq('teacher_id', currentUserId).eq('date', today).single()
+      if (!data) return showAlert('سجل الحضور أولاً', 'warning')
+      if (data.check_out_time) return showAlert('سجلت الانصراف بالفعل', 'warning')
+
+      const { error } = await supabase.from('teacher_attendance').update({ check_out_time: now }).eq('id', data.id)
+      error ? showAlert('خطأ في تسجيل الانصراف', 'danger') : showAlert('تم تسجيل الانصراف بنجاح')
     }
 
-    async function loadProfileData() {
-      try {
-        if (!currentUserData) return;
-        document.getElementById('profileName').textContent = currentUserData.full_name || 'غير محدد';
-        document.getElementById('profileRole').textContent = 'معلم';
-        document.getElementById('fullName').value = currentUserData.full_name || '';
-        document.getElementById('email').value = currentUserData.email || '';
-        document.getElementById('phone').value = currentUserData.phone || '';
-        document.getElementById('specialty').value = currentUserData.specialty || '';
+    let currentExamId = null
+    let examScoresData = []
 
-        const { data } = await supabaseClient
-          .from('teacher_attendance')
-          .select('*')
-          .eq('teacher_id', currentUserId)
-          .order('date', { ascending: false })
-          .limit(5);
+    async function loadExams() {
+      const container = document.getElementById('examsContainer')
+      container.innerHTML = '<div class="loading"><div class="loading-spinner"></div><p>جاري التحميل...</p></div>'
+      
+      if (!currentAcademyId || !currentUserId) {
+        container.innerHTML = '<p style="text-align:center;color:#888;">لا يمكن تحميل البيانات</p>'
+        return
+      }
 
-        let html = '';
-        if (data && data.length > 0) {
-          data.forEach(record => {
-            const checkIn = record.check_in_time ? new Date(record.check_in_time).toLocaleTimeString('ar-EG', {hour: '2-digit', minute: '2-digit'}) : '-';
-            const checkOut = record.check_out_time ? new Date(record.check_out_time).toLocaleTimeString('ar-EG', {hour: '2-digit', minute: '2-digit'}) : '-';
-            html += `
-              <div style="padding: 10px; border-bottom: 1px solid #eee;">
-                <div><strong>${record.date}</strong></div>
-                <div style="font-size: 0.85rem; color: var(--gray);">
-                  حضور: ${checkIn} | انصراف: ${checkOut}
-                </div>
+      const { data: myCourses } = await supabase.from('courses').select('id,name').eq('teacher_id', currentUserId).eq('academy_id', currentAcademyId)
+      const courseIds = myCourses?.map(c => c.id) || []
+      
+      if (courseIds.length === 0) {
+        container.innerHTML = '<p style="text-align:center;color:#888;">لا توجد كورسات</p>'
+        return
+      }
+
+      const { data: exams, error } = await supabase
+        .from('exams')
+        .select('*')
+        .eq('academy_id', currentAcademyId)
+        .in('course_id', courseIds)
+        .order('date', { ascending: false })
+
+      if (error) {
+        console.error('Exams query error:', error)
+        container.innerHTML = `<p style="text-align:center;color:#FC8181;">خطأ في تحميل البيانات: ${error.message}</p>`
+        return
+      }
+
+      if (!exams || exams.length === 0) {
+        container.innerHTML = '<p style="text-align:center;color:#888;">لا توجد اختبارات</p>'
+        return
+      }
+
+      // إنشاء خريطة للكورسات
+      const coursesMap = new Map(myCourses.map(c => [c.id, c.name]))
+
+      let html = '<div class="grid-2">'
+      exams.forEach(exam => {
+        const courseName = coursesMap.get(exam.course_id) || 'غير محدد'
+        const examTypeText = exam.exam_type === 'multiple_choice' ? 'اختيار من متعدد' : 
+                           exam.exam_type === 'essay' ? 'مقالي' : 
+                           exam.exam_type === 'mixed' ? 'مختلط' : exam.exam_type || 'غير محدد'
+        const difficultyText = exam.difficulty_level === 'easy' ? 'سهل' :
+                              exam.difficulty_level === 'medium' ? 'متوسط' :
+                              exam.difficulty_level === 'hard' ? 'صعب' : exam.difficulty_level || 'متوسط'
+        
+        html += `
+          <div class="card">
+            <div style="display:flex; justify-content:space-between; align-items:start; margin-bottom:12px;">
+              <h3 style="margin:0; font-size:1.1rem;">${exam.title}</h3>
+              <div style="display:flex; gap:5px;">
+                <button class="btn btn-sm" style="background:#5B8DEE; color:#fff; padding:5px 10px;" onclick="editExam(${exam.id})" title="تعديل">
+                  <i class="fas fa-edit"></i>
+                </button>
+                <button class="btn btn-sm" style="background:#FC8181; color:#fff; padding:5px 10px;" onclick="deleteExam(${exam.id})" title="حذف">
+                  <i class="fas fa-trash"></i>
+                </button>
               </div>
-            `;
-          });
-        } else {
-          html = '<p class="no-data">لا توجد سجلات حضور</p>';
-        }
-        document.getElementById('profileAttendanceRecords').innerHTML = html;
-      } catch (error) {
-        console.error('Error loading profile:', error);
-      }
+            </div>
+            <p style="font-size:0.9rem;"><strong>الكورس:</strong> ${courseName}</p>
+            <p style="font-size:0.9rem;"><strong>التاريخ:</strong> ${exam.date ? new Date(exam.date).toLocaleDateString('ar-EG') : 'غير محدد'}</p>
+            <p style="font-size:0.9rem;"><strong>الدرجة الكاملة:</strong> ${exam.max_score}</p>
+            <p style="font-size:0.9rem;"><strong>درجة النجاح:</strong> ${exam.pass_score || 0}</p>
+            <p style="font-size:0.9rem;"><strong>عدد الأسئلة:</strong> ${exam.total_questions || 0}</p>
+            <p style="font-size:0.9rem;"><strong>نوع الاختبار:</strong> ${examTypeText}</p>
+            <p style="font-size:0.9rem;"><strong>مستوى الصعوبة:</strong> ${difficultyText}</p>
+            ${exam.time_limit ? `<p style="font-size:0.9rem;"><strong>الوقت المحدد:</strong> ${exam.time_limit} دقيقة</p>` : ''}
+            ${exam.description ? `<p style="font-size:0.9rem;"><strong>الوصف:</strong> ${exam.description}</p>` : ''}
+            <div style="margin-top:12px; display:flex; gap:8px; flex-wrap:wrap;">
+              <button class="btn btn-primary btn-sm" onclick="showExamScoresModal(${exam.id})" style="font-size:0.85rem;">
+                <i class="fas fa-graduation-cap"></i> إدخال الدرجات
+              </button>
+              <button class="btn btn-sm" style="background:#81C995; color:#fff; font-size:0.85rem;" onclick="viewExamScores(${exam.id})">
+                <i class="fas fa-eye"></i> عرض الدرجات
+              </button>
+            </div>
+          </div>
+        `
+      })
+      html += '</div>'
+      container.innerHTML = html
     }
 
-    document.getElementById('profileForm').addEventListener('submit', async (e) => {
-      e.preventDefault();
-      try {
-        const { error } = await supabaseClient
-          .from('users')
-          .update({
-            full_name: document.getElementById('fullName').value,
-            email: document.getElementById('email').value,
-            phone: document.getElementById('phone').value,
-            specialty: document.getElementById('specialty').value
+    async function showAddExamModal() {
+      currentExamId = null
+      document.getElementById('examModalTitle').textContent = 'إضافة اختبار'
+      document.getElementById('examForm').reset()
+      
+      // تحميل الكورسات
+      const { data: courses } = await supabase
+        .from('courses')
+        .select('id,name')
+        .eq('teacher_id', currentUserId)
+        .eq('academy_id', currentAcademyId)
+        .order('name')
+      
+      const courseSelect = document.getElementById('examCourse')
+      courseSelect.innerHTML = '<option value="">اختر الكورس</option>'
+      courses?.forEach(c => {
+        courseSelect.innerHTML += `<option value="${c.id}">${c.name}</option>`
+      })
+
+      // إعادة تعيين الوحدات
+      document.getElementById('examModule').innerHTML = '<option value="">لا يوجد</option>'
+      
+      document.getElementById('examModal').style.display = 'flex'
+    }
+
+    // تحديث الوحدات عند اختيار الكورس
+    document.addEventListener('DOMContentLoaded', () => {
+      const examCourseSelect = document.getElementById('examCourse')
+      if (examCourseSelect) {
+        examCourseSelect.addEventListener('change', async function() {
+          const courseId = this.value
+          const moduleSelect = document.getElementById('examModule')
+          
+          if (!courseId) {
+            moduleSelect.innerHTML = '<option value="">لا يوجد</option>'
+            return
+          }
+
+          const { data: modules } = await supabase
+            .from('modules')
+            .select('id,title')
+            .eq('course_id', courseId)
+            .eq('academy_id', currentAcademyId)
+            .order('order')
+
+          moduleSelect.innerHTML = '<option value="">لا يوجد</option>'
+          modules?.forEach(m => {
+            moduleSelect.innerHTML += `<option value="${m.id}">${m.title}</option>`
           })
-          .eq('id', currentUserId);
-        if (error) throw error;
-        showStatus('تم حفظ التغييرات بنجاح');
-        await loadUserData();
-      } catch (error) {
-        console.error('Error saving profile:', error);
-        showStatus('خطأ في حفظ التغييرات', 'error');
+        })
       }
-    });
+    })
 
-    const reminders = [
-      "صلِّ على النبي",
-      "لا إله إلا الله",
-      "استغفر الله العظيم",
-      "سبحان الله وبحمده"
-    ];
+    async function editExam(examId) {
+      currentExamId = examId
+      document.getElementById('examModalTitle').textContent = 'تعديل اختبار'
+      
+      const { data: exam, error } = await supabase
+        .from('exams')
+        .select('*')
+        .eq('id', examId)
+        .single()
 
-    function showReminderBanner() {
-      const banner = document.getElementById("reminderBanner");
-      const randomIndex = Math.floor(Math.random() * reminders.length);
-      banner.textContent = reminders[randomIndex];
-      banner.style.display = "block";
-      banner.style.animation = "slideInDown 0.5s ease forwards";
-      setTimeout(() => {
-        banner.style.animation = "slideOutRight 1s ease forwards";
-      }, 2000);
-      setTimeout(() => {
-        banner.style.display = "none";
-      }, 3000);
+      if (error || !exam) {
+        showAlert('خطأ في تحميل بيانات الاختبار', 'danger')
+        return
+      }
+
+      // تحميل الكورسات
+      const { data: courses } = await supabase
+        .from('courses')
+        .select('id,name')
+        .eq('teacher_id', currentUserId)
+        .eq('academy_id', currentAcademyId)
+
+      const courseSelect = document.getElementById('examCourse')
+      courseSelect.innerHTML = '<option value="">اختر الكورس</option>'
+      courses?.forEach(c => {
+        courseSelect.innerHTML += `<option value="${c.id}" ${c.id === exam.course_id ? 'selected' : ''}>${c.name}</option>`
+      })
+
+      // تحميل الوحدات
+      if (exam.course_id) {
+        const { data: modules } = await supabase
+          .from('modules')
+          .select('id,title')
+          .eq('course_id', exam.course_id)
+          .eq('academy_id', currentAcademyId)
+          .order('order')
+
+        const moduleSelect = document.getElementById('examModule')
+        moduleSelect.innerHTML = '<option value="">لا يوجد</option>'
+        modules?.forEach(m => {
+          moduleSelect.innerHTML += `<option value="${m.id}" ${m.id === exam.module_id ? 'selected' : ''}>${m.title}</option>`
+        })
+      }
+
+      // ملء الحقول
+      document.getElementById('examTitle').value = exam.title || ''
+      document.getElementById('examDate').value = exam.date || ''
+      document.getElementById('examMaxScore').value = exam.max_score || 100
+      document.getElementById('examPassScore').value = exam.pass_score || 50
+      document.getElementById('examTotalQuestions').value = exam.total_questions || 0
+      document.getElementById('examType').value = exam.exam_type || 'multiple_choice'
+      document.getElementById('examDifficulty').value = exam.difficulty_level || 'medium'
+      document.getElementById('examTimeLimit').value = exam.time_limit || ''
+      document.getElementById('examDescription').value = exam.description || ''
+
+      document.getElementById('examModal').style.display = 'flex'
     }
 
-    document.addEventListener("DOMContentLoaded", async () => {
-      await loadUserData();
-      showReminderBanner();
-      setInterval(showReminderBanner, 300000);
-    });
-  </script></body>
+    async function deleteExam(examId) {
+      if (!confirm('هل أنت متأكد من حذف هذا الاختبار؟')) return
+
+      const { error } = await supabase
+        .from('exams')
+        .delete()
+        .eq('id', examId)
+        .eq('academy_id', currentAcademyId)
+
+      if (error) {
+        showAlert('خطأ في حذف الاختبار: ' + error.message, 'danger')
+      } else {
+        showAlert('تم حذف الاختبار بنجاح')
+        loadExams()
+      }
+    }
+
+    document.getElementById('examForm').addEventListener('submit', async e => {
+      e.preventDefault()
+      
+      const examData = {
+        academy_id: currentAcademyId,
+        course_id: document.getElementById('examCourse').value,
+        title: document.getElementById('examTitle').value,
+        date: document.getElementById('examDate').value,
+        max_score: parseInt(document.getElementById('examMaxScore').value),
+        pass_score: parseFloat(document.getElementById('examPassScore').value) || 0,
+        total_questions: parseInt(document.getElementById('examTotalQuestions').value) || 0,
+        exam_type: document.getElementById('examType').value,
+        difficulty_level: document.getElementById('examDifficulty').value,
+        description: document.getElementById('examDescription').value,
+        created_by: currentUserId
+      }
+
+      const moduleId = document.getElementById('examModule').value
+      if (moduleId) examData.module_id = moduleId
+
+      const timeLimit = document.getElementById('examTimeLimit').value
+      if (timeLimit) examData.time_limit = parseInt(timeLimit)
+
+      let error
+      if (currentExamId) {
+        // تحديث
+        const { error: updateError } = await supabase
+          .from('exams')
+          .update(examData)
+          .eq('id', currentExamId)
+          .eq('academy_id', currentAcademyId)
+        error = updateError
+      } else {
+        // إضافة
+        const { error: insertError } = await supabase
+          .from('exams')
+          .insert(examData)
+        error = insertError
+      }
+
+      if (error) {
+        showAlert('خطأ في حفظ الاختبار: ' + error.message, 'danger')
+        console.error('Exam save error:', error)
+      } else {
+        showAlert(currentExamId ? 'تم تحديث الاختبار بنجاح' : 'تم إضافة الاختبار بنجاح')
+        closeModal('examModal')
+        loadExams()
+      }
+    })
+
+    async function showExamScoresModal(examId) {
+      currentExamId = examId
+      examScoresData = []
+
+      const { data: exam, error: examError } = await supabase
+        .from('exams')
+        .select('*, courses(name)')
+        .eq('id', examId)
+        .single()
+
+      if (examError || !exam) {
+        showAlert('خطأ في تحميل بيانات الاختبار', 'danger')
+        return
+      }
+
+      // جلب الكورس
+      const { data: course } = await supabase
+        .from('courses')
+        .select('name')
+        .eq('id', exam.course_id)
+        .single()
+
+      document.getElementById('examScoresModalTitle').textContent = `إدخال درجات: ${exam.title}`
+      document.getElementById('examScoresInfo').innerHTML = `
+        <div style="font-size:0.9rem;"><strong>الكورس:</strong> ${course?.name || 'غير محدد'}</div>
+        <div style="font-size:0.9rem;"><strong>الدرجة الكاملة:</strong> ${exam.max_score}</div>
+        <div style="font-size:0.9rem;"><strong>التاريخ:</strong> ${exam.date ? new Date(exam.date).toLocaleDateString('ar-EG') : 'غير محدد'}</div>
+      `
+
+      // جلب الطلاب المسجلين في الكورس
+      const { data: subs } = await supabase
+        .from('subscriptions')
+        .select('student_id')
+        .eq('course_id', exam.course_id)
+        .eq('academy_id', currentAcademyId)
+        .eq('status', 'active')
+
+      const studentIds = subs?.map(s => s.student_id) || []
+      
+      if (studentIds.length === 0) {
+        document.getElementById('examScoresList').innerHTML = '<p style="text-align:center;color:#888;">لا يوجد طلاب مسجلين في هذا الكورس</p>'
+        document.getElementById('examScoresModal').style.display = 'flex'
+        return
+      }
+
+      const { data: students } = await supabase
+        .from('students')
+        .select('id,full_name,email')
+        .in('id', studentIds)
+        .eq('academy_id', currentAcademyId)
+
+      // ملاحظة: exam_scores.student_id يشير إلى users.id
+      // سنستخدم students.id مباشرة ونحاول، وإذا فشل سنستخدم profiles
+      let profilesMap = new Map()
+      
+      // محاولة جلب profiles الموجودة للطلاب
+      const studentEmails = students?.map(s => s.email).filter(Boolean) || []
+      if (studentEmails.length > 0) {
+        const { data: profiles } = await supabase
+          .from('profiles')
+          .select('id,email')
+          .in('email', studentEmails)
+          .eq('academy_id', currentAcademyId)
+        
+        profiles?.forEach(p => {
+          const student = students.find(s => s.email === p.email)
+          if (student) {
+            profilesMap.set(student.id, p.id)
+          }
+        })
+      }
+
+      // للطلاب الذين ليس لديهم profiles، سنستخدم students.id مباشرة
+      // (على افتراض أن students.id = users.id في قاعدة البيانات)
+      students?.forEach(student => {
+        if (!profilesMap.has(student.id)) {
+          profilesMap.set(student.id, student.id)
+        }
+      })
+
+      // جلب الدرجات الموجودة
+      const { data: existingScores } = await supabase
+        .from('exam_scores')
+        .select('*')
+        .eq('exam_id', examId)
+        .eq('academy_id', currentAcademyId)
+
+      const scoresMap = new Map(existingScores?.map(s => [s.student_id, s]) || [])
+
+      let html = '<div style="display:grid; gap:8px;">'
+      students?.forEach(student => {
+        // استخدام profile_id إذا كان متاحاً، وإلا استخدم student.id
+        const userId = profilesMap.get(student.id) || student.id
+        const existing = scoresMap.get(userId)
+        const score = existing?.score || ''
+        const examDate = existing?.exam_date || exam.date || new Date().toISOString().split('T')[0]
+        
+        examScoresData.push({
+          student_id: userId, // استخدام profile_id أو user_id
+          student_original_id: student.id, // حفظ ID الأصلي للعرض
+          student_name: student.full_name,
+          score: score,
+          exam_date: examDate,
+          existing_id: existing?.id
+        })
+
+        html += `
+          <div style="padding:12px; background:#f8f9fa; border-radius:8px; display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px;">
+            <div style="font-size:0.9rem;"><strong>${student.full_name}</strong></div>
+            <div style="display:flex; gap:8px; align-items:center; flex-wrap:wrap;">
+              <label style="font-size:0.9rem;">الدرجة:</label>
+              <input type="number" 
+                     data-student-id="${student.id}" 
+                     value="${score}" 
+                     min="0" 
+                     max="${exam.max_score}" 
+                     step="0.1"
+                     style="width:80px; padding:6px; border:2px solid #ddd; border-radius:6px; font-size:0.9rem;"
+                     onchange="updateExamScore('${student.id}', this.value)">
+              <span style="font-size:0.9rem;">/ ${exam.max_score}</span>
+            </div>
+          </div>
+        `
+      })
+      html += '</div>'
+      document.getElementById('examScoresList').innerHTML = html
+      document.getElementById('examScoresModal').style.display = 'flex'
+    }
+
+    function updateExamScore(studentId, score) {
+      // البحث باستخدام student_original_id أو student_id
+      const item = examScoresData.find(s => 
+        s.student_original_id === studentId || s.student_id === studentId
+      )
+      if (item) {
+        item.score = score ? parseFloat(score) : null
+      }
+    }
+
+    async function saveExamScores() {
+      if (!currentExamId) return
+
+      // ⚠️ تحذير مهم: يجب تطبيق تعديل قاعدة البيانات أولاً!
+      // راجع ملف APPLY_THIS_FIX.sql وتطبيقه في Supabase SQL Editor
+      const { data: exam } = await supabase
+        .from('exams')
+        .select('*')
+        .eq('id', currentExamId)
+        .single()
+
+      if (!exam) {
+        showAlert('خطأ في تحميل بيانات الاختبار', 'danger')
+        return
+      }
+
+      // التحقق من أن جميع student_id موجودة في جدول students
+      const allStudentIds = examScoresData
+        .filter(item => item.score !== null && item.score !== '')
+        .map(item => item.student_original_id || item.student_id)
+        .filter(Boolean)
+      
+      if (allStudentIds.length === 0) {
+        showAlert('يرجى إدخال درجة واحدة على الأقل', 'warning')
+        return
+      }
+
+      // التحقق من وجود جميع الطلاب في جدول students
+      const { data: validStudents, error: studentsCheckError } = await supabase
+        .from('students')
+        .select('id')
+        .in('id', allStudentIds)
+        .eq('academy_id', currentAcademyId)
+
+      if (studentsCheckError) {
+        showAlert('خطأ في التحقق من بيانات الطلاب: ' + studentsCheckError.message, 'danger')
+        console.error('Students check error:', studentsCheckError)
+        return
+      }
+
+      const validStudentIdsSet = new Set(validStudents?.map(s => s.id) || [])
+      const missingStudents = allStudentIds.filter(id => !validStudentIdsSet.has(id))
+      
+      if (missingStudents.length > 0) {
+        showAlert(
+          `خطأ: ${missingStudents.length} طالب غير موجودين في جدول students:\n` +
+          `${missingStudents.slice(0, 3).join(', ')}${missingStudents.length > 3 ? '...' : ''}\n\n` +
+          `يرجى التأكد من أن جميع الطلاب موجودين في جدول students أولاً.`,
+          'danger'
+        )
+        console.error('Missing students:', missingStudents)
+        return
+      }
+
+      // الآن نستخدم student_original_id (من students) مباشرة
+      // بعد تطبيق تعديل قاعدة البيانات، سيعمل هذا بشكل صحيح
+
+      const recordsToInsert = []
+      const recordsToUpdate = []
+
+      examScoresData.forEach(item => {
+        if (item.score === null || item.score === '' || !item.student_id) return
+
+        const scoreValue = parseFloat(item.score)
+        if (isNaN(scoreValue) || scoreValue < 0) {
+          console.warn('Invalid score value:', item.score)
+          return
+        }
+
+        // استخدام student_original_id (من students) مباشرة
+        // بعد تعديل قاعدة البيانات، سيعمل هذا بشكل صحيح
+        const studentIdToUse = item.student_original_id || item.student_id
+
+        const record = {
+          academy_id: currentAcademyId,
+          exam_id: parseInt(currentExamId), // exam_id هو integer
+          student_id: studentIdToUse, // استخدام students.id مباشرة
+          score: scoreValue,
+          exam_date: item.exam_date || exam.date || new Date().toISOString().split('T')[0]
+        }
+
+        if (item.existing_id) {
+          recordsToUpdate.push({ id: item.existing_id, ...record })
+        } else {
+          recordsToInsert.push(record)
+        }
+      })
+
+      if (recordsToInsert.length === 0 && recordsToUpdate.length === 0) {
+        showAlert('لا توجد درجات لحفظها', 'warning')
+        return
+      }
+
+      let error = null
+      let savedCount = 0
+
+      // إدراج السجلات الجديدة واحداً تلو الآخر لتجنب مشاكل الـ conflict
+      if (recordsToInsert.length > 0) {
+        for (const record of recordsToInsert) {
+          // محاولة الإدراج
+          const { error: insertError } = await supabase
+            .from('exam_scores')
+            .insert(record)
+          
+          if (insertError) {
+            // إذا كان الخطأ بسبب foreign key constraint (23503)
+            // يعني أن student_id غير موجود في users (قبل تعديل قاعدة البيانات)
+            // أو غير موجود في students (بعد تعديل قاعدة البيانات)
+            if (insertError.code === '23503') {
+              const studentOriginalId = examScoresData.find(s => 
+                s.student_id === record.student_id || s.student_original_id === record.student_id
+              )?.student_original_id
+              
+              console.warn('Foreign key error - student not found:', {
+                student_id_used: record.student_id,
+                original_id: studentOriginalId,
+                error: insertError.message
+              })
+              
+              // محاولة البحث عن profile بديل (إذا كان موجوداً)
+              if (studentOriginalId) {
+                try {
+                  const { data: student } = await supabase
+                    .from('students')
+                    .select('id,email')
+                    .eq('id', studentOriginalId)
+                    .eq('academy_id', currentAcademyId)
+                    .maybeSingle()
+                  
+                  if (student?.email) {
+                    // البحث عن profile بدون .single() لتجنب خطأ 406
+                    const { data: profiles } = await supabase
+                      .from('profiles')
+                      .select('id')
+                      .eq('email', student.email)
+                      .eq('academy_id', currentAcademyId)
+                      .limit(1)
+                    
+                    if (profiles && profiles.length > 0) {
+                      // إعادة المحاولة مع profile.id
+                      const retryRecord = { ...record, student_id: profiles[0].id }
+                      const { error: retryError } = await supabase
+                        .from('exam_scores')
+                        .insert(retryRecord)
+                      
+                      if (!retryError) {
+                        savedCount++
+                        continue
+                      }
+                    }
+                  }
+                } catch (profileError) {
+                  console.warn('Error searching for profile:', profileError)
+                }
+              }
+              
+              // إذا فشلت جميع المحاولات، تخطي هذا السجل
+              // وأبلغ المستخدم بأنه يجب تعديل قاعدة البيانات
+              console.warn('Skipping student record:', record.student_id)
+              continue // تخطي هذا السجل والمتابعة
+            }
+            
+            // إذا كان الخطأ بسبب duplicate، نحاول التحديث بدلاً من ذلك
+            if (insertError.code === '23505' || insertError.message.includes('duplicate')) {
+              // البحث عن السجل الموجود
+              const { data: existing } = await supabase
+                .from('exam_scores')
+                .select('id')
+                .eq('exam_id', record.exam_id)
+                .eq('student_id', record.student_id)
+                .eq('academy_id', record.academy_id)
+                .single()
+              
+              if (existing) {
+                const { error: updateError } = await supabase
+                  .from('exam_scores')
+                  .update({ score: record.score, exam_date: record.exam_date })
+                  .eq('id', existing.id)
+                
+                if (!updateError) {
+                  savedCount++
+                  continue
+                }
+              }
+            }
+            error = insertError
+            console.error('Insert error for record:', record, insertError)
+            break
+          } else {
+            savedCount++
+          }
+        }
+      }
+
+      // تحديث السجلات الموجودة
+      if (!error && recordsToUpdate.length > 0) {
+        for (const record of recordsToUpdate) {
+          const { id, ...updateData } = record
+          
+          // استخدام student_original_id للتحديث أيضاً
+          if (updateData.student_id) {
+            const item = examScoresData.find(s => 
+              s.student_id === updateData.student_id || 
+              s.existing_id === id
+            )
+            if (item?.student_original_id) {
+              updateData.student_id = item.student_original_id
+            }
+          }
+          
+          const { error: updateError } = await supabase
+            .from('exam_scores')
+            .update(updateData)
+            .eq('id', id)
+          if (updateError) {
+            // إذا كان الخطأ بسبب foreign key، تخطي هذا السجل
+            if (updateError.code === '23503') {
+              console.warn('Skipping update - foreign key error:', record.student_id, updateError)
+              continue
+            }
+            error = updateError
+            console.error('Update error for record:', record, updateError)
+            break
+          } else {
+            savedCount++
+          }
+        }
+      }
+
+      // حساب عدد السجلات المتخطاة
+      const skippedCount = recordsToInsert.length - savedCount
+      
+      if (error && error.code !== '23503') {
+        // خطأ غير متعلق بـ foreign key
+        showAlert('خطأ في حفظ الدرجات: ' + error.message, 'danger')
+        console.error('Save scores error:', error)
+      } else {
+        if (savedCount > 0) {
+          let message = `تم حفظ ${savedCount} درجة بنجاح`
+          if (skippedCount > 0) {
+            message += `. تم تخطي ${skippedCount} طالب (غير موجودين في users/students)`
+            showAlert(message, 'warning')
+          } else {
+            showAlert(message)
+          }
+          closeModal('examScoresModal')
+          loadExams() // إعادة تحميل قائمة الاختبارات
+        } else {
+          if (skippedCount > 0) {
+            showAlert(
+              `❌ لم يتم حفظ أي درجات!\n\n` +
+              `السبب: Foreign Key في جدول exam_scores يشير إلى users.id وليس students.id\n\n` +
+              `الحل: يجب تطبيق تعديل قاعدة البيانات أولاً:\n` +
+              `1. افتح Supabase Dashboard → SQL Editor\n` +
+              `2. شغّل محتوى ملف: fix_exam_scores_foreign_key.sql\n` +
+              `3. جرب حفظ الدرجات مرة أخرى\n\n` +
+              `عدد الطلاب المتأثرين: ${skippedCount}`,
+              'danger'
+            )
+          } else {
+            showAlert('لم يتم حفظ أي درجات. يرجى التحقق من البيانات.', 'warning')
+          }
+        }
+      }
+    }
+
+    async function viewExamScores(examId) {
+      const { data: exam } = await supabase
+        .from('exams')
+        .select('*')
+        .eq('id', examId)
+        .single()
+
+      if (!exam) {
+        showAlert('خطأ في تحميل بيانات الاختبار', 'danger')
+        return
+      }
+
+      const { data: scores } = await supabase
+        .from('exam_scores')
+        .select('*')
+        .eq('exam_id', examId)
+        .eq('academy_id', currentAcademyId)
+
+      if (!scores || scores.length === 0) {
+        showAlert('لا توجد درجات مسجلة لهذا الاختبار', 'warning')
+        return
+      }
+
+      const studentIds = [...new Set(scores.map(s => s.student_id))]
+      const { data: students } = await supabase
+        .from('students')
+        .select('id,full_name')
+        .in('id', studentIds)
+        .eq('academy_id', currentAcademyId)
+
+      const studentsMap = new Map(students?.map(s => [s.id, s.full_name]) || [])
+
+      let html = `
+        <div class="card">
+          <h3 style="margin-bottom:15px; font-size:1.2rem;">درجات الطلاب - ${exam.title}</h3>
+          <div style="overflow-x:auto;">
+            <table style="width:100%; border-collapse:collapse; font-size:0.9rem;">
+              <thead>
+                <tr style="background:#f8f9fa;">
+                  <th style="padding:10px; text-align:right; border:1px solid #ddd;">اسم الطالب</th>
+                  <th style="padding:10px; text-align:center; border:1px solid #ddd;">الدرجة</th>
+                  <th style="padding:10px; text-align:center; border:1px solid #ddd;">النسبة المئوية</th>
+                  <th style="padding:10px; text-align:center; border:1px solid #ddd;">الحالة</th>
+                </tr>
+              </thead>
+              <tbody>
+      `
+
+      scores.forEach(score => {
+        const studentName = studentsMap.get(score.student_id) || 'غير محدد'
+        const percentage = ((score.score / exam.max_score) * 100).toFixed(1)
+        const passed = score.score >= exam.pass_score
+        const statusColor = passed ? '#81C995' : '#FC8181'
+        const statusText = passed ? 'ناجح' : 'راسب'
+
+        html += `
+          <tr>
+            <td style="padding:10px; border:1px solid #ddd;">${studentName}</td>
+            <td style="padding:10px; text-align:center; border:1px solid #ddd;">${score.score} / ${exam.max_score}</td>
+            <td style="padding:10px; text-align:center; border:1px solid #ddd;">${percentage}%</td>
+            <td style="padding:10px; text-align:center; border:1px solid #ddd; color:${statusColor}; font-weight:bold;">${statusText}</td>
+          </tr>
+        `
+      })
+
+      html += `
+              </tbody>
+            </table>
+          </div>
+        </div>
+      `
+
+      // إنشاء modal لعرض الدرجات
+      const modal = document.createElement('div')
+      modal.className = 'modal'
+      modal.style.cssText = 'display:flex; position:fixed; inset:0; background:rgba(0,0,0,0.6); backdrop-filter:blur(8px); align-items:center; justify-content:center; z-index:1000; padding:15px;'
+      modal.innerHTML = `
+        <div style="background:#fff; border-radius:16px; width:100%; max-width:900px; max-height:90vh; overflow-y:auto;">
+          <div style="padding:20px; border-bottom:1px solid #eee; display:flex; justify-content:space-between; align-items:center;">
+            <h2 style="font-size:1.3rem; margin:0;">عرض درجات الطلاب</h2>
+            <button onclick="this.closest('.modal').remove()" style="background:none; border:none; font-size:1.5rem; cursor:pointer;">×</button>
+          </div>
+          <div style="padding:20px;">
+            ${html}
+          </div>
+        </div>
+      `
+      document.body.appendChild(modal)
+    }
+
+    async function loadReports() {
+      const container = document.getElementById('reportsContainer')
+      container.innerHTML = '<div class="loading"><div class="loading-spinner"></div><p>جاري التحميل...</p></div>'
+      
+      if (!currentAcademyId || !currentUserId) {
+        container.innerHTML = '<p style="text-align:center;color:#888;">لا يمكن تحميل البيانات</p>'
+        return
+      }
+
+      try {
+        const { data: myCourses } = await supabase.from('courses').select('id,name').eq('teacher_id', currentUserId).eq('academy_id', currentAcademyId)
+        const courseIds = myCourses?.map(c => c.id) || []
+
+        // إحصائيات الحضور
+        const { data: attendanceData } = await supabase
+          .from('attendances')
+          .select('status')
+          .eq('academy_id', currentAcademyId)
+          .in('course_id', courseIds)
+
+        const presentCount = attendanceData?.filter(a => a.status === 'present').length || 0
+        const absentCount = attendanceData?.filter(a => a.status === 'absent').length || 0
+        const lateCount = attendanceData?.filter(a => a.status === 'late').length || 0
+        const totalAttendance = attendanceData?.length || 0
+
+        // إحصائيات الاختبارات
+        const { data: myExams } = await supabase
+          .from('exams')
+          .select('id')
+          .eq('academy_id', currentAcademyId)
+          .in('course_id', courseIds)
+        const examIds = myExams?.map(e => e.id) || []
+        
+        const { data: examScores } = examIds.length > 0 ? await supabase
+          .from('exam_scores')
+          .select('score')
+          .eq('academy_id', currentAcademyId)
+          .in('exam_id', examIds) : { data: [] }
+
+        const avgScore = examScores && examScores.length > 0
+          ? (examScores.reduce((sum, e) => sum + (parseFloat(e.score) || 0), 0) / examScores.length).toFixed(2)
+          : 0
+
+        let html = `
+          <div class="grid-3" style="margin-bottom:20px;">
+            <div class="stat-card">
+              <i class="stat-card-icon fas fa-check-circle"></i>
+              <p>الحضور</p>
+              <h3 class="stat-card-value">${presentCount}</h3>
+            </div>
+            <div class="stat-card">
+              <i class="stat-card-icon fas fa-times-circle"></i>
+              <p>الغياب</p>
+              <h3 class="stat-card-value">${absentCount}</h3>
+            </div>
+            <div class="stat-card">
+              <i class="stat-card-icon fas fa-clock"></i>
+              <p>التأخير</p>
+              <h3 class="stat-card-value">${lateCount}</h3>
+            </div>
+          </div>
+          <div class="card">
+            <h3 style="margin-bottom:15px;">ملخص الإحصائيات</h3>
+            <div style="display:grid; gap:12px; font-size:0.9rem;">
+              <div><strong>إجمالي سجلات الحضور:</strong> ${totalAttendance}</div>
+              <div><strong>نسبة الحضور:</strong> ${totalAttendance > 0 ? ((presentCount / totalAttendance) * 100).toFixed(1) : 0}%</div>
+              <div><strong>متوسط درجات الاختبارات:</strong> ${avgScore}</div>
+              <div><strong>عدد الكورسات:</strong> ${myCourses?.length || 0}</div>
+            </div>
+          </div>
+        `
+        container.innerHTML = html
+      } catch (error) {
+        console.error('Reports load error:', error)
+        container.innerHTML = `<p style="text-align:center;color:#FC8181;">خطأ في تحميل البيانات: ${error.message}</p>`
+      }
+    }
+
+    document.addEventListener('DOMContentLoaded', initApp)
+  </script>
+</body>
 </html>
